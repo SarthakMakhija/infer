@@ -56,10 +56,18 @@ impl<'a> Lexer<'a> {
             if Self::looks_like_identifier(char) {
                 self.next();
             } else {
-                return Ok(Token::new(TokenType::Identifier, index..next_index, self.source));
+                return Ok(Token::new(
+                    TokenType::Identifier,
+                    index..next_index,
+                    self.source,
+                ));
             }
         }
-        Ok(Token::new(TokenType::Identifier, index..self.source.len(), self.source))
+        Ok(Token::new(
+            TokenType::Identifier,
+            index..self.source.len(),
+            self.source,
+        ))
     }
 
     fn whole_number(&mut self, index: usize) -> Result<Token<'a>, LexError> {
@@ -67,21 +75,35 @@ impl<'a> Lexer<'a> {
             if Self::looks_like_whole_number(char) {
                 self.next();
             } else {
-                return Ok(Token::new(TokenType::WholeNumber, index..next_index, self.source));
+                return Ok(Token::new(
+                    TokenType::WholeNumber,
+                    index..next_index,
+                    self.source,
+                ));
             }
         }
-        Ok(Token::new(TokenType::WholeNumber, index..self.source.len(), self.source))
+        Ok(Token::new(
+            TokenType::WholeNumber,
+            index..self.source.len(),
+            self.source,
+        ))
     }
 
     fn string(&mut self, index: usize) -> Result<Token<'a>, LexError> {
         while let Some(&(next_index, char)) = self.peek() {
             if char == '"' {
                 self.next();
-                return Ok(Token::new(TokenType::StringLiteral, index..next_index + 1, self.source));
+                return Ok(Token::new(
+                    TokenType::StringLiteral,
+                    index..next_index + 1,
+                    self.source,
+                ));
             }
             self.next();
         }
-        Err(LexError::UnterminatedStringLiteral(self.source[index..].to_string()))
+        Err(LexError::UnterminatedStringLiteral(
+            self.source[index..].to_string(),
+        ))
     }
 
     fn looks_like_identifier(ch: char) -> bool {
@@ -166,7 +188,9 @@ mod tests {
         let result = lexer.lex();
 
         assert!(result.is_err());
-        assert!(matches!(result.err().unwrap(), LexError::UnterminatedStringLiteral(str) if str == "\"john"));
+        assert!(
+            matches!(result.err().unwrap(), LexError::UnterminatedStringLiteral(str) if str == "\"john")
+        );
     }
 
     #[test]
