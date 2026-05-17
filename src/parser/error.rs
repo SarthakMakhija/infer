@@ -9,13 +9,13 @@ pub(crate) enum ParseError {
     ///
     /// The first `TokenType` is the expected token, and the second is the actual token found.
     UnexpectedTokenType(TokenType, TokenType),
-    
+
     /// The parser reached the end of the input stream unexpectedly while parsing a construct.
     UnexpectedEof,
-    
+
     /// A scanning error propagated from the lexical analysis phase.
     LexError(LexError),
-    
+
     /// An error encountered while parsing or validating an individual expression.
     ExpressionError(ExpressionError),
 }
