@@ -13,22 +13,22 @@ use std::iter::Peekable;
 use std::str::CharIndices;
 
 /// A convenience type alias for standard Result returned by the lexer.
-pub(crate) type LexResult<'a> = Result<Token<'a>, LexError>;
+pub(crate) type LexResult<'src> = Result<Token<'src>, LexError>;
 
 /// A stateful lexical analyzer that scans source code and emits tokens.
 ///
 /// The `Lexer` implements the standard `Iterator` trait, making it an
 /// on-demand, lazy stream of `LexResult`s.
-pub(crate) struct Lexer<'a> {
-    source: &'a str,
-    chars: Peekable<CharIndices<'a>>,
+pub(crate) struct Lexer<'src> {
+    source: &'src str,
+    chars: Peekable<CharIndices<'src>>,
     keywords: Keywords,
     line: usize,
 }
 
-impl<'a> Lexer<'a> {
+impl<'src> Lexer<'src> {
     /// Creates a new `Lexer` instance for the given source string.
-    pub(crate) fn new(source: &'a str, keywords: Keywords) -> Self {
+    pub(crate) fn new(source: &'src str, keywords: Keywords) -> Self {
         Self {
             source,
             chars: source.char_indices().peekable(),
@@ -64,7 +64,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn maybe_identifier(&mut self, index: usize) -> LexResult<'a> {
+    fn maybe_identifier(&mut self, index: usize) -> LexResult<'src> {
         while let Some(&(next_index, char)) = self.peek() {
             if Self::looks_like_identifier(char) {
                 self.move_ahead();
@@ -75,7 +75,7 @@ impl<'a> Lexer<'a> {
         self.identifier_or_keyword(index, self.source.len())
     }
 
-    fn identifier_or_keyword(&self, index: usize, last_index: usize) -> LexResult<'a> {
+    fn identifier_or_keyword(&self, index: usize, last_index: usize) -> LexResult<'src> {
         let token = &self.source[index..last_index];
         if self.keywords.has(token) {
             return Ok(Token::new(
@@ -93,7 +93,7 @@ impl<'a> Lexer<'a> {
         ))
     }
 
-    fn whole_number(&mut self, index: usize) -> LexResult<'a> {
+    fn whole_number(&mut self, index: usize) -> LexResult<'src> {
         while let Some(&(next_index, char)) = self.peek() {
             if Self::looks_like_whole_number(char) {
                 self.move_ahead();
@@ -114,7 +114,7 @@ impl<'a> Lexer<'a> {
         ))
     }
 
-    fn string(&mut self, index: usize) -> LexResult<'a> {
+    fn string(&mut self, index: usize) -> LexResult<'src> {
         while let Some(&(next_index, char)) = self.peek() {
             if char == '"' {
                 self.move_ahead();
@@ -144,8 +144,8 @@ impl<'a> Lexer<'a> {
     }
 }
 
-impl<'a> Iterator for Lexer<'a> {
-    type Item = LexResult<'a>;
+impl<'src> Iterator for Lexer<'src> {
+    type Item = LexResult<'src>;
 
     /// Scans the next token from the source code.
     ///
