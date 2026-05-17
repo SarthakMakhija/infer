@@ -1,4 +1,4 @@
-# Type Inference Compiler (infer)
+# Type Inference Compiler (infer) (WIP)
 [![CI](https://github.com/SarthakMakhija/infer/actions/workflows/build.yml/badge.svg)](https://github.com/SarthakMakhija/infer/actions/workflows/build.yml)
 
 _infer_ is a compiler for a statically typed toy programming language implemented in Rust. The primary objective of this project is to serve as an educational showcase for designing and implementing **Constraint-Based Type Inference (Hindley-Milner style)** from scratch.

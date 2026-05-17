@@ -1,5 +1,5 @@
 /// Represents errors that can occur during the lexical analysis (tokenization) phase.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub(crate) enum LexError {
     /// Encountered a character that does not match any valid token.
     UnrecognizedChar(char),

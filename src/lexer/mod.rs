@@ -2,9 +2,9 @@
 //!
 //! It converts a raw string of source code into a stream of structured `Token`s.
 
-mod error;
-mod keywords;
-mod token;
+pub(crate) mod error;
+pub(crate) mod keywords;
+pub(crate) mod token;
 
 use crate::lexer::error::LexError;
 use crate::lexer::keywords::Keywords;
