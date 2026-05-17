@@ -1,11 +1,6 @@
 use crate::lexer::error::LexError;
 use crate::lexer::token::TokenType;
-
-#[derive(Debug, PartialEq)]
-pub(crate) enum ExpressionError {
-    UnsupportedTokenType(TokenType),
-    ParseIntError(String),
-}
+use crate::parser::ast::error::ExpressionError;
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum ParseError {
@@ -18,5 +13,11 @@ pub(crate) enum ParseError {
 impl From<LexError> for ParseError {
     fn from(error: LexError) -> Self {
         ParseError::LexError(error)
+    }
+}
+
+impl From<ExpressionError> for ParseError {
+    fn from(error: ExpressionError) -> Self {
+        ParseError::ExpressionError(error)
     }
 }
