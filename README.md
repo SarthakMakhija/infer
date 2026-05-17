@@ -18,7 +18,7 @@ You can read the formal specification of the language in the [EBNF grammar file]
 This compiler is built as a step-by-step linear pipeline. Each phase of the compilation process is cleanly decoupled:
 
 ```mermaid
-graph LR
+graph TD
     Source[Source Code] --> Lexer[1. Lexer]
     Lexer -->|Token Stream| Parser[2. Parser]
     Parser -->|AST| AST[3. AST Representation]
