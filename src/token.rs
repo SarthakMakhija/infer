@@ -81,3 +81,72 @@ impl<'a> Token<'a> {
         }
     }
 }
+
+#[cfg(test)]
+mod token_type_tests {
+    use super::*;
+
+    #[test]
+    fn keyword_type_var() {
+        assert_eq!(TokenType::keyword_type("var").unwrap(), TokenType::Var);
+    }
+
+    #[test]
+    fn keyword_type_invalid() {
+        assert!(matches!(
+            TokenType::keyword_type("unknown"),
+            Err(LexError::UnsupportedKeyword)
+        ));
+    }
+}
+
+#[cfg(test)]
+mod token_tests {
+    use super::*;
+
+    #[test]
+    fn token_equals() {
+        let token = Token::equals("=", 0, 1);
+        assert_eq!(token.token_type, TokenType::Equals);
+        assert_eq!(token.range, 0..1);
+        assert_eq!(token.line, 1);
+        assert_eq!(token.source, "=");
+    }
+
+    #[test]
+    fn token_semicolon() {
+        let token = Token::semicolon(";", 0, 2);
+        assert_eq!(token.token_type, TokenType::Semicolon);
+        assert_eq!(token.range, 0..1);
+        assert_eq!(token.line, 2);
+        assert_eq!(token.source, ";");
+    }
+
+    #[test]
+    fn token_colon() {
+        let token = Token::colon(":", 0, 1);
+        assert_eq!(token.token_type, TokenType::Colon);
+        assert_eq!(token.range, 0..1);
+        assert_eq!(token.line, 1);
+        assert_eq!(token.source, ":");
+    }
+
+    #[test]
+    fn token_eof() {
+        let source = "var x = 10;";
+        let token = Token::eof(source, 3);
+        assert_eq!(token.token_type, TokenType::Eof);
+        assert_eq!(token.range, source.len()..source.len());
+        assert_eq!(token.line, 3);
+        assert_eq!(token.source, source);
+    }
+
+    #[test]
+    fn new_token() {
+        let token = Token::new(TokenType::Identifier, 4..8, 1, "var name = 10;");
+        assert_eq!(token.token_type, TokenType::Identifier);
+        assert_eq!(token.range, 4..8);
+        assert_eq!(token.line, 1);
+        assert_eq!(token.source, "var name = 10;");
+    }
+}
