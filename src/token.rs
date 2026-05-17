@@ -4,6 +4,7 @@ use std::ops::Range;
 pub(crate) enum TokenType {
     Equals,
     EOF,
+    Identifier
 }
 
 #[derive(Debug, PartialEq)]
@@ -26,6 +27,14 @@ impl<'a> Token<'a> {
         Self {
             token_type: TokenType::EOF,
             range: source.len()..source.len(),
+            source,
+        }
+    }
+
+    pub(crate) fn new(token_type: TokenType, range: Range<usize>, source: &'a str) -> Self {
+        Self {
+            token_type,
+            range,
             source,
         }
     }
