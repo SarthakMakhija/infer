@@ -92,6 +92,11 @@ impl<'a> Token<'a> {
             source,
         }
     }
+
+    /// Returns the text slice of this token from the original source code.
+    pub(crate) fn value(&self) -> &str {
+        &self.source[self.range.start..self.range.end]
+    }
 }
 
 #[cfg(test)]
@@ -150,5 +155,11 @@ mod token_tests {
         assert_eq!(token.range, 4..8);
         assert_eq!(token.line, 1);
         assert_eq!(token.source, "var name = 10;");
+    }
+
+    #[test]
+    fn token_value() {
+        let token = Token::new(TokenType::Identifier, 4..8, 1, "var name = 10;");
+        assert_eq!(token.value(), "name");
     }
 }

@@ -1,3 +1,4 @@
+pub(crate) mod ast;
 pub(crate) mod error;
 
 use crate::lexer::token::{Token, TokenType};
@@ -27,6 +28,14 @@ impl<'a, T: Iterator<Item = LexResult<'a>>> ParserStream<'a, T> {
 
     pub(crate) fn expect_identifier(&mut self) -> Result<Token<'a>, ParseError> {
         self.expect(TokenType::Identifier)
+    }
+
+    pub(crate) fn next_token(&mut self) -> Result<Token<'a>, ParseError> {
+        let optional_token = self.stream.next().transpose()?;
+        match optional_token {
+            Some(token) => Ok(token),
+            None => Err(ParseError::UnexpectedEof),
+        }
     }
 }
 
@@ -99,5 +108,29 @@ mod tests {
             result.err().unwrap(),
             ParseError::LexError(crate::lexer::error::LexError::UnrecognizedChar('?'))
         ));
+    }
+
+    #[test]
+    fn next_token() {
+        let lexer = Lexer::new("var name", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+
+        let var = stream.next_token().unwrap();
+        assert_eq!(var.token_type, TokenType::Var);
+
+        let name = stream.next_token().unwrap();
+        assert_eq!(name.token_type, TokenType::Identifier);
+    }
+
+    #[test]
+    fn attempt_to_get_next_token_where_there_is_none() {
+        let lexer = Lexer::new("var name", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+
+        stream.next_token().unwrap();
+        stream.next_token().unwrap();
+
+        let token = stream.next_token();
+        assert_eq!(token.err().unwrap(), ParseError::UnexpectedEof);
     }
 }
