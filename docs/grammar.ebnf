@@ -1,0 +1,17 @@
+program
+    = { statement } EOF ;
+
+statement
+    = declaration ;
+
+declaration
+    = "var" identifier [ ":" type ] [ "=" literal ] ";" ;
+
+identifier
+    = IDENTIFIER ;
+
+type
+    = "i32" | "i64" | "string" | "bool" ;
+
+literal
+    = LITERAL ;
