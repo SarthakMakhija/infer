@@ -66,7 +66,7 @@ impl<'src> Lexer<'src> {
 
     fn maybe_identifier(&mut self, index: usize) -> LexResult<'src> {
         while let Some(&(next_index, char)) = self.peek() {
-            if Self::looks_like_identifier(char) {
+            if Self::is_identifier_char(char) {
                 self.move_ahead();
             } else {
                 return self.identifier_or_keyword(index, next_index);
@@ -135,8 +135,12 @@ impl<'src> Lexer<'src> {
         ))
     }
 
-    fn looks_like_identifier(ch: char) -> bool {
+    fn is_identifier_start(ch: char) -> bool {
         ch.is_ascii_alphabetic() || ch == '_'
+    }
+
+    fn is_identifier_char(ch: char) -> bool {
+        ch.is_ascii_alphanumeric() || ch == '_'
     }
 
     fn looks_like_whole_number(ch: char) -> bool {
@@ -173,7 +177,7 @@ impl<'src> Iterator for Lexer<'src> {
                     self.move_ahead();
                     Some(self.string(index))
                 }
-                char if Self::looks_like_identifier(char) => Some(self.maybe_identifier(index)),
+                char if Self::is_identifier_start(char) => Some(self.maybe_identifier(index)),
                 char if Self::looks_like_whole_number(char) => Some(self.whole_number(index)),
                 _ => Some(Err(LexError::UnrecognizedChar(char))),
             };
@@ -234,6 +238,20 @@ mod tests {
     fn lex_identifier_with_underscore() {
         let mut lexer = Lexer::new("first_name", Keywords::new());
         assert_token!(lexer.next(), TokenType::Identifier, 0..10);
+        assert!(lexer.next().is_none());
+    }
+
+    #[test]
+    fn lex_identifier_containing_digits() {
+        let mut lexer = Lexer::new("i32", Keywords::new());
+        assert_token!(lexer.next(), TokenType::Identifier, 0..3);
+        assert!(lexer.next().is_none());
+    }
+
+    #[test]
+    fn lex_number_is_not_identifier() {
+        let mut lexer = Lexer::new("100", Keywords::new());
+        assert_token!(lexer.next(), TokenType::WholeNumber, 0..3);
         assert!(lexer.next().is_none());
     }
 
