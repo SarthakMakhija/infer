@@ -23,6 +23,14 @@ impl<'a> Lexer<'a> {
                     self.next();
                     Ok(Token::equals(self.source, index))
                 }
+                ';' => {
+                    self.next();
+                    Ok(Token::semicolon(self.source, index))
+                }
+                ':' => {
+                    self.next();
+                    Ok(Token::colon(self.source, index))
+                }
                 char if Self::looks_like_identifier(char) => Ok(self.identifier(index)),
                 _ => Err(LexError::UnrecognizedChar(char)),
             };
@@ -76,6 +84,20 @@ mod tests {
     fn lex_equals() {
         let mut lexer = Lexer::new("=");
         assert_token!(lexer.lex(), TokenType::Equals, 0..1);
+        assert_token!(lexer.lex(), TokenType::EOF, 1..1);
+    }
+
+    #[test]
+    fn lex_semicolon() {
+        let mut lexer = Lexer::new(";");
+        assert_token!(lexer.lex(), TokenType::Semicolon, 0..1);
+        assert_token!(lexer.lex(), TokenType::EOF, 1..1);
+    }
+
+    #[test]
+    fn lex_colon() {
+        let mut lexer = Lexer::new(":");
+        assert_token!(lexer.lex(), TokenType::Colon, 0..1);
         assert_token!(lexer.lex(), TokenType::EOF, 1..1);
     }
 

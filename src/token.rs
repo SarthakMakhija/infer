@@ -3,8 +3,10 @@ use std::ops::Range;
 #[derive(Debug, PartialEq)]
 pub(crate) enum TokenType {
     Equals,
+    Semicolon,
+    Colon,
+    Identifier,
     EOF,
-    Identifier
 }
 
 #[derive(Debug, PartialEq)]
@@ -18,6 +20,22 @@ impl<'a> Token<'a> {
     pub(crate) fn equals(source: &'a str, index: usize) -> Self {
         Self {
             token_type: TokenType::Equals,
+            range: index..index+1,
+            source,
+        }
+    }
+
+    pub(crate) fn semicolon(source: &'a str, index: usize) -> Self {
+        Self {
+            token_type: TokenType::Semicolon,
+            range: index..index+1,
+            source,
+        }
+    }
+
+    pub(crate) fn colon(source: &'a str, index: usize) -> Self {
+        Self {
+            token_type: TokenType::Colon,
             range: index..index+1,
             source,
         }
