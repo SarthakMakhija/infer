@@ -1,3 +1,4 @@
+use crate::error::LexError;
 use std::ops::Range;
 
 #[derive(Debug, PartialEq)]
@@ -6,9 +7,19 @@ pub(crate) enum TokenType {
     Semicolon,
     Colon,
     Identifier,
+    Var,
     WholeNumber,
     StringLiteral,
     Eof,
+}
+
+impl TokenType {
+    pub(crate) fn keyword_type(token: &str) -> Result<Self, LexError> {
+        match token {
+            "var" => Ok(TokenType::Var),
+            _ => Err(LexError::UnsupportedKeyword),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]

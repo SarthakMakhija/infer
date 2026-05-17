@@ -1,4 +1,5 @@
 use crate::error::LexError;
+use crate::keywords::Keywords;
 use crate::token::{Token, TokenType};
 use std::iter::Peekable;
 use std::str::CharIndices;
@@ -6,13 +7,15 @@ use std::str::CharIndices;
 pub(crate) struct Lexer<'a> {
     source: &'a str,
     chars: Peekable<CharIndices<'a>>,
+    keywords: Keywords,
 }
 
 impl<'a> Lexer<'a> {
-    pub(crate) fn new(source: &'a str) -> Self {
+    pub(crate) fn new(source: &'a str, keywords: Keywords) -> Self {
         Self {
             source,
             chars: source.char_indices().peekable(),
+            keywords,
         }
     }
 
@@ -35,7 +38,7 @@ impl<'a> Lexer<'a> {
                     self.next();
                     self.string(index)
                 }
-                char if Self::looks_like_identifier(char) => self.identifier(index),
+                char if Self::looks_like_identifier(char) => self.maybe_identifier(index),
                 char if Self::looks_like_whole_number(char) => self.whole_number(index),
                 _ => Err(LexError::UnrecognizedChar(char)),
             };
@@ -51,21 +54,33 @@ impl<'a> Lexer<'a> {
         self.chars.peek()
     }
 
-    fn identifier(&mut self, index: usize) -> Result<Token<'a>, LexError> {
+    fn maybe_identifier(&mut self, index: usize) -> Result<Token<'a>, LexError> {
         while let Some(&(next_index, char)) = self.peek() {
             if Self::looks_like_identifier(char) {
                 self.next();
             } else {
-                return Ok(Token::new(
-                    TokenType::Identifier,
-                    index..next_index,
-                    self.source,
-                ));
+                return self.identifier_or_keyword(index, next_index);
             }
+        }
+        self.identifier_or_keyword(index, self.source.len())
+    }
+
+    fn identifier_or_keyword(
+        &self,
+        index: usize,
+        last_index: usize,
+    ) -> Result<Token<'a>, LexError> {
+        let token = &self.source[index..last_index];
+        if self.keywords.has(token) {
+            return Ok(Token::new(
+                TokenType::keyword_type(token)?,
+                index..last_index,
+                self.source,
+            ));
         }
         Ok(Token::new(
             TokenType::Identifier,
-            index..self.source.len(),
+            index..last_index,
             self.source,
         ))
     }
@@ -135,56 +150,70 @@ mod tests {
 
     #[test]
     fn lex_equals() {
-        let mut lexer = Lexer::new("=");
+        let mut lexer = Lexer::new("=", Keywords::new());
         assert_token!(lexer.lex(), TokenType::Equals, 0..1);
         assert_token!(lexer.lex(), TokenType::Eof, 1..1);
     }
 
     #[test]
     fn lex_semicolon() {
-        let mut lexer = Lexer::new(";");
+        let mut lexer = Lexer::new(";", Keywords::new());
         assert_token!(lexer.lex(), TokenType::Semicolon, 0..1);
         assert_token!(lexer.lex(), TokenType::Eof, 1..1);
     }
 
     #[test]
     fn lex_colon() {
-        let mut lexer = Lexer::new(":");
+        let mut lexer = Lexer::new(":", Keywords::new());
         assert_token!(lexer.lex(), TokenType::Colon, 0..1);
         assert_token!(lexer.lex(), TokenType::Eof, 1..1);
     }
 
     #[test]
     fn lex_identifier() {
-        let mut lexer = Lexer::new("name");
+        let mut lexer = Lexer::new("name", Keywords::new());
         assert_token!(lexer.lex(), TokenType::Identifier, 0..4);
         assert_token!(lexer.lex(), TokenType::Eof, 4..4);
     }
 
     #[test]
     fn lex_identifier_with_underscore() {
-        let mut lexer = Lexer::new("first_name");
+        let mut lexer = Lexer::new("first_name", Keywords::new());
         assert_token!(lexer.lex(), TokenType::Identifier, 0..10);
         assert_token!(lexer.lex(), TokenType::Eof, 10..10);
     }
 
     #[test]
+    fn lex_var_keyword() {
+        let mut lexer = Lexer::new("var", Keywords::new());
+        assert_token!(lexer.lex(), TokenType::Var, 0..3);
+        assert_token!(lexer.lex(), TokenType::Eof, 3..3);
+    }
+
+    #[test]
+    fn lex_var_case_sensitive() {
+        let mut lexer = Lexer::new("VAR", Keywords::new());
+        assert_token!(lexer.lex(), TokenType::Identifier, 0..3);
+        assert_token!(lexer.lex(), TokenType::Eof, 3..3);
+    }
+
+    #[test]
     fn lex_whole_number() {
-        let mut lexer = Lexer::new("123212");
+        let mut lexer = Lexer::new("123212", Keywords::new());
         assert_token!(lexer.lex(), TokenType::WholeNumber, 0..6);
         assert_token!(lexer.lex(), TokenType::Eof, 6..6);
     }
 
     #[test]
     fn lex_string() {
-        let mut lexer = Lexer::new("\"john\"");
+        let mut lexer = Lexer::new("\"john\"", Keywords::new());
         assert_token!(lexer.lex(), TokenType::StringLiteral, 0..6);
         assert_token!(lexer.lex(), TokenType::Eof, 6..6);
     }
 
     #[test]
     fn attempt_to_lex_unterminated_string() {
-        let mut lexer = Lexer::new("\"john");
+        let mut lexer = Lexer::new("\"john", Keywords::new());
         let result = lexer.lex();
 
         assert!(result.is_err());
@@ -195,7 +224,7 @@ mod tests {
 
     #[test]
     fn attempt_to_lex_unrecognized_character() {
-        let mut lexer = Lexer::new("?");
+        let mut lexer = Lexer::new("?", Keywords::new());
         let result = lexer.lex();
         assert!(matches!(result, Err(LexError::UnrecognizedChar(ch)) if ch == '?'));
     }
