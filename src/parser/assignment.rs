@@ -6,15 +6,24 @@ use crate::parser::error::ParseError;
 use crate::parser::expression::ExpressionParser;
 use crate::parser::ParserStream;
 
+/// A sub-parser responsible for parsing variable declaration and assignment statements.
+///
+/// `AssignmentParser` parses constructs following the grammar:
+/// `declaration = "var" identifier [ ":" type ] [ "=" literal ] ";" ;`
 pub(crate) struct AssignmentParser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
     stream: &'stream mut ParserStream<'src, I>,
 }
 
 impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> AssignmentParser<'src, 'stream, I> {
+    /// Creates a new instance of `AssignmentParser` sharing the parser stream borrow.
     pub(crate) fn new(stream: &'stream mut ParserStream<'src, I>) -> Self {
         Self { stream }
     }
 
+    /// Parses a variable assignment/declaration statement from the stream.
+    ///
+    /// Validates syntax constructs, handles optional type annotations and optional expressions,
+    /// and ensures the statement is terminated with a semicolon.
     pub(crate) fn parse(&mut self) -> Result<AssignmentNode, ParseError> {
         self.stream.expect(TokenType::Var)?;
         let name = self.stream.expect_identifier()?;

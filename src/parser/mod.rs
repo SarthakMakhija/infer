@@ -8,17 +8,25 @@ use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
 use std::iter::Peekable;
 
+/// A stateful wrapper around a lexer token stream that provides helper methods for parsing.
+///
+/// `ParserStream` maintains a peekable iterator of lex results, allowing sub-parsers to
+/// look ahead, assert token types, and handle end-of-file conditions cleanly.
 pub(crate) struct ParserStream<'a, T: Iterator<Item = LexResult<'a>>> {
     stream: Peekable<T>,
 }
 
 impl<'a, T: Iterator<Item = LexResult<'a>>> ParserStream<'a, T> {
+    /// Creates a new `ParserStream` from any iterator yielding `LexResult`s.
     pub(crate) fn new(stream: T) -> ParserStream<'a, T> {
         Self {
             stream: stream.peekable(),
         }
     }
 
+    /// Consumes the next token from the stream and asserts that it matches the `expected` token type.
+    ///
+    /// Returns the matched `Token` on success, or a `ParseError` (such as `UnexpectedTokenType` or `UnexpectedEof`) on mismatch.
     pub(crate) fn expect(&mut self, expected: TokenType) -> Result<Token<'a>, ParseError> {
         let optional_token = self.stream.next().transpose()?;
         match optional_token {
@@ -28,10 +36,14 @@ impl<'a, T: Iterator<Item = LexResult<'a>>> ParserStream<'a, T> {
         }
     }
 
+    /// Asserts that the next token is an identifier and consumes it.
     pub(crate) fn expect_identifier(&mut self) -> Result<Token<'a>, ParseError> {
         self.expect(TokenType::Identifier)
     }
 
+    /// Consumes and returns the next token from the stream regardless of its type.
+    ///
+    /// Returns `UnexpectedEof` if the stream is empty.
     pub(crate) fn expect_token(&mut self) -> Result<Token<'a>, ParseError> {
         let optional_token = self.stream.next().transpose()?;
         match optional_token {
@@ -40,6 +52,9 @@ impl<'a, T: Iterator<Item = LexResult<'a>>> ParserStream<'a, T> {
         }
     }
 
+    /// Peeks at the next token, and consumes it if it matches the `expected` token type.
+    ///
+    /// Returns `true` and advances the stream if it matches; otherwise returns `false` without advancing.
     pub(crate) fn maybe_matches(&mut self, expected: TokenType) -> bool {
         if let Some(Ok(token)) = self.stream.peek() {
             if token.token_type == expected {
