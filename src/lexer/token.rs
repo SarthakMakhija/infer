@@ -98,6 +98,11 @@ impl<'src> Token<'src> {
         &self.source[self.range.start..self.range.end]
     }
 
+    /// Returns the owned value of this token from the original source code.
+    pub(crate) fn owned_value(&self) -> String {
+        self.value().to_string()
+    }
+
     /// Returns the string value of a string literal token, stripping the surrounding double quotes.
     pub(crate) fn string_value(&self) -> &str {
         let val = self.value();
@@ -171,6 +176,12 @@ mod token_tests {
     fn token_value() {
         let token = Token::new(TokenType::Identifier, 4..8, 1, "var name = 10;");
         assert_eq!(token.value(), "name");
+    }
+
+    #[test]
+    fn token_owned_value() {
+        let token = Token::new(TokenType::Identifier, 4..8, 1, "var name = 10;");
+        assert_eq!(token.owned_value(), String::from("name"));
     }
 
     #[test]

@@ -1,3 +1,4 @@
+pub(crate) mod assignment;
 pub(crate) mod ast;
 pub(crate) mod error;
 pub(crate) mod expression;
@@ -37,6 +38,16 @@ impl<'a, T: Iterator<Item = LexResult<'a>>> ParserStream<'a, T> {
             Some(token) => Ok(token),
             None => Err(ParseError::UnexpectedEof),
         }
+    }
+
+    pub(crate) fn maybe_matches(&mut self, expected: TokenType) -> bool {
+        if let Some(Ok(token)) = self.stream.peek() {
+            if token.token_type == expected {
+                let _ = self.stream.next();
+                return true;
+            }
+        }
+        false
     }
 }
 
@@ -133,5 +144,41 @@ mod tests {
 
         let token = stream.expect_token();
         assert_eq!(token.err().unwrap(), ParseError::UnexpectedEof);
+    }
+
+    #[test]
+    fn maybe_matches() {
+        let lexer = Lexer::new("var name", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+
+        assert!(stream.maybe_matches(TokenType::Var));
+    }
+
+    #[test]
+    fn maybe_matches_does_not_match() {
+        let lexer = Lexer::new("var name", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+
+        assert!(!stream.maybe_matches(TokenType::Identifier));
+    }
+
+    #[test]
+    fn maybe_matches_does_not_match_and_does_not_consume_token() {
+        let lexer = Lexer::new("var name", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+
+        assert!(!stream.maybe_matches(TokenType::Identifier));
+
+        let token = stream.expect(TokenType::Var).unwrap();
+        assert_eq!(token.token_type, TokenType::Var);
+        assert_eq!(token.value(), "var");
+    }
+
+    #[test]
+    fn maybe_matches_eof() {
+        let lexer = Lexer::new("", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+
+        assert!(!stream.maybe_matches(TokenType::Var));
     }
 }
