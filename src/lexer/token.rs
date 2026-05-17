@@ -10,7 +10,6 @@ pub(crate) enum TokenType {
     Var,
     WholeNumber,
     StringLiteral,
-    Eof,
 }
 
 impl TokenType {
@@ -71,15 +70,6 @@ impl<'a> Token<'a> {
             source,
         }
     }
-
-    pub(crate) fn eof(source: &'a str, line: usize) -> Self {
-        Self {
-            token_type: TokenType::Eof,
-            range: source.len()..source.len(),
-            line,
-            source,
-        }
-    }
 }
 
 #[cfg(test)]
@@ -129,16 +119,6 @@ mod token_tests {
         assert_eq!(token.range, 0..1);
         assert_eq!(token.line, 1);
         assert_eq!(token.source, ":");
-    }
-
-    #[test]
-    fn token_eof() {
-        let source = "var x = 10;";
-        let token = Token::eof(source, 3);
-        assert_eq!(token.token_type, TokenType::Eof);
-        assert_eq!(token.range, source.len()..source.len());
-        assert_eq!(token.line, 3);
-        assert_eq!(token.source, source);
     }
 
     #[test]
