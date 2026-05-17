@@ -2,17 +2,22 @@ use std::collections::HashSet;
 
 const KEYWORDS: &[&str] = &["var"];
 
+/// A collection of reserved keywords in the language.
+///
+/// Used by the lexer to distinguish between general identifiers and structural keywords.
 pub(crate) struct Keywords {
     vocabulary: HashSet<String>,
 }
 
 impl Keywords {
+    /// Creates a new `Keywords` dictionary initialized with all supported reserved keywords.
     pub(crate) fn new() -> Self {
         Self {
             vocabulary: KEYWORDS.iter().map(|word| word.to_string()).collect(),
         }
     }
 
+    /// Checks if a given word is a reserved keyword.
     pub(crate) fn has(&self, word: &str) -> bool {
         self.vocabulary.contains(word)
     }

@@ -1,3 +1,7 @@
+//! The `lexer` module contains the scanner/tokenizer implementation.
+//!
+//! It converts a raw string of source code into a stream of structured `Token`s.
+
 mod error;
 mod keywords;
 mod token;
@@ -8,8 +12,13 @@ use crate::lexer::token::{Token, TokenType};
 use std::iter::Peekable;
 use std::str::CharIndices;
 
+/// A convenience type alias for standard Result returned by the lexer.
 pub(crate) type LexResult<'a> = Result<Token<'a>, LexError>;
 
+/// A stateful lexical analyzer that scans source code and emits tokens.
+///
+/// The `Lexer` implements the standard `Iterator` trait, making it an
+/// on-demand, lazy stream of `LexResult`s.
 pub(crate) struct Lexer<'a> {
     source: &'a str,
     chars: Peekable<CharIndices<'a>>,
@@ -18,6 +27,7 @@ pub(crate) struct Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
+    /// Creates a new `Lexer` instance for the given source string.
     pub(crate) fn new(source: &'a str, keywords: Keywords) -> Self {
         Self {
             source,
@@ -137,6 +147,11 @@ impl<'a> Lexer<'a> {
 impl<'a> Iterator for Lexer<'a> {
     type Item = LexResult<'a>;
 
+    /// Scans the next token from the source code.
+    ///
+    /// Silently consumes any leading whitespace or newlines, updating the line counter.
+    /// Returns `Some(Ok(Token))` for successfully scanned tokens, `Some(Err(LexError))`
+    /// if a scanning error occurs, and `None` when the end of the source is reached.
     fn next(&mut self) -> Option<Self::Item> {
         self.skip_whitespace();
 

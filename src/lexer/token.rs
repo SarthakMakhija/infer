@@ -1,18 +1,28 @@
 use crate::lexer::error::LexError;
 use std::ops::Range;
 
+/// The catalog of different syntactic categories (token types) supported by the language.
 #[derive(Debug, PartialEq)]
 pub(crate) enum TokenType {
+    /// The `=` assignment operator.
     Equals,
+    /// The `;` statement terminator.
     Semicolon,
+    /// The `:` type annotation separator.
     Colon,
+    /// A user-defined identifier (e.g. variable names or type names).
     Identifier,
+    /// The `var` structural keyword.
     Var,
+    /// A numeric integer literal.
     WholeNumber,
+    /// A double-quoted string literal.
     StringLiteral,
 }
 
 impl TokenType {
+    /// Maps a string slice lexeme to its corresponding reserved keyword `TokenType`.
+    /// Returns `LexError::UnsupportedKeyword` if the slice is not a recognized keyword.
     pub(crate) fn keyword_type(token: &str) -> Result<Self, LexError> {
         match token {
             "var" => Ok(TokenType::Var),
@@ -21,15 +31,24 @@ impl TokenType {
     }
 }
 
+/// Represents a single lexical token scanned from the source code.
+///
+/// A `Token` keeps track of its type, its byte range in the original source,
+/// the line number it was found on, and holds a reference to the source itself.
 #[derive(Debug, PartialEq)]
 pub(crate) struct Token<'a> {
+    /// The syntactic category of this token.
     pub(crate) token_type: TokenType,
+    /// The byte range span of this token in the source code.
     pub(crate) range: Range<usize>,
+    /// The 1-based line number where this token is located.
     pub(crate) line: usize,
+    /// A reference to the original source code slice.
     pub(crate) source: &'a str,
 }
 
 impl<'a> Token<'a> {
+    /// Creates a generic new `Token`.
     pub(crate) fn new(
         token_type: TokenType,
         range: Range<usize>,
@@ -44,6 +63,7 @@ impl<'a> Token<'a> {
         }
     }
 
+    /// Creates a new `Token` representing the `=` operator.
     pub(crate) fn equals(source: &'a str, index: usize, line: usize) -> Self {
         Self {
             token_type: TokenType::Equals,
@@ -53,6 +73,7 @@ impl<'a> Token<'a> {
         }
     }
 
+    /// Creates a new `Token` representing the `;` terminator.
     pub(crate) fn semicolon(source: &'a str, index: usize, line: usize) -> Self {
         Self {
             token_type: TokenType::Semicolon,
@@ -62,6 +83,7 @@ impl<'a> Token<'a> {
         }
     }
 
+    /// Creates a new `Token` representing the `:` separator.
     pub(crate) fn colon(source: &'a str, index: usize, line: usize) -> Self {
         Self {
             token_type: TokenType::Colon,
