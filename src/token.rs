@@ -6,7 +6,7 @@ pub(crate) enum TokenType {
     Semicolon,
     Colon,
     Identifier,
-    EOF,
+    Eof,
 }
 
 #[derive(Debug, PartialEq)]
@@ -20,7 +20,7 @@ impl<'a> Token<'a> {
     pub(crate) fn equals(source: &'a str, index: usize) -> Self {
         Self {
             token_type: TokenType::Equals,
-            range: index..index+1,
+            range: index..index + 1,
             source,
         }
     }
@@ -28,7 +28,7 @@ impl<'a> Token<'a> {
     pub(crate) fn semicolon(source: &'a str, index: usize) -> Self {
         Self {
             token_type: TokenType::Semicolon,
-            range: index..index+1,
+            range: index..index + 1,
             source,
         }
     }
@@ -36,14 +36,14 @@ impl<'a> Token<'a> {
     pub(crate) fn colon(source: &'a str, index: usize) -> Self {
         Self {
             token_type: TokenType::Colon,
-            range: index..index+1,
+            range: index..index + 1,
             source,
         }
     }
 
     pub(crate) fn eof(source: &'a str) -> Self {
         Self {
-            token_type: TokenType::EOF,
+            token_type: TokenType::Eof,
             range: source.len()..source.len(),
             source,
         }

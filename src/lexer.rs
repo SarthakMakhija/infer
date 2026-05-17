@@ -84,35 +84,35 @@ mod tests {
     fn lex_equals() {
         let mut lexer = Lexer::new("=");
         assert_token!(lexer.lex(), TokenType::Equals, 0..1);
-        assert_token!(lexer.lex(), TokenType::EOF, 1..1);
+        assert_token!(lexer.lex(), TokenType::Eof, 1..1);
     }
 
     #[test]
     fn lex_semicolon() {
         let mut lexer = Lexer::new(";");
         assert_token!(lexer.lex(), TokenType::Semicolon, 0..1);
-        assert_token!(lexer.lex(), TokenType::EOF, 1..1);
+        assert_token!(lexer.lex(), TokenType::Eof, 1..1);
     }
 
     #[test]
     fn lex_colon() {
         let mut lexer = Lexer::new(":");
         assert_token!(lexer.lex(), TokenType::Colon, 0..1);
-        assert_token!(lexer.lex(), TokenType::EOF, 1..1);
+        assert_token!(lexer.lex(), TokenType::Eof, 1..1);
     }
 
     #[test]
     fn lex_identifier() {
         let mut lexer = Lexer::new("name");
         assert_token!(lexer.lex(), TokenType::Identifier, 0..4);
-        assert_token!(lexer.lex(), TokenType::EOF, 4..4);
+        assert_token!(lexer.lex(), TokenType::Eof, 4..4);
     }
 
     #[test]
     fn lex_identifier_with_underscore() {
         let mut lexer = Lexer::new("first_name");
         assert_token!(lexer.lex(), TokenType::Identifier, 0..10);
-        assert_token!(lexer.lex(), TokenType::EOF, 10..10);
+        assert_token!(lexer.lex(), TokenType::Eof, 10..10);
     }
 
     #[test]
