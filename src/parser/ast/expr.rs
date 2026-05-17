@@ -20,7 +20,7 @@ impl<'a> TryFrom<Token<'a>> for Expression {
                     .map_err(|_| ExpressionError::ParseIntError(token.value().to_string()))?;
                 Ok(Expression::I32(value))
             }
-            TokenType::StringLiteral => Ok(Expression::String(token.value().to_string())),
+            TokenType::StringLiteral => Ok(Expression::String(token.string_value().to_string())),
             other => Err(ExpressionError::UnsupportedTokenType(other)),
         }
     }

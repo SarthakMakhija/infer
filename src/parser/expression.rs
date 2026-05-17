@@ -1,0 +1,81 @@
+use crate::lexer::LexResult;
+use crate::parser::ast::expr::Expression;
+use crate::parser::error::ParseError;
+use crate::parser::ParserStream;
+
+pub(crate) struct ExpressionParser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
+    stream: &'stream mut ParserStream<'src, I>,
+}
+
+impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 'stream, I> {
+    pub(crate) fn new(stream: &'stream mut ParserStream<'src, I>) -> Self {
+        Self { stream }
+    }
+
+    pub(crate) fn parse(&mut self) -> Result<Expression, ParseError> {
+        let token = self.stream.expect_token()?;
+        Ok(Expression::try_from(token)?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::lexer::keywords::Keywords;
+    use crate::lexer::token::TokenType;
+    use crate::lexer::Lexer;
+    use crate::parser::ast::error::ExpressionError;
+
+    #[test]
+    fn parse_whole_number() {
+        let lexer = Lexer::new("123", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expr = parser.parse().unwrap();
+        assert_eq!(expr, Expression::I32(123));
+    }
+
+    #[test]
+    fn parse_string_literal() {
+        let lexer = Lexer::new("\"infer\"", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expr = parser.parse().unwrap();
+        assert_eq!(expr, Expression::String("infer".to_string()));
+    }
+
+    #[test]
+    fn parse_identifier() {
+        let lexer = Lexer::new("my_var", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expr = parser.parse().unwrap();
+        assert_eq!(expr, Expression::Identifier("my_var".to_string()));
+    }
+
+    #[test]
+    fn parse_unsupported_token() {
+        let lexer = Lexer::new("var", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let res = parser.parse();
+        assert_eq!(
+            res.err().unwrap(),
+            ParseError::ExpressionError(ExpressionError::UnsupportedTokenType(TokenType::Var))
+        );
+    }
+
+    #[test]
+    fn parse_eof() {
+        let lexer = Lexer::new("", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let res = parser.parse();
+        assert_eq!(res.err().unwrap(), ParseError::UnexpectedEof);
+    }
+}

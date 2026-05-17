@@ -36,7 +36,7 @@ impl TokenType {
 /// A `Token` keeps track of its type, its byte range in the original source,
 /// the line number it was found on, and holds a reference to the source itself.
 #[derive(Debug, PartialEq)]
-pub(crate) struct Token<'a> {
+pub(crate) struct Token<'src> {
     /// The syntactic category of this token.
     pub(crate) token_type: TokenType,
     /// The byte range span of this token in the source code.
@@ -44,16 +44,16 @@ pub(crate) struct Token<'a> {
     /// The 1-based line number where this token is located.
     pub(crate) line: usize,
     /// A reference to the original source code slice.
-    pub(crate) source: &'a str,
+    pub(crate) source: &'src str,
 }
 
-impl<'a> Token<'a> {
+impl<'src> Token<'src> {
     /// Creates a generic new `Token`.
     pub(crate) fn new(
         token_type: TokenType,
         range: Range<usize>,
         line: usize,
-        source: &'a str,
+        source: &'src str,
     ) -> Self {
         Self {
             token_type,
@@ -64,7 +64,7 @@ impl<'a> Token<'a> {
     }
 
     /// Creates a new `Token` representing the `=` operator.
-    pub(crate) fn equals(source: &'a str, index: usize, line: usize) -> Self {
+    pub(crate) fn equals(source: &'src str, index: usize, line: usize) -> Self {
         Self {
             token_type: TokenType::Equals,
             range: index..index + 1,
@@ -74,7 +74,7 @@ impl<'a> Token<'a> {
     }
 
     /// Creates a new `Token` representing the `;` terminator.
-    pub(crate) fn semicolon(source: &'a str, index: usize, line: usize) -> Self {
+    pub(crate) fn semicolon(source: &'src str, index: usize, line: usize) -> Self {
         Self {
             token_type: TokenType::Semicolon,
             range: index..index + 1,
@@ -84,7 +84,7 @@ impl<'a> Token<'a> {
     }
 
     /// Creates a new `Token` representing the `:` separator.
-    pub(crate) fn colon(source: &'a str, index: usize, line: usize) -> Self {
+    pub(crate) fn colon(source: &'src str, index: usize, line: usize) -> Self {
         Self {
             token_type: TokenType::Colon,
             range: index..index + 1,
@@ -96,6 +96,16 @@ impl<'a> Token<'a> {
     /// Returns the text slice of this token from the original source code.
     pub(crate) fn value(&self) -> &str {
         &self.source[self.range.start..self.range.end]
+    }
+
+    /// Returns the string value of a string literal token, stripping the surrounding double quotes.
+    pub(crate) fn string_value(&self) -> &str {
+        let val = self.value();
+        if val.starts_with('"') && val.ends_with('"') && val.len() >= 2 {
+            &val[1..val.len() - 1]
+        } else {
+            val
+        }
     }
 }
 
@@ -161,5 +171,14 @@ mod token_tests {
     fn token_value() {
         let token = Token::new(TokenType::Identifier, 4..8, 1, "var name = 10;");
         assert_eq!(token.value(), "name");
+    }
+
+    #[test]
+    fn token_string_value() {
+        let token = Token::new(TokenType::StringLiteral, 0..7, 1, "\"infer\"");
+        assert_eq!(token.string_value(), "infer");
+
+        let token2 = Token::new(TokenType::StringLiteral, 1..6, 1, "\"infer\"");
+        assert_eq!(token2.string_value(), "infer");
     }
 }

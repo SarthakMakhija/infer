@@ -1,5 +1,6 @@
 pub(crate) mod ast;
 pub(crate) mod error;
+pub(crate) mod expression;
 
 use crate::lexer::token::{Token, TokenType};
 use crate::lexer::LexResult;
@@ -30,7 +31,7 @@ impl<'a, T: Iterator<Item = LexResult<'a>>> ParserStream<'a, T> {
         self.expect(TokenType::Identifier)
     }
 
-    pub(crate) fn next_token(&mut self) -> Result<Token<'a>, ParseError> {
+    pub(crate) fn expect_token(&mut self) -> Result<Token<'a>, ParseError> {
         let optional_token = self.stream.next().transpose()?;
         match optional_token {
             Some(token) => Ok(token),
@@ -111,26 +112,26 @@ mod tests {
     }
 
     #[test]
-    fn next_token() {
+    fn expect_token() {
         let lexer = Lexer::new("var name", Keywords::new());
         let mut stream = ParserStream::new(lexer);
 
-        let var = stream.next_token().unwrap();
+        let var = stream.expect_token().unwrap();
         assert_eq!(var.token_type, TokenType::Var);
 
-        let name = stream.next_token().unwrap();
+        let name = stream.expect_token().unwrap();
         assert_eq!(name.token_type, TokenType::Identifier);
     }
 
     #[test]
-    fn attempt_to_get_next_token_where_there_is_none() {
+    fn attempt_to_get_token_where_there_is_none() {
         let lexer = Lexer::new("var name", Keywords::new());
         let mut stream = ParserStream::new(lexer);
 
-        stream.next_token().unwrap();
-        stream.next_token().unwrap();
+        stream.expect_token().unwrap();
+        stream.expect_token().unwrap();
 
-        let token = stream.next_token();
+        let token = stream.expect_token();
         assert_eq!(token.err().unwrap(), ParseError::UnexpectedEof);
     }
 }
