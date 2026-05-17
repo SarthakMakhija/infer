@@ -1,6 +1,10 @@
-use crate::error::LexError;
-use crate::keywords::Keywords;
-use crate::token::{Token, TokenType};
+mod error;
+mod keywords;
+mod token;
+
+use crate::lexer::error::LexError;
+use crate::lexer::keywords::Keywords;
+use crate::lexer::token::{Token, TokenType};
 use std::iter::Peekable;
 use std::str::CharIndices;
 
@@ -164,7 +168,6 @@ impl<'a> Lexer<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::token::TokenType;
 
     macro_rules! assert_token {
         ($token:expr, $expected_type:pat, $expected_range:expr) => {

@@ -1,4 +1,4 @@
-use crate::error::LexError;
+use crate::lexer::error::LexError;
 use std::ops::Range;
 
 #[derive(Debug, PartialEq)]
@@ -31,6 +31,20 @@ pub(crate) struct Token<'a> {
 }
 
 impl<'a> Token<'a> {
+    pub(crate) fn new(
+        token_type: TokenType,
+        range: Range<usize>,
+        line: usize,
+        source: &'a str,
+    ) -> Self {
+        Self {
+            token_type,
+            range,
+            line,
+            source,
+        }
+    }
+
     pub(crate) fn equals(source: &'a str, index: usize, line: usize) -> Self {
         Self {
             token_type: TokenType::Equals,
@@ -62,20 +76,6 @@ impl<'a> Token<'a> {
         Self {
             token_type: TokenType::Eof,
             range: source.len()..source.len(),
-            line,
-            source,
-        }
-    }
-
-    pub(crate) fn new(
-        token_type: TokenType,
-        range: Range<usize>,
-        line: usize,
-        source: &'a str,
-    ) -> Self {
-        Self {
-            token_type,
-            range,
             line,
             source,
         }
