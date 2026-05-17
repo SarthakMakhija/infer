@@ -6,6 +6,8 @@ pub(crate) enum TokenType {
     Semicolon,
     Colon,
     Identifier,
+    WholeNumber,
+    StringLiteral,
     Eof,
 }
 
