@@ -7,13 +7,13 @@ use std::iter::Peekable;
 ///
 /// `ParserStream` maintains a peekable iterator of lex results, allowing sub-parsers to
 /// look ahead, assert token types, and handle end-of-file conditions cleanly.
-pub(crate) struct ParserStream<'a, T: Iterator<Item = LexResult<'a>>> {
+pub(crate) struct ParserStream<'src, T: Iterator<Item = LexResult<'src>>> {
     stream: Peekable<T>,
 }
 
-impl<'a, T: Iterator<Item = LexResult<'a>>> ParserStream<'a, T> {
+impl<'src, T: Iterator<Item = LexResult<'src>>> ParserStream<'src, T> {
     /// Creates a new `ParserStream` from any iterator yielding `LexResult`s.
-    pub(crate) fn new(stream: T) -> ParserStream<'a, T> {
+    pub(crate) fn new(stream: T) -> ParserStream<'src, T> {
         Self {
             stream: stream.peekable(),
         }
@@ -22,7 +22,7 @@ impl<'a, T: Iterator<Item = LexResult<'a>>> ParserStream<'a, T> {
     /// Consumes the next token from the stream and asserts that it matches the `expected` token type.
     ///
     /// Returns the matched `Token` on success, or a `ParseError` (such as `UnexpectedTokenType` or `UnexpectedEof`) on mismatch.
-    pub(crate) fn expect(&mut self, expected: TokenType) -> Result<Token<'a>, ParseError> {
+    pub(crate) fn expect(&mut self, expected: TokenType) -> Result<Token<'src>, ParseError> {
         let optional_token = self.stream.next().transpose()?;
         match optional_token {
             Some(token) if token.token_type == expected => Ok(token),
@@ -32,14 +32,14 @@ impl<'a, T: Iterator<Item = LexResult<'a>>> ParserStream<'a, T> {
     }
 
     /// Asserts that the next token is an identifier and consumes it.
-    pub(crate) fn expect_identifier(&mut self) -> Result<Token<'a>, ParseError> {
+    pub(crate) fn expect_identifier(&mut self) -> Result<Token<'src>, ParseError> {
         self.expect(TokenType::Identifier)
     }
 
     /// Consumes and returns the next token from the stream regardless of its type.
     ///
     /// Returns `UnexpectedEof` if the stream is empty.
-    pub(crate) fn expect_token(&mut self) -> Result<Token<'a>, ParseError> {
+    pub(crate) fn expect_token(&mut self) -> Result<Token<'src>, ParseError> {
         let optional_token = self.stream.next().transpose()?;
         match optional_token {
             Some(token) => Ok(token),
@@ -58,6 +58,17 @@ impl<'a, T: Iterator<Item = LexResult<'a>>> ParserStream<'a, T> {
             }
         }
         false
+    }
+
+    /// Peeks at the next item in the token stream without consuming it.
+    ///
+    /// Returns `None` if the stream has reached the end-of-file.
+    pub(crate) fn peek(&mut self) -> Result<Option<&Token<'src>>, ParseError> {
+        match self.stream.peek() {
+            None => Ok(None),
+            Some(Err(err)) => Err(ParseError::LexError(err.clone())),
+            Some(Ok(token)) => Ok(Some(token)),
+        }
     }
 }
 
@@ -190,5 +201,50 @@ mod tests {
         let mut stream = ParserStream::new(lexer);
 
         assert!(!stream.maybe_matches(TokenType::Var));
+    }
+
+    #[test]
+    fn peek() {
+        let lexer = Lexer::new("var id = 100;", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+
+        let peeked = stream.peek().unwrap();
+        assert!(peeked.is_some());
+        assert_eq!(peeked.unwrap().token_type, TokenType::Var);
+    }
+
+    #[test]
+    fn peek_does_not_consume() {
+        let lexer = Lexer::new("var id = 100;", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+
+        let peeked = stream.peek().unwrap();
+        assert!(peeked.is_some());
+        assert_eq!(peeked.unwrap().token_type, TokenType::Var);
+
+        let consumed = stream.expect(TokenType::Var).unwrap();
+        assert_eq!(consumed.token_type, TokenType::Var);
+    }
+
+    #[test]
+    fn peek_returns_lex_error_given_unrecognized_token() {
+        let lexer = Lexer::new("?", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+
+        let peeked_err = stream.peek();
+        assert!(peeked_err.is_err());
+        assert!(matches!(
+            peeked_err.err().unwrap(),
+            ParseError::LexError(crate::lexer::error::LexError::UnrecognizedChar('?'))
+        ));
+    }
+
+    #[test]
+    fn peek_eof() {
+        let lexer = Lexer::new("", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+
+        let peeked = stream.peek().unwrap();
+        assert!(peeked.is_none());
     }
 }

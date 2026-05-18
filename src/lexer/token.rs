@@ -2,7 +2,7 @@ use crate::lexer::error::LexError;
 use std::ops::Range;
 
 /// The catalog of different syntactic categories (token types) supported by the language.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub(crate) enum TokenType {
     /// The `=` assignment operator.
     Equals,
@@ -41,7 +41,7 @@ impl TokenType {
 ///
 /// A `Token` keeps track of its type, its byte range in the original source,
 /// the line number it was found on, and holds a reference to the source itself.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub(crate) struct Token<'src> {
     /// The syntactic category of this token.
     pub(crate) token_type: TokenType,
@@ -117,6 +117,11 @@ impl<'src> Token<'src> {
         } else {
             val
         }
+    }
+
+    /// Returns `true` if this token's type is `TokenType::Var`.
+    pub(crate) fn is_var(&self) -> bool {
+        matches!(self.token_type, TokenType::Var)
     }
 }
 
@@ -207,5 +212,17 @@ mod token_tests {
 
         let token2 = Token::new(TokenType::StringLiteral, 1..6, 1, "\"infer\"");
         assert_eq!(token2.string_value(), "infer");
+    }
+
+    #[test]
+    fn token_is_var() {
+        let token = Token::new(TokenType::Var, 0..3, 1, "var");
+        assert!(token.is_var());
+    }
+
+    #[test]
+    fn token_is_not_var() {
+        let token = Token::new(TokenType::Identifier, 0..4, 1, "name");
+        assert!(!token.is_var());
     }
 }
