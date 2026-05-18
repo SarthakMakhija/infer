@@ -1,7 +1,7 @@
 use crate::ast::expr::Expression;
 use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
-use crate::parser::ParserStream;
+use crate::parser::stream::ParserStream;
 
 pub(crate) struct ExpressionParser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
     stream: &'stream mut ParserStream<'src, I>,

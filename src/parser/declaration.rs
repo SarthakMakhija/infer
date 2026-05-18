@@ -4,7 +4,7 @@ use crate::lexer::token::TokenType;
 use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
 use crate::parser::expression::ExpressionParser;
-use crate::parser::ParserStream;
+use crate::parser::stream::ParserStream;
 
 /// A sub-parser responsible for parsing variable declaration and assignment statements.
 ///
