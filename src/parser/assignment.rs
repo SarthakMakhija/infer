@@ -1,7 +1,7 @@
 use crate::lexer::token::TokenType;
 use crate::lexer::LexResult;
 use crate::parser::ast::expr::Expression;
-use crate::parser::ast::AssignmentNode;
+use crate::parser::ast::statement::{Assignment, Statement};
 use crate::parser::error::ParseError;
 use crate::parser::expression::ExpressionParser;
 use crate::parser::ParserStream;
@@ -24,18 +24,18 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> AssignmentParser<'src, 
     ///
     /// Validates syntax constructs, handles optional type annotations and optional expressions,
     /// and ensures the statement is terminated with a semicolon.
-    pub(crate) fn parse(&mut self) -> Result<AssignmentNode, ParseError> {
+    pub(crate) fn parse(&mut self) -> Result<Statement, ParseError> {
         self.stream.expect(TokenType::Var)?;
         let name = self.stream.expect_identifier()?;
         let data_type = self.maybe_datatype()?;
         let expression = self.maybe_expression()?;
         self.stream.expect(TokenType::Semicolon)?;
 
-        Ok(AssignmentNode::new(
+        Ok(Statement::assignment(Assignment::new(
             name.owned_value(),
             data_type,
             expression,
-        ))
+        )))
     }
 
     fn maybe_datatype(&mut self) -> Result<Option<String>, ParseError> {
@@ -68,10 +68,16 @@ mod tests {
         let mut stream = ParserStream::new(lexer);
         let mut parser = AssignmentParser::new(&mut stream);
 
-        let node = parser.parse().unwrap();
-        assert_eq!(node.variable, "id");
-        assert_eq!(node.data_type, Some("i32".to_string()));
-        assert_eq!(node.expression, Some(Expression::I32(100)));
+        let statement = parser.parse().unwrap();
+
+        assert_eq!(
+            statement,
+            Statement::assignment(Assignment::new(
+                "id".to_string(),
+                Some("i32".to_string()),
+                Some(Expression::I32(100))
+            ))
+        );
     }
 
     #[test]
@@ -80,12 +86,14 @@ mod tests {
         let mut stream = ParserStream::new(lexer);
         let mut parser = AssignmentParser::new(&mut stream);
 
-        let node = parser.parse().unwrap();
-        assert_eq!(node.variable, "greeting");
-        assert_eq!(node.data_type, None);
+        let statement = parser.parse().unwrap();
         assert_eq!(
-            node.expression,
-            Some(Expression::String("hello".to_string()))
+            statement,
+            Statement::assignment(Assignment::new(
+                "greeting".to_string(),
+                None,
+                Some(Expression::String("hello".to_string()))
+            ))
         );
     }
 
@@ -95,10 +103,15 @@ mod tests {
         let mut stream = ParserStream::new(lexer);
         let mut parser = AssignmentParser::new(&mut stream);
 
-        let node = parser.parse().unwrap();
-        assert_eq!(node.variable, "age");
-        assert_eq!(node.data_type, Some("i32".to_string()));
-        assert_eq!(node.expression, None);
+        let statement = parser.parse().unwrap();
+        assert_eq!(
+            statement,
+            Statement::assignment(Assignment::new(
+                "age".to_string(),
+                Some("i32".to_string()),
+                None
+            ))
+        );
     }
 
     #[test]
@@ -107,10 +120,11 @@ mod tests {
         let mut stream = ParserStream::new(lexer);
         let mut parser = AssignmentParser::new(&mut stream);
 
-        let node = parser.parse().unwrap();
-        assert_eq!(node.variable, "flag");
-        assert_eq!(node.data_type, None);
-        assert_eq!(node.expression, None);
+        let statement = parser.parse().unwrap();
+        assert_eq!(
+            statement,
+            Statement::assignment(Assignment::new("flag".to_string(), None, None))
+        );
     }
 
     #[test]
