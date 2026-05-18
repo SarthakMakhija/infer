@@ -31,3 +31,14 @@ impl VariableDeclaration {
         }
     }
 }
+
+#[cfg(test)]
+impl VariableDeclaration {
+    pub(crate) fn new_with_variable(variable: String) -> Self {
+        Self::new(variable, None, None)
+    }
+
+    pub(crate) fn new_with_variable_and_type(variable: String, data_type: String) -> Self {
+        Self::new(variable, Some(data_type), None)
+    }
+}
