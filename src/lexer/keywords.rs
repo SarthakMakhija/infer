@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-const KEYWORDS: &[&str] = &["var"];
+const KEYWORDS: &[&str] = &["var", "true", "false"];
 
 /// A collection of reserved keywords in the language.
 ///

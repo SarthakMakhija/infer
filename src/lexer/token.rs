@@ -18,6 +18,10 @@ pub(crate) enum TokenType {
     WholeNumber,
     /// A double-quoted string literal.
     StringLiteral,
+    /// The `true` boolean literal keyword.
+    True,
+    /// The `false` boolean literal keyword.
+    False,
 }
 
 impl TokenType {
@@ -26,6 +30,8 @@ impl TokenType {
     pub(crate) fn keyword_type(token: &str) -> Result<Self, LexError> {
         match token {
             "var" => Ok(TokenType::Var),
+            "true" => Ok(TokenType::True),
+            "false" => Ok(TokenType::False),
             _ => Err(LexError::UnsupportedKeyword),
         }
     }
@@ -121,6 +127,16 @@ mod token_type_tests {
     #[test]
     fn keyword_type_var() {
         assert_eq!(TokenType::keyword_type("var").unwrap(), TokenType::Var);
+    }
+
+    #[test]
+    fn keyword_type_true() {
+        assert_eq!(TokenType::keyword_type("true").unwrap(), TokenType::True);
+    }
+
+    #[test]
+    fn keyword_type_false() {
+        assert_eq!(TokenType::keyword_type("false").unwrap(), TokenType::False);
     }
 
     #[test]
