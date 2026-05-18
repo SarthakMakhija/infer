@@ -21,7 +21,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::error::ExpressionError;
+    use crate::ast::expr::ExpressionError;
     use crate::lexer::keywords::Keywords;
     use crate::lexer::token::TokenType;
     use crate::lexer::Lexer;

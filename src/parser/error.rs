@@ -1,4 +1,4 @@
-use crate::ast::error::ExpressionError;
+use crate::ast::expr::ExpressionError;
 use crate::lexer::error::LexError;
 use crate::lexer::token::TokenType;
 
