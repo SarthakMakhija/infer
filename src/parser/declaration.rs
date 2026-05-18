@@ -152,7 +152,7 @@ mod tests {
         let res = parser.parse();
         assert_eq!(
             res.err().unwrap(),
-            ParseError::UnexpectedTokenType(TokenType::Identifier, TokenType::Equals)
+            ParseError::UnexpectedTokenType(TokenType::Identifier, TokenType::Equals, 1)
         );
     }
 }

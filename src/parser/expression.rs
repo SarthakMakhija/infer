@@ -65,7 +65,7 @@ mod tests {
         let res = parser.parse();
         assert_eq!(
             res.err().unwrap(),
-            ParseError::ExpressionError(ExpressionError::UnsupportedTokenType(TokenType::Var))
+            ParseError::ExpressionError(ExpressionError::UnsupportedTokenType(TokenType::Var, 1))
         );
     }
 

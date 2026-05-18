@@ -5,12 +5,12 @@ use std::str::FromStr;
 #[derive(Debug, PartialEq)]
 pub(crate) enum ExpressionError {
     /// The parser encountered a token type that cannot be converted into or used as an expression.
-    UnsupportedTokenType(TokenType),
+    UnsupportedTokenType(TokenType, usize),
 
     /// Failed to parse a numeric literal string slice into a concrete integer value.
     ///
     /// Stores the invalid string that failed parsing.
-    ParseIntError(String),
+    ParseIntError(String, usize),
 }
 
 #[derive(Debug, PartialEq)]
@@ -28,14 +28,15 @@ impl<'a> TryFrom<Token<'a>> for Expression {
         match token.token_type {
             TokenType::Identifier => Ok(Expression::Identifier(token.value().to_string())),
             TokenType::WholeNumber => {
-                let value = i32::from_str(token.value())
-                    .map_err(|_| ExpressionError::ParseIntError(token.value().to_string()))?;
+                let value = i32::from_str(token.value()).map_err(|_| {
+                    ExpressionError::ParseIntError(token.value().to_string(), token.line)
+                })?;
                 Ok(Expression::I32(value))
             }
             TokenType::StringLiteral => Ok(Expression::String(token.string_value().to_string())),
             TokenType::True => Ok(Expression::Boolean(true)),
             TokenType::False => Ok(Expression::Boolean(false)),
-            other => Err(ExpressionError::UnsupportedTokenType(other)),
+            other => Err(ExpressionError::UnsupportedTokenType(other, token.line)),
         }
     }
 }
@@ -65,7 +66,7 @@ mod tests {
         let expression = Expression::try_from(token);
         assert_eq!(
             expression.err().unwrap(),
-            ExpressionError::ParseIntError("999999999999".to_string())
+            ExpressionError::ParseIntError("999999999999".to_string(), 1)
         );
     }
 
@@ -82,7 +83,7 @@ mod tests {
         let expression = Expression::try_from(token);
         assert_eq!(
             expression.err().unwrap(),
-            ExpressionError::UnsupportedTokenType(TokenType::Var)
+            ExpressionError::UnsupportedTokenType(TokenType::Var, 1)
         );
     }
 

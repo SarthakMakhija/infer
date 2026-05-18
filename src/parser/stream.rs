@@ -26,7 +26,11 @@ impl<'src, T: Iterator<Item = LexResult<'src>>> ParserStream<'src, T> {
         let optional_token = self.stream.next().transpose()?;
         match optional_token {
             Some(token) if token.token_type == expected => Ok(token),
-            Some(token) => Err(ParseError::UnexpectedTokenType(expected, token.token_type)),
+            Some(token) => Err(ParseError::UnexpectedTokenType(
+                expected,
+                token.token_type,
+                token.line,
+            )),
             None => Err(ParseError::UnexpectedEof),
         }
     }
@@ -96,7 +100,7 @@ mod tests {
         let result = stream.expect(TokenType::Var);
         assert_eq!(
             result.err().unwrap(),
-            ParseError::UnexpectedTokenType(TokenType::Var, TokenType::Identifier)
+            ParseError::UnexpectedTokenType(TokenType::Var, TokenType::Identifier, 1)
         );
     }
 
@@ -127,7 +131,7 @@ mod tests {
         let result = stream.expect_identifier();
         assert_eq!(
             result.err().unwrap(),
-            ParseError::UnexpectedTokenType(TokenType::Identifier, TokenType::Var)
+            ParseError::UnexpectedTokenType(TokenType::Identifier, TokenType::Var, 1)
         );
     }
 
