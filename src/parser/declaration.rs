@@ -8,7 +8,7 @@ use crate::parser::ParserStream;
 
 /// A sub-parser responsible for parsing variable declaration and assignment statements.
 ///
-/// `AssignmentParser` parses constructs following the grammar:
+/// `VariableDeclarationParser` parses constructs following the grammar:
 /// `declaration = "var" identifier [ ":" type ] [ "=" literal ] ";" ;`
 pub(crate) struct VariableDeclarationParser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
     stream: &'stream mut ParserStream<'src, I>,
@@ -17,7 +17,7 @@ pub(crate) struct VariableDeclarationParser<'src, 'stream, I: Iterator<Item = Le
 impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>>
     VariableDeclarationParser<'src, 'stream, I>
 {
-    /// Creates a new instance of `AssignmentParser` sharing the parser stream borrow.
+    /// Creates a new instance of `VariableDeclarationParser` sharing the parser stream borrow.
     pub(crate) fn new(stream: &'stream mut ParserStream<'src, I>) -> Self {
         Self { stream }
     }
