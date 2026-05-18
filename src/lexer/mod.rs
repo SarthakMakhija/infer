@@ -79,7 +79,7 @@ impl<'src> Lexer<'src> {
         let token = &self.source[index..last_index];
         if self.keywords.has(token) {
             return Ok(Token::new(
-                TokenType::keyword_type(token)?,
+                TokenType::keyword_type(token, self.line)?,
                 index..last_index,
                 self.line,
                 self.source,
@@ -132,6 +132,7 @@ impl<'src> Lexer<'src> {
         }
         Err(LexError::UnterminatedStringLiteral(
             self.source[index..].to_string(),
+            self.line,
         ))
     }
 
@@ -179,7 +180,7 @@ impl<'src> Iterator for Lexer<'src> {
                 }
                 char if Self::is_identifier_start(char) => Some(self.maybe_identifier(index)),
                 char if Self::looks_like_whole_number(char) => Some(self.whole_number(index)),
-                _ => Some(Err(LexError::UnrecognizedChar(char))),
+                _ => Some(Err(LexError::UnrecognizedChar(char, self.line))),
             };
         }
         None
@@ -290,7 +291,7 @@ mod tests {
 
         assert!(result.is_some());
         assert!(
-            matches!(result.unwrap().err().unwrap(), LexError::UnterminatedStringLiteral(str) if str == "\"john")
+            matches!(result.unwrap().err().unwrap(), LexError::UnterminatedStringLiteral(ref str, 1) if str == "\"john")
         );
     }
 
@@ -301,7 +302,7 @@ mod tests {
 
         assert!(result.is_some());
         assert!(
-            matches!(result.unwrap().err().unwrap(), LexError::UnterminatedStringLiteral(str) if str == "\"john\ndoe")
+            matches!(result.unwrap().err().unwrap(), LexError::UnterminatedStringLiteral(ref str, 2) if str == "\"john\ndoe")
         );
     }
 
@@ -309,7 +310,7 @@ mod tests {
     fn attempt_to_lex_unrecognized_character() {
         let mut lexer = Lexer::new("?", Keywords::new());
         let result = lexer.next().unwrap();
-        assert!(matches!(result, Err(LexError::UnrecognizedChar(ch)) if ch == '?'));
+        assert!(matches!(result, Err(LexError::UnrecognizedChar(ch, 1)) if ch == '?'));
     }
 
     #[test]

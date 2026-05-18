@@ -24,13 +24,13 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> Parser<'src, 'stream, I
         let mut builder = ProgramBuilder::new();
         while let Some(token_ref) = self.stream.peek()? {
             let token = token_ref.clone();
-            let statement = self.statement_from(&token)?;
+            let statement = self.statement_beginning_at(&token)?;
             builder = builder.add(statement);
         }
         Ok(builder.build())
     }
 
-    fn statement_from(&mut self, token: &Token) -> Result<Statement, ParseError> {
+    fn statement_beginning_at(&mut self, token: &Token) -> Result<Statement, ParseError> {
         let statement = match token {
             token if token.is_var() => VariableDeclarationParser::new(self.stream).parse()?,
             _ => unimplemented!(),
@@ -106,7 +106,7 @@ mod tests {
         assert!(res.is_err());
         assert!(matches!(
             res.err().unwrap(),
-            ParseError::LexError(crate::lexer::error::LexError::UnrecognizedChar('?'))
+            ParseError::LexError(crate::lexer::error::LexError::UnrecognizedChar('?', 1))
         ));
     }
 }

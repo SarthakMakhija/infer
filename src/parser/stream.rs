@@ -139,7 +139,7 @@ mod tests {
         let result = stream.expect(TokenType::Var);
         assert!(matches!(
             result.err().unwrap(),
-            ParseError::LexError(crate::lexer::error::LexError::UnrecognizedChar('?'))
+            ParseError::LexError(crate::lexer::error::LexError::UnrecognizedChar('?', 1))
         ));
     }
 
@@ -235,7 +235,7 @@ mod tests {
         assert!(peeked_err.is_err());
         assert!(matches!(
             peeked_err.err().unwrap(),
-            ParseError::LexError(crate::lexer::error::LexError::UnrecognizedChar('?'))
+            ParseError::LexError(crate::lexer::error::LexError::UnrecognizedChar('?', 1))
         ));
     }
 

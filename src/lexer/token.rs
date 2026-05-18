@@ -27,12 +27,12 @@ pub(crate) enum TokenType {
 impl TokenType {
     /// Maps a string slice lexeme to its corresponding reserved keyword `TokenType`.
     /// Returns `LexError::UnsupportedKeyword` if the slice is not a recognized keyword.
-    pub(crate) fn keyword_type(token: &str) -> Result<Self, LexError> {
+    pub(crate) fn keyword_type(token: &str, line: usize) -> Result<Self, LexError> {
         match token {
             "var" => Ok(TokenType::Var),
             "true" => Ok(TokenType::True),
             "false" => Ok(TokenType::False),
-            _ => Err(LexError::UnsupportedKeyword),
+            _ => Err(LexError::UnsupportedKeyword(token.to_string(), line)),
         }
     }
 }
@@ -131,24 +131,27 @@ mod token_type_tests {
 
     #[test]
     fn keyword_type_var() {
-        assert_eq!(TokenType::keyword_type("var").unwrap(), TokenType::Var);
+        assert_eq!(TokenType::keyword_type("var", 1).unwrap(), TokenType::Var);
     }
 
     #[test]
     fn keyword_type_true() {
-        assert_eq!(TokenType::keyword_type("true").unwrap(), TokenType::True);
+        assert_eq!(TokenType::keyword_type("true", 1).unwrap(), TokenType::True);
     }
 
     #[test]
     fn keyword_type_false() {
-        assert_eq!(TokenType::keyword_type("false").unwrap(), TokenType::False);
+        assert_eq!(
+            TokenType::keyword_type("false", 1).unwrap(),
+            TokenType::False
+        );
     }
 
     #[test]
     fn keyword_type_invalid() {
         assert!(matches!(
-            TokenType::keyword_type("unknown"),
-            Err(LexError::UnsupportedKeyword)
+            TokenType::keyword_type("unknown", 1),
+            Err(LexError::UnsupportedKeyword(ref word, 1)) if word == "unknown"
         ));
     }
 }
