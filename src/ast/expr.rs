@@ -1,6 +1,8 @@
 use crate::lexer::token::{Token, TokenType};
 use std::str::FromStr;
 
+use std::fmt;
+
 /// Represents errors encountered while parsing tokens into AST expressions.
 #[derive(Debug, PartialEq)]
 pub(crate) enum ExpressionError {
@@ -12,6 +14,29 @@ pub(crate) enum ExpressionError {
     /// Stores the invalid string that failed parsing.
     ParseIntError(String, usize),
 }
+
+impl fmt::Display for ExpressionError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ExpressionError::UnsupportedTokenType(token_type, line) => {
+                write!(
+                    formatter,
+                    "unsupported expression token '{:?}' on line {}",
+                    token_type, line
+                )
+            }
+            ExpressionError::ParseIntError(val, line) => {
+                write!(
+                    formatter,
+                    "failed to parse integer '{}' on line {}",
+                    val, line
+                )
+            }
+        }
+    }
+}
+
+impl std::error::Error for ExpressionError {}
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum Expression {
@@ -99,5 +124,20 @@ mod tests {
         let token = Token::new(TokenType::False, 0..5, 1, "false");
         let expression = Expression::try_from(token).unwrap();
         assert_eq!(expression, Expression::Boolean(false));
+    }
+
+    #[test]
+    fn display_unsupported_token_type() {
+        let err = ExpressionError::UnsupportedTokenType(TokenType::Var, 5);
+        assert_eq!(
+            err.to_string(),
+            "unsupported expression token 'Var' on line 5"
+        );
+    }
+
+    #[test]
+    fn display_parse_int_error() {
+        let err = ExpressionError::ParseIntError("abc".to_string(), 10);
+        assert_eq!(err.to_string(), "failed to parse integer 'abc' on line 10");
     }
 }
