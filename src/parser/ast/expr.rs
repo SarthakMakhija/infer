@@ -7,6 +7,7 @@ pub(crate) enum Expression {
     I32(i32),
     String(String),
     Identifier(String),
+    Boolean(bool),
 }
 
 impl<'a> TryFrom<Token<'a>> for Expression {
@@ -21,6 +22,8 @@ impl<'a> TryFrom<Token<'a>> for Expression {
                 Ok(Expression::I32(value))
             }
             TokenType::StringLiteral => Ok(Expression::String(token.string_value().to_string())),
+            TokenType::True => Ok(Expression::Boolean(true)),
+            TokenType::False => Ok(Expression::Boolean(false)),
             other => Err(ExpressionError::UnsupportedTokenType(other)),
         }
     }
@@ -70,5 +73,19 @@ mod tests {
             expression.err().unwrap(),
             ExpressionError::UnsupportedTokenType(TokenType::Var)
         );
+    }
+
+    #[test]
+    fn try_from_boolean_true() {
+        let token = Token::new(TokenType::True, 0..4, 1, "true");
+        let expression = Expression::try_from(token).unwrap();
+        assert_eq!(expression, Expression::Boolean(true));
+    }
+
+    #[test]
+    fn try_from_boolean_false() {
+        let token = Token::new(TokenType::False, 0..5, 1, "false");
+        let expression = Expression::try_from(token).unwrap();
+        assert_eq!(expression, Expression::Boolean(false));
     }
 }
