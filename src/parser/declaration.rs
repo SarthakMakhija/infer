@@ -1,7 +1,7 @@
 use crate::lexer::token::TokenType;
 use crate::lexer::LexResult;
 use crate::parser::ast::expr::Expression;
-use crate::parser::ast::statement::{Assignment, Statement};
+use crate::parser::ast::statement::{Statement, VariableDeclaration};
 use crate::parser::error::ParseError;
 use crate::parser::expression::ExpressionParser;
 use crate::parser::ParserStream;
@@ -10,17 +10,19 @@ use crate::parser::ParserStream;
 ///
 /// `AssignmentParser` parses constructs following the grammar:
 /// `declaration = "var" identifier [ ":" type ] [ "=" literal ] ";" ;`
-pub(crate) struct AssignmentParser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
+pub(crate) struct VariableDeclarationParser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
     stream: &'stream mut ParserStream<'src, I>,
 }
 
-impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> AssignmentParser<'src, 'stream, I> {
+impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>>
+    VariableDeclarationParser<'src, 'stream, I>
+{
     /// Creates a new instance of `AssignmentParser` sharing the parser stream borrow.
     pub(crate) fn new(stream: &'stream mut ParserStream<'src, I>) -> Self {
         Self { stream }
     }
 
-    /// Parses a variable assignment/declaration statement from the stream.
+    /// Parses a variable declaration and assignment statements from the stream.
     ///
     /// Validates syntax constructs, handles optional type annotations and optional expressions,
     /// and ensures the statement is terminated with a semicolon.
@@ -31,7 +33,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> AssignmentParser<'src, 
         let expression = self.maybe_expression()?;
         self.stream.expect(TokenType::Semicolon)?;
 
-        Ok(Statement::assignment(Assignment::new(
+        Ok(Statement::variable_declaration(VariableDeclaration::new(
             name.owned_value(),
             data_type,
             expression,
@@ -63,16 +65,16 @@ mod tests {
     use crate::lexer::Lexer;
 
     #[test]
-    fn parse_assignment_with_type_and_expr() {
+    fn parse_variable_declaration_with_type_and_expr() {
         let lexer = Lexer::new("var id: i32 = 100;", Keywords::new());
         let mut stream = ParserStream::new(lexer);
-        let mut parser = AssignmentParser::new(&mut stream);
+        let mut parser = VariableDeclarationParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
 
         assert_eq!(
             statement,
-            Statement::assignment(Assignment::new(
+            Statement::variable_declaration(VariableDeclaration::new(
                 "id".to_string(),
                 Some("i32".to_string()),
                 Some(Expression::I32(100))
@@ -81,15 +83,15 @@ mod tests {
     }
 
     #[test]
-    fn parse_assignment_without_type_with_expr() {
+    fn parse_variable_declaration_without_type_with_expr() {
         let lexer = Lexer::new("var greeting = \"hello\";", Keywords::new());
         let mut stream = ParserStream::new(lexer);
-        let mut parser = AssignmentParser::new(&mut stream);
+        let mut parser = VariableDeclarationParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::assignment(Assignment::new(
+            Statement::variable_declaration(VariableDeclaration::new(
                 "greeting".to_string(),
                 None,
                 Some(Expression::String("hello".to_string()))
@@ -98,15 +100,15 @@ mod tests {
     }
 
     #[test]
-    fn parse_assignment_with_type_without_expr() {
+    fn parse_variable_declaration_with_type_without_expr() {
         let lexer = Lexer::new("var age: i32;", Keywords::new());
         let mut stream = ParserStream::new(lexer);
-        let mut parser = AssignmentParser::new(&mut stream);
+        let mut parser = VariableDeclarationParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::assignment(Assignment::new(
+            Statement::variable_declaration(VariableDeclaration::new(
                 "age".to_string(),
                 Some("i32".to_string()),
                 None
@@ -115,33 +117,37 @@ mod tests {
     }
 
     #[test]
-    fn parse_assignment_without_type_without_expr() {
+    fn parse_variable_declaration_without_type_without_expr() {
         let lexer = Lexer::new("var flag;", Keywords::new());
         let mut stream = ParserStream::new(lexer);
-        let mut parser = AssignmentParser::new(&mut stream);
+        let mut parser = VariableDeclarationParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::assignment(Assignment::new("flag".to_string(), None, None))
+            Statement::variable_declaration(VariableDeclaration::new(
+                "flag".to_string(),
+                None,
+                None
+            ))
         );
     }
 
     #[test]
-    fn parse_assignment_missing_semicolon() {
+    fn parse_variable_declaration_missing_semicolon() {
         let lexer = Lexer::new("var id = 100", Keywords::new());
         let mut stream = ParserStream::new(lexer);
-        let mut parser = AssignmentParser::new(&mut stream);
+        let mut parser = VariableDeclarationParser::new(&mut stream);
 
         let res = parser.parse();
         assert_eq!(res.err().unwrap(), ParseError::UnexpectedEof);
     }
 
     #[test]
-    fn parse_assignment_missing_variable() {
+    fn parse_variable_declaration_missing_variable() {
         let lexer = Lexer::new("var = 100;", Keywords::new());
         let mut stream = ParserStream::new(lexer);
-        let mut parser = AssignmentParser::new(&mut stream);
+        let mut parser = VariableDeclarationParser::new(&mut stream);
 
         let res = parser.parse();
         assert_eq!(

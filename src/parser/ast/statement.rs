@@ -2,23 +2,23 @@ use crate::parser::ast::expr::Expression;
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum Statement {
-    Assignment(Assignment),
+    VariableDeclaration(VariableDeclaration),
 }
 
 impl Statement {
-    pub(crate) fn assignment(statement: Assignment) -> Self {
-        Statement::Assignment(statement)
+    pub(crate) fn variable_declaration(statement: VariableDeclaration) -> Self {
+        Statement::VariableDeclaration(statement)
     }
 }
 
 #[derive(Debug, PartialEq)]
-pub(crate) struct Assignment {
+pub(crate) struct VariableDeclaration {
     pub(crate) variable: String,
     pub(crate) data_type: Option<String>,
     pub(crate) expression: Option<Expression>,
 }
 
-impl Assignment {
+impl VariableDeclaration {
     pub(crate) fn new(
         variable: String,
         data_type: Option<String>,
