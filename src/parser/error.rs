@@ -1,6 +1,6 @@
+use crate::ast::error::ExpressionError;
 use crate::lexer::error::LexError;
 use crate::lexer::token::TokenType;
-use crate::parser::ast::error::ExpressionError;
 
 /// Represents all syntactic and structural errors encountered during the parsing phase.
 #[derive(Debug, PartialEq)]

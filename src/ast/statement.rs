@@ -1,4 +1,4 @@
-use crate::parser::ast::expr::Expression;
+use crate::ast::expr::Expression;
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum Statement {

@@ -1,7 +1,7 @@
+use crate::ast::expr::Expression;
+use crate::ast::statement::{Statement, VariableDeclaration};
 use crate::lexer::token::TokenType;
 use crate::lexer::LexResult;
-use crate::parser::ast::expr::Expression;
-use crate::parser::ast::statement::{Statement, VariableDeclaration};
 use crate::parser::error::ParseError;
 use crate::parser::expression::ExpressionParser;
 use crate::parser::ParserStream;

@@ -1,5 +1,5 @@
+use crate::ast::expr::Expression;
 use crate::lexer::LexResult;
-use crate::parser::ast::expr::Expression;
 use crate::parser::error::ParseError;
 use crate::parser::ParserStream;
 
@@ -21,10 +21,10 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ast::error::ExpressionError;
     use crate::lexer::keywords::Keywords;
     use crate::lexer::token::TokenType;
     use crate::lexer::Lexer;
-    use crate::parser::ast::error::ExpressionError;
 
     #[test]
     fn parse_whole_number() {

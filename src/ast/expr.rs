@@ -1,5 +1,5 @@
+use crate::ast::error::ExpressionError;
 use crate::lexer::token::{Token, TokenType};
-use crate::parser::ast::error::ExpressionError;
 use std::str::FromStr;
 
 #[derive(Debug, PartialEq)]

@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+pub(crate) mod ast;
 mod lexer;
 mod parser;
 
