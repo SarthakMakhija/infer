@@ -174,6 +174,22 @@ impl<'src> Iterator for Lexer<'src> {
                     self.move_ahead();
                     Some(Ok(Token::colon(self.source, index, self.line)))
                 }
+                '+' => {
+                    self.move_ahead();
+                    Some(Ok(Token::plus(self.source, index, self.line)))
+                }
+                '-' => {
+                    self.move_ahead();
+                    Some(Ok(Token::minus(self.source, index, self.line)))
+                }
+                '*' => {
+                    self.move_ahead();
+                    Some(Ok(Token::star(self.source, index, self.line)))
+                }
+                '/' => {
+                    self.move_ahead();
+                    Some(Ok(Token::slash(self.source, index, self.line)))
+                }
                 '"' => {
                     self.move_ahead();
                     Some(self.string(index))
@@ -334,6 +350,42 @@ mod tests {
         assert_token!(lexer.next(), TokenType::Equals, 17..18);
         assert_token!(lexer.next(), TokenType::StringLiteral, 19..25);
         assert_token!(lexer.next(), TokenType::Semicolon, 25..26);
+        assert!(lexer.next().is_none());
+    }
+
+    #[test]
+    fn lex_plus_operator() {
+        let mut lexer = Lexer::new("amount + increment", Keywords::new());
+        assert_token!(lexer.next(), TokenType::Identifier, 0..6);
+        assert_token!(lexer.next(), TokenType::Plus, 7..8);
+        assert_token!(lexer.next(), TokenType::Identifier, 9..18);
+        assert!(lexer.next().is_none());
+    }
+
+    #[test]
+    fn lex_minus_operator() {
+        let mut lexer = Lexer::new("a - b", Keywords::new());
+        assert_token!(lexer.next(), TokenType::Identifier, 0..1);
+        assert_token!(lexer.next(), TokenType::Minus, 2..3);
+        assert_token!(lexer.next(), TokenType::Identifier, 4..5);
+        assert!(lexer.next().is_none());
+    }
+
+    #[test]
+    fn lex_star_operator() {
+        let mut lexer = Lexer::new("amount * factor", Keywords::new());
+        assert_token!(lexer.next(), TokenType::Identifier, 0..6);
+        assert_token!(lexer.next(), TokenType::Star, 7..8);
+        assert_token!(lexer.next(), TokenType::Identifier, 9..15);
+        assert!(lexer.next().is_none());
+    }
+
+    #[test]
+    fn lex_slash_operator() {
+        let mut lexer = Lexer::new("a / b", Keywords::new());
+        assert_token!(lexer.next(), TokenType::Identifier, 0..1);
+        assert_token!(lexer.next(), TokenType::Slash, 2..3);
+        assert_token!(lexer.next(), TokenType::Identifier, 4..5);
         assert!(lexer.next().is_none());
     }
 }

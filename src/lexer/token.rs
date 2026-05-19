@@ -22,6 +22,14 @@ pub(crate) enum TokenType {
     True,
     /// The `false` boolean literal keyword.
     False,
+    /// The `+` operator.
+    Plus,
+    /// The `-` operator.
+    Minus,
+    /// The `*` operator.
+    Star,
+    /// The `/` operator.
+    Slash,
 }
 
 impl TokenType {
@@ -93,6 +101,46 @@ impl<'src> Token<'src> {
     pub(crate) fn colon(source: &'src str, index: usize, line: usize) -> Self {
         Self {
             token_type: TokenType::Colon,
+            range: index..index + 1,
+            line,
+            source,
+        }
+    }
+
+    /// Creates a new `Token` representing the `+` operator.
+    pub(crate) fn plus(source: &'src str, index: usize, line: usize) -> Self {
+        Self {
+            token_type: TokenType::Plus,
+            range: index..index + 1,
+            line,
+            source,
+        }
+    }
+
+    /// Creates a new `Token` representing the `-` operator.
+    pub(crate) fn minus(source: &'src str, index: usize, line: usize) -> Self {
+        Self {
+            token_type: TokenType::Minus,
+            range: index..index + 1,
+            line,
+            source,
+        }
+    }
+
+    /// Creates a new `Token` representing the `*` operator.
+    pub(crate) fn star(source: &'src str, index: usize, line: usize) -> Self {
+        Self {
+            token_type: TokenType::Star,
+            range: index..index + 1,
+            line,
+            source,
+        }
+    }
+
+    /// Creates a new `Token` representing the `/` operator.
+    pub(crate) fn slash(source: &'src str, index: usize, line: usize) -> Self {
+        Self {
+            token_type: TokenType::Slash,
             range: index..index + 1,
             line,
             source,
@@ -227,5 +275,41 @@ mod token_tests {
     fn token_is_not_var() {
         let token = Token::new(TokenType::Identifier, 0..4, 1, "name");
         assert!(!token.is_var());
+    }
+
+    #[test]
+    fn token_plus() {
+        let token = Token::plus("+", 0, 1);
+        assert_eq!(token.token_type, TokenType::Plus);
+        assert_eq!(token.range, 0..1);
+        assert_eq!(token.line, 1);
+        assert_eq!(token.source, "+");
+    }
+
+    #[test]
+    fn token_minus() {
+        let token = Token::minus("-", 0, 1);
+        assert_eq!(token.token_type, TokenType::Minus);
+        assert_eq!(token.range, 0..1);
+        assert_eq!(token.line, 1);
+        assert_eq!(token.source, "-");
+    }
+
+    #[test]
+    fn token_star() {
+        let token = Token::star("*", 0, 1);
+        assert_eq!(token.token_type, TokenType::Star);
+        assert_eq!(token.range, 0..1);
+        assert_eq!(token.line, 1);
+        assert_eq!(token.source, "*");
+    }
+
+    #[test]
+    fn token_slash() {
+        let token = Token::slash("/", 0, 1);
+        assert_eq!(token.token_type, TokenType::Slash);
+        assert_eq!(token.range, 0..1);
+        assert_eq!(token.line, 1);
+        assert_eq!(token.source, "/");
     }
 }
