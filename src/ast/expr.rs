@@ -7,11 +7,13 @@ use std::fmt;
 #[derive(Debug, PartialEq)]
 pub(crate) enum ExpressionError {
     /// The parser encountered a token type that cannot be converted into or used as an expression.
+    ///
+    /// Stores the unsupported `TokenType` and the line number where it occurred.
     UnsupportedTokenType(TokenType, usize),
 
     /// Failed to parse a numeric literal string slice into a concrete integer value.
     ///
-    /// Stores the invalid string that failed parsing.
+    /// Stores the invalid string that failed parsing and the line number where it occurred.
     ParseIntError(String, usize),
 }
 

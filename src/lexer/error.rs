@@ -1,13 +1,21 @@
 use std::fmt;
 
 /// Represents errors that can occur during the lexical analysis (tokenization) phase.
+///
+/// Each variant captures the line number (1-based) where the lexical error was encountered.
 #[derive(Debug, PartialEq, Clone)]
 pub(crate) enum LexError {
     /// Encountered a character that does not match any valid token.
+    ///
+    /// Stores the unrecognized character and the line number.
     UnrecognizedChar(char, usize),
     /// A string literal was opened but not closed before the end of the file or line.
+    ///
+    /// Stores the unterminated string content and the line number.
     UnterminatedStringLiteral(String, usize),
     /// Encountered an identifier matching a keyword format but which is currently unsupported.
+    ///
+    /// Stores the unsupported keyword name and the line number.
     UnsupportedKeyword(String, usize),
 }
 
