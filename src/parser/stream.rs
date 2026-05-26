@@ -1,34 +1,21 @@
 use crate::lexer::token::{Token, TokenType};
 use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
-use std::collections::VecDeque;
+use std::iter::Peekable;
 
 /// A stateful wrapper around a lexer token stream that provides helper methods for parsing.
 ///
-/// `ParserStream` maintains a lookahead buffer of lex results, allowing sub-parsers to
-/// look ahead multiple tokens, assert token types, and handle end-of-file conditions cleanly.
+/// `ParserStream` maintains a peekable iterator of lex results, allowing sub-parsers to
+/// look ahead, assert token types, and handle end-of-file conditions cleanly.
 pub(crate) struct ParserStream<'src, T: Iterator<Item = LexResult<'src>>> {
-    stream: T,
-    buffer: VecDeque<LexResult<'src>>,
+    stream: Peekable<T>,
 }
 
 impl<'src, T: Iterator<Item = LexResult<'src>>> ParserStream<'src, T> {
     /// Creates a new `ParserStream` from any iterator yielding `LexResult`s.
     pub(crate) fn new(stream: T) -> ParserStream<'src, T> {
         Self {
-            stream,
-            buffer: VecDeque::new(),
-        }
-    }
-
-    /// Fills the lookahead buffer up to the required size `n`.
-    fn fill_buffer(&mut self, n: usize) {
-        while self.buffer.len() < n {
-            if let Some(next) = self.stream.next() {
-                self.buffer.push_back(next);
-            } else {
-                break;
-            }
+            stream: stream.peekable(),
         }
     }
 
@@ -36,8 +23,7 @@ impl<'src, T: Iterator<Item = LexResult<'src>>> ParserStream<'src, T> {
     ///
     /// Returns the matched `Token` on success, or a `ParseError` (such as `UnexpectedTokenType` or `UnexpectedEof`) on mismatch.
     pub(crate) fn expect(&mut self, expected: TokenType) -> Result<Token<'src>, ParseError> {
-        self.fill_buffer(1);
-        let optional_token = self.buffer.pop_front().transpose()?;
+        let optional_token = self.stream.next().transpose()?;
         match optional_token {
             Some(token) if token.token_type == expected => Ok(token),
             Some(token) => Err(ParseError::UnexpectedTokenType(
@@ -58,8 +44,7 @@ impl<'src, T: Iterator<Item = LexResult<'src>>> ParserStream<'src, T> {
     ///
     /// Returns `UnexpectedEof` if the stream is empty.
     pub(crate) fn expect_token(&mut self) -> Result<Token<'src>, ParseError> {
-        self.fill_buffer(1);
-        let optional_token = self.buffer.pop_front().transpose()?;
+        let optional_token = self.stream.next().transpose()?;
         match optional_token {
             Some(token) => Ok(token),
             None => Err(ParseError::UnexpectedEof),
@@ -70,10 +55,9 @@ impl<'src, T: Iterator<Item = LexResult<'src>>> ParserStream<'src, T> {
     ///
     /// Returns `true` and advances the stream if it matches; otherwise returns `false` without advancing.
     pub(crate) fn maybe_matches(&mut self, expected: TokenType) -> bool {
-        self.fill_buffer(1);
-        if let Some(Ok(token)) = self.buffer.front() {
+        if let Some(Ok(token)) = self.stream.peek() {
             if token.token_type == expected {
-                let _ = self.buffer.pop_front();
+                let _ = self.stream.next();
                 return true;
             }
         }
@@ -84,20 +68,7 @@ impl<'src, T: Iterator<Item = LexResult<'src>>> ParserStream<'src, T> {
     ///
     /// Returns `None` if the stream has reached the end-of-file.
     pub(crate) fn peek(&mut self) -> Result<Option<&Token<'src>>, ParseError> {
-        self.fill_buffer(1);
-        match self.buffer.front() {
-            None => Ok(None),
-            Some(Err(err)) => Err(ParseError::LexError(err.clone())),
-            Some(Ok(token)) => Ok(Some(token)),
-        }
-    }
-
-    /// Peeks at the second token in the token stream without consuming it.
-    ///
-    /// Returns `None` if the stream has reached the end-of-file.
-    pub(crate) fn peek_second(&mut self) -> Result<Option<&Token<'src>>, ParseError> {
-        self.fill_buffer(2);
-        match self.buffer.get(1) {
+        match self.stream.peek() {
             None => Ok(None),
             Some(Err(err)) => Err(ParseError::LexError(err.clone())),
             Some(Ok(token)) => Ok(Some(token)),
