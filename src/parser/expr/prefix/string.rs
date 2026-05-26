@@ -6,7 +6,7 @@ use crate::parser::expr::PrefixRule;
 pub(crate) struct String;
 
 impl<'src> PrefixRule<'src> for String {
-    fn parse(&mut self, token: &'src Token) -> Result<Expression, ParseError> {
+    fn parse(&mut self, token: &Token<'src>) -> Result<Expression, ParseError> {
         Ok(Expression::String(token.string_value().to_string()))
     }
 }

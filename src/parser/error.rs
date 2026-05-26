@@ -20,8 +20,11 @@ pub(crate) enum ParseError {
     /// An error encountered while parsing or validating an individual expression.
     ExpressionError(ExpressionError),
 
-    /// An error encountered while parsing prefix expressions, with unsupported prefix parser.
+    /// An error encountered while parsing prefix expressions, with unsupported prefix parser rule.
     UnsupportedPrefixExpression(TokenType, usize),
+
+    /// An error encountered while parsing infix expressions, with unsupported infix parser rule.
+    UnsupportedInfixExpression(TokenType, usize),
 }
 
 impl From<LexError> for ParseError {
@@ -59,6 +62,13 @@ impl fmt::Display for ParseError {
                 write!(
                     formatter,
                     "no supported prefix parser for '{:?}' on line {}",
+                    actual, line
+                )
+            }
+            ParseError::UnsupportedInfixExpression(actual, line) => {
+                write!(
+                    formatter,
+                    "no supported infix parser for '{:?}' on line {}",
                     actual, line
                 )
             }
@@ -101,6 +111,15 @@ mod tests {
         assert_eq!(
             err.to_string(),
             "failed to parse integer '1234567890123456' on line 7"
+        );
+    }
+
+    #[test]
+    fn display_unsupported_infix_expression() {
+        let err = ParseError::UnsupportedInfixExpression(TokenType::Plus, 10);
+        assert_eq!(
+            err.to_string(),
+            "no supported infix parser for 'Plus' on line 10"
         );
     }
 }

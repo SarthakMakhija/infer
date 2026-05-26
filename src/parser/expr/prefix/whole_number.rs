@@ -7,7 +7,7 @@ use std::str::FromStr;
 pub(crate) struct WholeNumber;
 
 impl<'src> PrefixRule<'src> for WholeNumber {
-    fn parse(&mut self, token: &'src Token) -> Result<Expression, ParseError> {
+    fn parse(&mut self, token: &Token<'src>) -> Result<Expression, ParseError> {
         let value = i32::from_str(token.value()).map_err(|_| {
             ParseError::ExpressionError(ExpressionError::ParseIntError(
                 token.value().to_string(),

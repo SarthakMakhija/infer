@@ -1,3 +1,4 @@
+pub(crate) mod infix;
 pub(crate) mod precedence;
 pub(crate) mod prefix;
 
@@ -5,6 +6,7 @@ use crate::ast::expr::Expression;
 use crate::lexer::token::{Token, TokenType};
 use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
+use crate::parser::expr::infix::binary::BinaryOperator;
 use crate::parser::expr::precedence::Precedence;
 use crate::parser::expr::prefix::boolean::Boolean;
 use crate::parser::expr::prefix::identifier::Identifier;
@@ -17,11 +19,11 @@ pub(crate) struct ExpressionParser<'src, 'stream, I: Iterator<Item = LexResult<'
 }
 
 pub(crate) trait PrefixRule<'src> {
-    fn parse(&mut self, token: &'src Token) -> Result<Expression, ParseError>;
+    fn parse(&mut self, token: &Token<'src>) -> Result<Expression, ParseError>;
 }
 
 pub(crate) trait InfixRule<'src> {
-    fn parse(&mut self, left: Expression, token: &'src Token) -> Result<Expression, ParseError>;
+    fn parse(&mut self, left: Expression, token: &Token<'src>) -> Result<Expression, ParseError>;
 }
 
 impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 'stream, I> {
@@ -35,10 +37,16 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 
 
     pub(crate) fn parse_with_precedence(
         &mut self,
-        _precedence: Precedence,
+        precedence: Precedence,
     ) -> Result<Expression, ParseError> {
         let token = self.stream.expect_token()?;
-        let left = self.parse_prefix(&token)?;
+        let mut left = self.parse_prefix(&token)?;
+
+        while precedence < self.precedence()? {
+            let token = self.stream.expect_token()?;
+            left = self.parse_infix(left, &token)?;
+        }
+
         Ok(left)
     }
 
@@ -54,6 +62,33 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 
                 token.line,
             )),
         }
+    }
+
+    fn parse_infix(
+        &mut self,
+        left: Expression,
+        token: &Token<'src>,
+    ) -> Result<Expression, ParseError> {
+        match token.token_type {
+            TokenType::Plus | TokenType::Minus => {
+                BinaryOperator::new(self, Precedence::Plus).parse(left, &token)
+            }
+            TokenType::Star | TokenType::Slash => {
+                BinaryOperator::new(self, Precedence::Star).parse(left, &token)
+            }
+            _ => Err(ParseError::UnsupportedInfixExpression(
+                token.token_type,
+                token.line,
+            )),
+        }
+    }
+
+    fn precedence(&mut self) -> Result<Precedence, ParseError> {
+        if let Some(result) = self.stream.peek().transpose() {
+            let token = result?;
+            return Ok(Precedence::of(token.token_type));
+        }
+        Ok(Precedence::None)
     }
 }
 
@@ -115,5 +150,98 @@ mod tests {
 
         let res = parser.parse();
         assert_eq!(res.err().unwrap(), ParseError::UnexpectedEof);
+    }
+}
+
+#[cfg(test)]
+mod complex_expression_tests {
+    use super::*;
+    use crate::ast::expr::Operator;
+    use crate::lexer::keywords::Keywords;
+    use crate::lexer::Lexer;
+    use crate::parser::stream::ParserStream;
+
+    #[test]
+    fn parse_complex_addition_and_subtraction() {
+        let lexer = Lexer::new("1 + 3 - 2", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expr = parser.parse().unwrap();
+        assert_eq!(
+            expr,
+            Expression::BinaryExpression(
+                Box::new(Expression::BinaryExpression(
+                    Box::new(Expression::I32(1)),
+                    Operator::Plus,
+                    Box::new(Expression::I32(3))
+                )),
+                Operator::Minus,
+                Box::new(Expression::I32(2))
+            )
+        );
+    }
+
+    #[test]
+    fn parse_complex_addition_and_multiplication() {
+        let lexer = Lexer::new("1 + 2 * 4", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expr = parser.parse().unwrap();
+        assert_eq!(
+            expr,
+            Expression::BinaryExpression(
+                Box::new(Expression::I32(1)),
+                Operator::Plus,
+                Box::new(Expression::BinaryExpression(
+                    Box::new(Expression::I32(2)),
+                    Operator::Multiply,
+                    Box::new(Expression::I32(4))
+                ))
+            )
+        );
+    }
+
+    #[test]
+    fn parse_expression_with_identifiers() {
+        let lexer = Lexer::new("amount + factor * rate", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expr = parser.parse().unwrap();
+        assert_eq!(
+            expr,
+            Expression::BinaryExpression(
+                Box::new(Expression::Identifier("amount".to_string())),
+                Operator::Plus,
+                Box::new(Expression::BinaryExpression(
+                    Box::new(Expression::Identifier("factor".to_string())),
+                    Operator::Multiply,
+                    Box::new(Expression::Identifier("rate".to_string()))
+                ))
+            )
+        );
+    }
+
+    #[test]
+    fn parse_complex_division_and_subtraction() {
+        let lexer = Lexer::new("10 / 2 - 3", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expr = parser.parse().unwrap();
+        assert_eq!(
+            expr,
+            Expression::BinaryExpression(
+                Box::new(Expression::BinaryExpression(
+                    Box::new(Expression::I32(10)),
+                    Operator::Divide,
+                    Box::new(Expression::I32(2))
+                )),
+                Operator::Minus,
+                Box::new(Expression::I32(3))
+            )
+        );
     }
 }

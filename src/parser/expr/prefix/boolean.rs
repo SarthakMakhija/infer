@@ -6,7 +6,7 @@ use crate::parser::expr::PrefixRule;
 pub(crate) struct Boolean;
 
 impl<'src> PrefixRule<'src> for Boolean {
-    fn parse(&mut self, token: &'src Token) -> Result<Expression, ParseError> {
+    fn parse(&mut self, token: &Token<'src>) -> Result<Expression, ParseError> {
         if let TokenType::BooleanLiteral(val) = token.token_type {
             Ok(Expression::Boolean(val))
         } else {
