@@ -34,12 +34,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> Parser<'src, 'stream, I
     fn statement_beginning_at(&mut self, token: &Token) -> Result<Statement, ParseError> {
         let statement = match token.token_type {
             TokenType::Var => VariableDeclarationParser::new(self.stream).parse()?,
-            _ => {
-                return Err(ParseError::UnsupportedPrefixExpression(
-                    token.token_type,
-                    token.line,
-                ))
-            }
+            _ => unimplemented!(),
         };
         Ok(statement)
     }

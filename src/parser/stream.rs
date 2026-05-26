@@ -1,21 +1,23 @@
 use crate::lexer::token::{Token, TokenType};
 use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
-use std::iter::Peekable;
+use std::collections::VecDeque;
 
 /// A stateful wrapper around a lexer token stream that provides helper methods for parsing.
 ///
 /// `ParserStream` maintains a peekable iterator of lex results, allowing sub-parsers to
 /// look ahead, assert token types, and handle end-of-file conditions cleanly.
 pub(crate) struct ParserStream<'src, T: Iterator<Item = LexResult<'src>>> {
-    stream: Peekable<T>,
+    stream: T,
+    buffer: VecDeque<LexResult<'src>>,
 }
 
 impl<'src, T: Iterator<Item = LexResult<'src>>> ParserStream<'src, T> {
     /// Creates a new `ParserStream` from any iterator yielding `LexResult`s.
     pub(crate) fn new(stream: T) -> ParserStream<'src, T> {
         Self {
-            stream: stream.peekable(),
+            stream,
+            buffer: VecDeque::new(),
         }
     }
 
@@ -23,7 +25,8 @@ impl<'src, T: Iterator<Item = LexResult<'src>>> ParserStream<'src, T> {
     ///
     /// Returns the matched `Token` on success, or a `ParseError` (such as `UnexpectedTokenType` or `UnexpectedEof`) on mismatch.
     pub(crate) fn expect(&mut self, expected: TokenType) -> Result<Token<'src>, ParseError> {
-        let optional_token = self.stream.next().transpose()?;
+        self.fill_buffer(1);
+        let optional_token = self.buffer.pop_front().transpose()?;
         match optional_token {
             Some(token) if token.token_type == expected => Ok(token),
             Some(token) => Err(ParseError::UnexpectedTokenType(
@@ -44,7 +47,8 @@ impl<'src, T: Iterator<Item = LexResult<'src>>> ParserStream<'src, T> {
     ///
     /// Returns `UnexpectedEof` if the stream is empty.
     pub(crate) fn expect_token(&mut self) -> Result<Token<'src>, ParseError> {
-        let optional_token = self.stream.next().transpose()?;
+        self.fill_buffer(1);
+        let optional_token = self.buffer.pop_front().transpose()?;
         match optional_token {
             Some(token) => Ok(token),
             None => Err(ParseError::UnexpectedEof),
@@ -55,9 +59,10 @@ impl<'src, T: Iterator<Item = LexResult<'src>>> ParserStream<'src, T> {
     ///
     /// Returns `true` and advances the stream if it matches; otherwise returns `false` without advancing.
     pub(crate) fn maybe_matches(&mut self, expected: TokenType) -> bool {
-        if let Some(Ok(token)) = self.stream.peek() {
+        self.fill_buffer(1);
+        if let Some(Ok(token)) = self.buffer.front() {
             if token.token_type == expected {
-                let _ = self.stream.next();
+                let _ = self.buffer.pop_front();
                 return true;
             }
         }
@@ -68,10 +73,21 @@ impl<'src, T: Iterator<Item = LexResult<'src>>> ParserStream<'src, T> {
     ///
     /// Returns `None` if the stream has reached the end-of-file.
     pub(crate) fn peek(&mut self) -> Result<Option<&Token<'src>>, ParseError> {
-        match self.stream.peek() {
+        self.fill_buffer(1);
+        match self.buffer.front() {
             None => Ok(None),
             Some(Err(err)) => Err(ParseError::LexError(err.clone())),
             Some(Ok(token)) => Ok(Some(token)),
+        }
+    }
+
+    fn fill_buffer(&mut self, count: usize) {
+        while self.buffer.len() < count {
+            if let Some(result) = self.stream.next() {
+                self.buffer.push_back(result);
+            } else {
+                break;
+            }
         }
     }
 }
