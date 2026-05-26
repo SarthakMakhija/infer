@@ -3,11 +3,16 @@ use crate::ast::expr::Expression;
 #[derive(Debug, PartialEq)]
 pub(crate) enum Statement {
     VariableDeclaration(VariableDeclaration),
+    Assignment(Assignment),
 }
 
 impl Statement {
     pub(crate) fn variable_declaration(statement: VariableDeclaration) -> Self {
         Statement::VariableDeclaration(statement)
+    }
+
+    pub(crate) fn assignment(statement: Assignment) -> Self {
+        Statement::Assignment(statement)
     }
 }
 
@@ -27,6 +32,21 @@ impl VariableDeclaration {
         Self {
             variable,
             data_type,
+            expression,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) struct Assignment {
+    pub(crate) variable: String,
+    pub(crate) expression: Expression,
+}
+
+impl Assignment {
+    pub(crate) fn new(variable: String, expression: Expression) -> Self {
+        Self {
+            variable,
             expression,
         }
     }

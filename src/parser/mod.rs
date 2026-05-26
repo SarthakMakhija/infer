@@ -1,11 +1,13 @@
 use crate::ast::program::{Program, ProgramBuilder};
 use crate::ast::statement::Statement;
-use crate::lexer::token::Token;
+use crate::lexer::token::{Token, TokenType};
 use crate::lexer::LexResult;
+use crate::parser::assignment::AssignmentParser;
 use crate::parser::declaration::VariableDeclarationParser;
 use crate::parser::error::ParseError;
 use crate::parser::stream::ParserStream;
 
+pub(crate) mod assignment;
 pub(crate) mod declaration;
 pub(crate) mod error;
 pub(crate) mod expr;
@@ -31,9 +33,31 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> Parser<'src, 'stream, I
     }
 
     fn statement_beginning_at(&mut self, token: &Token) -> Result<Statement, ParseError> {
-        let statement = match token {
-            token if token.is_var() => VariableDeclarationParser::new(self.stream).parse()?,
-            _ => unimplemented!(),
+        let statement = match token.token_type {
+            TokenType::Var => VariableDeclarationParser::new(self.stream).parse()?,
+            TokenType::Identifier => {
+                if let Some(next_token) = self.stream.peek_second()? {
+                    if next_token.token_type == TokenType::Equals {
+                        AssignmentParser::new(self.stream).parse()?
+                    } else {
+                        return Err(ParseError::UnsupportedPrefixExpression(
+                            token.token_type,
+                            token.line,
+                        ));
+                    }
+                } else {
+                    return Err(ParseError::UnsupportedPrefixExpression(
+                        token.token_type,
+                        token.line,
+                    ));
+                }
+            }
+            _ => {
+                return Err(ParseError::UnsupportedPrefixExpression(
+                    token.token_type,
+                    token.line,
+                ))
+            }
         };
         Ok(statement)
     }
@@ -108,5 +132,25 @@ mod tests {
             res.err().unwrap(),
             ParseError::LexError(crate::lexer::error::LexError::UnrecognizedChar('?', 1))
         ));
+    }
+
+    #[test]
+    fn parse_variable_declaration_and_assignment() {
+        let lexer = Lexer::new("var x = 100; x = 200;", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = Parser::new(&mut stream);
+
+        let program = parser.parse().unwrap();
+        let expected = ProgramBuilder::new()
+            .add(Statement::variable_declaration(VariableDeclaration::new(
+                "x".to_string(),
+                None,
+                Some(Expression::I32(100)),
+            )))
+            .add(Statement::assignment(
+                crate::ast::statement::Assignment::new("x".to_string(), Expression::I32(200)),
+            ))
+            .build();
+        assert_eq!(program, expected);
     }
 }
