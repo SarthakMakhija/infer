@@ -2,10 +2,13 @@ program
     = { statement } EOF ;
 
 statement
-    = declaration ;
+    = declaration | assignment ;
 
 declaration
     = "var" identifier [ ":" type ] [ "=" expression ] ";" ;
+
+assignment
+    = identifier "=" expression ";" ;
 
 identifier
     = IDENTIFIER ;
@@ -14,10 +17,13 @@ type
     = "i32" | "i64" | "string" | "bool" ;
 
 expression
-    = primary | binary ;
+    = primary | unary | binary ;
 
 primary
-    = literal | identifier
+    = literal | identifier | "(" expression ")" ;
+
+unary
+    = ( "-" | "!" ) expression ;
 
 binary
     = expression operator expression ;
