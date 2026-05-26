@@ -182,3 +182,126 @@ mod tests {
         assert_eq!(program, expected);
     }
 }
+
+#[cfg(test)]
+mod assignment_expression_tests {
+    use super::*;
+    use crate::ast::expr::{BinaryOperator, Expression};
+    use crate::ast::statement::{Assignment, VariableDeclaration};
+    use crate::lexer::keywords::Keywords;
+    use crate::lexer::Lexer;
+
+    #[test]
+    fn parse_assignment_with_binary_expression() {
+        let lexer = Lexer::new(
+            "total_price = base_price + tax_rate * quantity;",
+            Keywords::new(),
+        );
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = Parser::new(&mut stream);
+
+        let program = parser.parse().unwrap();
+        let expected = ProgramBuilder::new()
+            .add(Statement::assignment(Assignment::new(
+                "total_price".to_string(),
+                Expression::Binary(
+                    Box::new(Expression::Identifier("base_price".to_string())),
+                    BinaryOperator::Plus,
+                    Box::new(Expression::Binary(
+                        Box::new(Expression::Identifier("tax_rate".to_string())),
+                        BinaryOperator::Multiply,
+                        Box::new(Expression::Identifier("quantity".to_string())),
+                    )),
+                ),
+            )))
+            .build();
+        assert_eq!(program, expected);
+    }
+
+    #[test]
+    fn parse_assignment_with_grouped_expression() {
+        let lexer = Lexer::new(
+            "adjusted_score = (base_points + bonus_points) * multiplier;",
+            Keywords::new(),
+        );
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = Parser::new(&mut stream);
+
+        let program = parser.parse().unwrap();
+        let expected = ProgramBuilder::new()
+            .add(Statement::assignment(Assignment::new(
+                "adjusted_score".to_string(),
+                Expression::Binary(
+                    Box::new(Expression::Grouped(Box::new(Expression::Binary(
+                        Box::new(Expression::Identifier("base_points".to_string())),
+                        BinaryOperator::Plus,
+                        Box::new(Expression::Identifier("bonus_points".to_string())),
+                    )))),
+                    BinaryOperator::Multiply,
+                    Box::new(Expression::Identifier("multiplier".to_string())),
+                ),
+            )))
+            .build();
+        assert_eq!(program, expected);
+    }
+
+    #[test]
+    fn parse_declaration_with_complex_expression() {
+        let lexer = Lexer::new(
+            "var total_cost = fixed_cost + variable_unit_cost * quantity;",
+            Keywords::new(),
+        );
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = Parser::new(&mut stream);
+
+        let program = parser.parse().unwrap();
+        let expected = ProgramBuilder::new()
+            .add(Statement::variable_declaration(VariableDeclaration::new(
+                "total_cost".to_string(),
+                None,
+                Some(Expression::Binary(
+                    Box::new(Expression::Identifier("fixed_cost".to_string())),
+                    BinaryOperator::Plus,
+                    Box::new(Expression::Binary(
+                        Box::new(Expression::Identifier("variable_unit_cost".to_string())),
+                        BinaryOperator::Multiply,
+                        Box::new(Expression::Identifier("quantity".to_string())),
+                    )),
+                )),
+            )))
+            .build();
+        assert_eq!(program, expected);
+    }
+
+    #[test]
+    fn parse_declaration_and_assignment_with_complex_expressions() {
+        let lexer = Lexer::new(
+            "var net_salary = gross_salary - deductions; net_salary = net_salary + yearly_bonus;",
+            Keywords::new(),
+        );
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = Parser::new(&mut stream);
+
+        let program = parser.parse().unwrap();
+        let expected = ProgramBuilder::new()
+            .add(Statement::variable_declaration(VariableDeclaration::new(
+                "net_salary".to_string(),
+                None,
+                Some(Expression::Binary(
+                    Box::new(Expression::Identifier("gross_salary".to_string())),
+                    BinaryOperator::Minus,
+                    Box::new(Expression::Identifier("deductions".to_string())),
+                )),
+            )))
+            .add(Statement::assignment(Assignment::new(
+                "net_salary".to_string(),
+                Expression::Binary(
+                    Box::new(Expression::Identifier("net_salary".to_string())),
+                    BinaryOperator::Plus,
+                    Box::new(Expression::Identifier("yearly_bonus".to_string())),
+                ),
+            )))
+            .build();
+        assert_eq!(program, expected);
+    }
+}
