@@ -171,7 +171,7 @@ mod tests {
                 None,
                 Some(Expression::Binary(
                     Box::new(Expression::Identifier("amount".to_string())),
-                    crate::ast::expr::Operator::Plus,
+                    crate::ast::expr::BinaryOperator::Plus,
                     Box::new(Expression::Identifier("interest".to_string()))
                 ))
             ))

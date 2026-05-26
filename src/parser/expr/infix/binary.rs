@@ -45,7 +45,7 @@ impl<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>> InfixParser<'src
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::Operator;
+    use crate::ast::expr::BinaryOperator;
     use crate::lexer::keywords::Keywords;
     use crate::lexer::token::TokenType;
     use crate::lexer::Lexer;
@@ -66,7 +66,7 @@ mod tests {
             expression,
             Expression::Binary(
                 Box::new(Expression::I32(1)),
-                Operator::Plus,
+                BinaryOperator::Plus,
                 Box::new(Expression::I32(2))
             )
         );
@@ -87,7 +87,7 @@ mod tests {
             expression,
             Expression::Binary(
                 Box::new(Expression::I32(10)),
-                Operator::Minus,
+                BinaryOperator::Minus,
                 Box::new(Expression::I32(5))
             )
         );
@@ -108,7 +108,7 @@ mod tests {
             expression,
             Expression::Binary(
                 Box::new(Expression::I32(3)),
-                Operator::Multiply,
+                BinaryOperator::Multiply,
                 Box::new(Expression::I32(4))
             )
         );
@@ -129,7 +129,7 @@ mod tests {
             expression,
             Expression::Binary(
                 Box::new(Expression::I32(20)),
-                Operator::Divide,
+                BinaryOperator::Divide,
                 Box::new(Expression::I32(4))
             )
         );

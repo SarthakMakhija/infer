@@ -157,7 +157,7 @@ mod tests {
 #[cfg(test)]
 mod complex_expression_tests {
     use super::*;
-    use crate::ast::expr::Operator;
+    use crate::ast::expr::BinaryOperator;
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
     use crate::parser::stream::ParserStream;
@@ -174,10 +174,10 @@ mod complex_expression_tests {
             Expression::Binary(
                 Box::new(Expression::Binary(
                     Box::new(Expression::I32(1)),
-                    Operator::Plus,
+                    BinaryOperator::Plus,
                     Box::new(Expression::I32(3))
                 )),
-                Operator::Minus,
+                BinaryOperator::Minus,
                 Box::new(Expression::I32(2))
             )
         );
@@ -194,10 +194,10 @@ mod complex_expression_tests {
             expr,
             Expression::Binary(
                 Box::new(Expression::I32(1)),
-                Operator::Plus,
+                BinaryOperator::Plus,
                 Box::new(Expression::Binary(
                     Box::new(Expression::I32(2)),
-                    Operator::Multiply,
+                    BinaryOperator::Multiply,
                     Box::new(Expression::I32(4))
                 ))
             )
@@ -215,10 +215,10 @@ mod complex_expression_tests {
             expr,
             Expression::Binary(
                 Box::new(Expression::Identifier("amount".to_string())),
-                Operator::Plus,
+                BinaryOperator::Plus,
                 Box::new(Expression::Binary(
                     Box::new(Expression::Identifier("factor".to_string())),
-                    Operator::Multiply,
+                    BinaryOperator::Multiply,
                     Box::new(Expression::Identifier("rate".to_string()))
                 ))
             )
@@ -237,10 +237,10 @@ mod complex_expression_tests {
             Expression::Binary(
                 Box::new(Expression::Binary(
                     Box::new(Expression::I32(10)),
-                    Operator::Divide,
+                    BinaryOperator::Divide,
                     Box::new(Expression::I32(2))
                 )),
-                Operator::Minus,
+                BinaryOperator::Minus,
                 Box::new(Expression::I32(3))
             )
         );

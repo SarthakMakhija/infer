@@ -44,26 +44,48 @@ pub(crate) enum Expression {
     String(String),
     Identifier(String),
     Boolean(bool),
-    Binary(Box<Expression>, Operator, Box<Expression>),
+    Unary(Box<Expression>, UnaryOperator),
+    Binary(Box<Expression>, BinaryOperator, Box<Expression>),
 }
 
 #[derive(Debug, PartialEq)]
-pub(crate) enum Operator {
+pub(crate) enum BinaryOperator {
     Plus,
     Minus,
     Multiply,
     Divide,
 }
 
-impl TryFrom<&Token<'_>> for Operator {
+impl TryFrom<&Token<'_>> for BinaryOperator {
     type Error = ExpressionError;
 
     fn try_from(token: &Token<'_>) -> Result<Self, Self::Error> {
         match token.token_type {
-            TokenType::Plus => Ok(Operator::Plus),
-            TokenType::Minus => Ok(Operator::Minus),
-            TokenType::Star => Ok(Operator::Multiply),
-            TokenType::Slash => Ok(Operator::Divide),
+            TokenType::Plus => Ok(BinaryOperator::Plus),
+            TokenType::Minus => Ok(BinaryOperator::Minus),
+            TokenType::Star => Ok(BinaryOperator::Multiply),
+            TokenType::Slash => Ok(BinaryOperator::Divide),
+            _ => Err(ExpressionError::UnsupportedOperator(
+                token.token_type,
+                token.line,
+            )),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) enum UnaryOperator {
+    Minus,
+    Negation,
+}
+
+impl TryFrom<&Token<'_>> for UnaryOperator {
+    type Error = ExpressionError;
+
+    fn try_from(token: &Token<'_>) -> Result<Self, Self::Error> {
+        match token.token_type {
+            TokenType::Minus => Ok(UnaryOperator::Minus),
+            TokenType::Bang => Ok(UnaryOperator::Negation),
             _ => Err(ExpressionError::UnsupportedOperator(
                 token.token_type,
                 token.line,
@@ -73,41 +95,70 @@ impl TryFrom<&Token<'_>> for Operator {
 }
 
 #[cfg(test)]
-mod tests {
+mod binary_operator_tests {
     use super::*;
 
     #[test]
     fn try_from_plus_token_to_plus_operator() {
         let token = Token::new(TokenType::Plus, 0..1, 1, "+");
-        let operator = Operator::try_from(&token).unwrap();
-        assert_eq!(operator, Operator::Plus);
+        let operator = BinaryOperator::try_from(&token).unwrap();
+        assert_eq!(operator, BinaryOperator::Plus);
     }
 
     #[test]
     fn try_from_minus_token_to_minus_operator() {
         let token = Token::new(TokenType::Minus, 0..1, 1, "-");
-        let operator = Operator::try_from(&token).unwrap();
-        assert_eq!(operator, Operator::Minus);
+        let operator = BinaryOperator::try_from(&token).unwrap();
+        assert_eq!(operator, BinaryOperator::Minus);
     }
 
     #[test]
     fn try_from_star_token_to_multiply_operator() {
         let token = Token::new(TokenType::Star, 0..1, 1, "*");
-        let operator = Operator::try_from(&token).unwrap();
-        assert_eq!(operator, Operator::Multiply);
+        let operator = BinaryOperator::try_from(&token).unwrap();
+        assert_eq!(operator, BinaryOperator::Multiply);
     }
 
     #[test]
     fn try_from_slash_token_to_divide_operator() {
         let token = Token::new(TokenType::Slash, 0..1, 1, "/");
-        let operator = Operator::try_from(&token).unwrap();
-        assert_eq!(operator, Operator::Divide);
+        let operator = BinaryOperator::try_from(&token).unwrap();
+        assert_eq!(operator, BinaryOperator::Divide);
     }
 
     #[test]
     fn try_from_invalid_token_type_to_unsupported_operator_error() {
         let token = Token::new(TokenType::Identifier, 0..4, 2, "name");
-        let result = Operator::try_from(&token);
+        let result = BinaryOperator::try_from(&token);
+        assert_eq!(
+            result.err().unwrap(),
+            ExpressionError::UnsupportedOperator(TokenType::Identifier, 2)
+        );
+    }
+}
+
+#[cfg(test)]
+mod unary_operator_tests {
+    use super::*;
+
+    #[test]
+    fn try_from_minus_token_to_minus_operator() {
+        let token = Token::new(TokenType::Minus, 0..1, 1, "-");
+        let operator = UnaryOperator::try_from(&token).unwrap();
+        assert_eq!(operator, UnaryOperator::Minus);
+    }
+
+    #[test]
+    fn try_from_bang_token_to_negation_operator() {
+        let token = Token::new(TokenType::Bang, 0..1, 1, "!");
+        let operator = UnaryOperator::try_from(&token).unwrap();
+        assert_eq!(operator, UnaryOperator::Negation);
+    }
+
+    #[test]
+    fn try_from_invalid_token_type_to_unsupported_operator_error() {
+        let token = Token::new(TokenType::Identifier, 0..4, 2, "name");
+        let result = UnaryOperator::try_from(&token);
         assert_eq!(
             result.err().unwrap(),
             ExpressionError::UnsupportedOperator(TokenType::Identifier, 2)
