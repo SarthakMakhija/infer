@@ -19,6 +19,8 @@ pub(crate) enum ParseError {
 
     /// An error encountered while parsing or validating an individual expression.
     ExpressionError(ExpressionError),
+
+    UnsupportedPrefixExpression(TokenType, usize),
 }
 
 impl From<LexError> for ParseError {
@@ -51,6 +53,13 @@ impl fmt::Display for ParseError {
             }
             ParseError::ExpressionError(err) => {
                 write!(formatter, "{}", err)
+            }
+            ParseError::UnsupportedPrefixExpression(actual, line) => {
+                write!(
+                    formatter,
+                    "no supported prefix parser for '{:?}' on line {}",
+                    actual, line
+                )
             }
         }
     }

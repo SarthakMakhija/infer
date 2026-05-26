@@ -1,9 +1,13 @@
 pub(crate) mod prefix;
 
 use crate::ast::expr::Expression;
-use crate::lexer::token::Token;
+use crate::lexer::token::{Token, TokenType};
 use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
+use crate::parser::expr::prefix::boolean::Boolean;
+use crate::parser::expr::prefix::identifier::Identifier;
+use crate::parser::expr::prefix::string::String;
+use crate::parser::expr::prefix::whole_number::WholeNumber;
 use crate::parser::stream::ParserStream;
 
 pub(crate) struct ExpressionParser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
@@ -25,14 +29,27 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 
 
     pub(crate) fn parse(&mut self) -> Result<Expression, ParseError> {
         let token = self.stream.expect_token()?;
-        Ok(Expression::try_from(token)?)
+        let left = self.parse_prefix(&token)?;
+        Ok(left)
+    }
+
+    fn parse_prefix(&self, token: &Token<'src>) -> Result<Expression, ParseError> {
+        match token.token_type {
+            TokenType::Identifier => Identifier.parse(token),
+            TokenType::WholeNumber => WholeNumber.parse(token),
+            TokenType::StringLiteral => String.parse(token),
+            TokenType::BooleanLiteral(_) => Boolean.parse(token),
+            _ => Err(ParseError::UnsupportedPrefixExpression(
+                token.token_type,
+                token.line,
+            )),
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::ExpressionError;
     use crate::lexer::keywords::Keywords;
     use crate::lexer::token::TokenType;
     use crate::lexer::Lexer;
@@ -68,7 +85,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_unsupported_token() {
+    fn parse_unsupported_token_as_expression() {
         let lexer = Lexer::new("var", Keywords::new());
         let mut stream = ParserStream::new(lexer);
         let mut parser = ExpressionParser::new(&mut stream);
@@ -76,7 +93,7 @@ mod tests {
         let res = parser.parse();
         assert_eq!(
             res.err().unwrap(),
-            ParseError::ExpressionError(ExpressionError::UnsupportedTokenType(TokenType::Var, 1))
+            ParseError::UnsupportedPrefixExpression(TokenType::Var, 1)
         );
     }
 
