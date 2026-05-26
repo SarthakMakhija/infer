@@ -1,10 +1,21 @@
+pub(crate) mod identifier;
+
 use crate::ast::expr::Expression;
+use crate::lexer::token::Token;
 use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
 use crate::parser::stream::ParserStream;
 
 pub(crate) struct ExpressionParser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
     stream: &'stream mut ParserStream<'src, I>,
+}
+
+pub(crate) trait PrefixRule<'src> {
+    fn parse(&mut self, token: &'src Token) -> Result<Expression, ParseError>;
+}
+
+pub(crate) trait InfixRule<'src> {
+    fn parse(&mut self, left: Expression, token: &'src Token) -> Result<Expression, ParseError>;
 }
 
 impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 'stream, I> {
