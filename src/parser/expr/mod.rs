@@ -1,9 +1,11 @@
+pub(crate) mod precedence;
 pub(crate) mod prefix;
 
 use crate::ast::expr::Expression;
 use crate::lexer::token::{Token, TokenType};
 use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
+use crate::parser::expr::precedence::Precedence;
 use crate::parser::expr::prefix::boolean::Boolean;
 use crate::parser::expr::prefix::identifier::Identifier;
 use crate::parser::expr::prefix::string::String;
@@ -28,12 +30,20 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 
     }
 
     pub(crate) fn parse(&mut self) -> Result<Expression, ParseError> {
+        self.parse_with_precedence(Precedence::None)
+    }
+
+    pub(crate) fn parse_with_precedence(
+        &mut self,
+        _precedence: Precedence,
+    ) -> Result<Expression, ParseError> {
         let token = self.stream.expect_token()?;
         let left = self.parse_prefix(&token)?;
         Ok(left)
     }
 
     fn parse_prefix(&self, token: &Token<'src>) -> Result<Expression, ParseError> {
+        //TODO: missing '-' (minus) and '(' (open parentheses)
         match token.token_type {
             TokenType::Identifier => Identifier.parse(token),
             TokenType::WholeNumber => WholeNumber.parse(token),
