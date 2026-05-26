@@ -5,7 +5,7 @@ use std::collections::VecDeque;
 
 /// A stateful wrapper around a lexer token stream that provides helper methods for parsing.
 ///
-/// `ParserStream` maintains a peekable iterator of lex results, allowing sub-parsers to
+/// `ParserStream` maintains an iterator of lex results, allowing sub-parsers to
 /// look ahead, assert token types, and handle end-of-file conditions cleanly.
 pub(crate) struct ParserStream<'src, T: Iterator<Item = LexResult<'src>>> {
     stream: T,
@@ -75,6 +75,21 @@ impl<'src, T: Iterator<Item = LexResult<'src>>> ParserStream<'src, T> {
     pub(crate) fn peek(&mut self) -> Result<Option<&Token<'src>>, ParseError> {
         self.fill_buffer(1);
         match self.buffer.front() {
+            None => Ok(None),
+            Some(Err(err)) => Err(ParseError::LexError(err.clone())),
+            Some(Ok(token)) => Ok(Some(token)),
+        }
+    }
+
+    /// Peeks at the second token in the token stream without consuming any tokens.
+    ///
+    /// This is used to resolve syntax collisions that require a two-token lookahead,
+    /// such as distinguishing assignments (`id = expr;`) from function calls (`id()`).
+    ///
+    /// Returns `None` if the stream has reached the end-of-file.
+    pub(crate) fn peek_second(&mut self) -> Result<Option<&Token<'src>>, ParseError> {
+        self.fill_buffer(2);
+        match self.buffer.get(1) {
             None => Ok(None),
             Some(Err(err)) => Err(ParseError::LexError(err.clone())),
             Some(Ok(token)) => Ok(Some(token)),
@@ -266,5 +281,45 @@ mod tests {
 
         let peeked = stream.peek().unwrap();
         assert!(peeked.is_none());
+    }
+
+    #[test]
+    fn peek_second_token() {
+        let lexer = Lexer::new("var id = 100;", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+
+        let peeked = stream.peek_second().unwrap();
+        assert_eq!(peeked.unwrap().token_type, TokenType::Identifier);
+    }
+
+    #[test]
+    fn peek_second_does_not_consume_first_token() {
+        let lexer = Lexer::new("var id = 100;", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+
+        let _ = stream.peek_second().unwrap();
+        let first = stream.expect(TokenType::Var).unwrap();
+        assert_eq!(first.token_type, TokenType::Var);
+    }
+
+    #[test]
+    fn peek_second_eof_returns_none() {
+        let lexer = Lexer::new("var", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+
+        let peeked = stream.peek_second().unwrap();
+        assert!(peeked.is_none());
+    }
+
+    #[test]
+    fn peek_second_returns_lex_error() {
+        let lexer = Lexer::new("var ?", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+
+        let peeked_err = stream.peek_second();
+        assert!(matches!(
+            peeked_err.err().unwrap(),
+            ParseError::LexError(crate::lexer::error::LexError::UnrecognizedChar('?', 1))
+        ));
     }
 }
