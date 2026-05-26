@@ -11,6 +11,7 @@ use crate::parser::expr::precedence::Precedence;
 use crate::parser::expr::prefix::boolean::BooleanParser;
 use crate::parser::expr::prefix::identifier::IdentifierParser;
 use crate::parser::expr::prefix::string::StringParser;
+use crate::parser::expr::prefix::unary::UnaryExpressionParser;
 use crate::parser::expr::prefix::whole_number::WholeNumberParser;
 use crate::parser::stream::ParserStream;
 
@@ -50,13 +51,14 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 
         Ok(left)
     }
 
-    fn parse_prefix(&self, token: &Token<'src>) -> Result<Expression, ParseError> {
-        //TODO: missing '-' (minus) and '(' (open parentheses), and '!' (bang)
+    fn parse_prefix(&mut self, token: &Token<'src>) -> Result<Expression, ParseError> {
+        //TODO: missing '(' (open parentheses).
         match token.token_type {
             TokenType::Identifier => IdentifierParser.parse(token),
             TokenType::WholeNumber => WholeNumberParser.parse(token),
             TokenType::StringLiteral => StringParser.parse(token),
             TokenType::BooleanLiteral(_) => BooleanParser.parse(token),
+            TokenType::Minus | TokenType::Bang => UnaryExpressionParser::new(self).parse(token),
             _ => Err(ParseError::UnsupportedPrefixExpression(
                 token.token_type,
                 token.line,
@@ -242,6 +244,62 @@ mod complex_expression_tests {
                 )),
                 BinaryOperator::Minus,
                 Box::new(Expression::I32(3))
+            )
+        );
+    }
+
+    #[test]
+    fn parse_unary_minus_expression() {
+        let lexer = Lexer::new("-10", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expr = parser.parse().unwrap();
+        assert_eq!(
+            expr,
+            Expression::Unary(
+                Box::new(Expression::I32(10)),
+                crate::ast::expr::UnaryOperator::Minus
+            )
+        );
+    }
+
+    #[test]
+    fn parse_unary_bang_expression() {
+        let lexer = Lexer::new("!true", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expr = parser.parse().unwrap();
+        assert_eq!(
+            expr,
+            Expression::Unary(
+                Box::new(Expression::Boolean(true)),
+                crate::ast::expr::UnaryOperator::Negation
+            )
+        );
+    }
+
+    #[test]
+    fn parse_unary_with_binary_precedence() {
+        let lexer = Lexer::new("-amount + factor * rate", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expr = parser.parse().unwrap();
+        assert_eq!(
+            expr,
+            Expression::Binary(
+                Box::new(Expression::Unary(
+                    Box::new(Expression::Identifier("amount".to_string())),
+                    crate::ast::expr::UnaryOperator::Minus
+                )),
+                BinaryOperator::Plus,
+                Box::new(Expression::Binary(
+                    Box::new(Expression::Identifier("factor".to_string())),
+                    BinaryOperator::Multiply,
+                    Box::new(Expression::Identifier("rate".to_string()))
+                ))
             )
         );
     }
