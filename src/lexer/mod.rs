@@ -190,6 +190,10 @@ impl<'src> Iterator for Lexer<'src> {
                     self.move_ahead();
                     Some(Ok(Token::slash(self.source, index, self.line)))
                 }
+                '!' => {
+                    self.move_ahead();
+                    Some(Ok(Token::bang(self.source, index, self.line)))
+                }
                 '"' => {
                     self.move_ahead();
                     Some(self.string(index))
@@ -241,6 +245,13 @@ mod tests {
     fn lex_colon() {
         let mut lexer = Lexer::new(":", Keywords::new());
         assert_token!(lexer.next(), TokenType::Colon, 0..1);
+        assert!(lexer.next().is_none());
+    }
+
+    #[test]
+    fn lex_bang_operator() {
+        let mut lexer = Lexer::new("!", Keywords::new());
+        assert_token!(lexer.next(), TokenType::Bang, 0..1);
         assert!(lexer.next().is_none());
     }
 

@@ -28,6 +28,8 @@ pub(crate) enum TokenType {
     Star,
     /// The `/` operator.
     Slash,
+    /// The `!` logical NOT operator.
+    Bang,
 }
 
 impl TokenType {
@@ -139,6 +141,16 @@ impl<'src> Token<'src> {
     pub(crate) fn slash(source: &'src str, index: usize, line: usize) -> Self {
         Self {
             token_type: TokenType::Slash,
+            range: index..index + 1,
+            line,
+            source,
+        }
+    }
+
+    /// Creates a new `Token` representing the `!` operator.
+    pub(crate) fn bang(source: &'src str, index: usize, line: usize) -> Self {
+        Self {
+            token_type: TokenType::Bang,
             range: index..index + 1,
             line,
             source,
@@ -312,5 +324,14 @@ mod token_tests {
         assert_eq!(token.range, 0..1);
         assert_eq!(token.line, 1);
         assert_eq!(token.source, "/");
+    }
+
+    #[test]
+    fn token_bang() {
+        let token = Token::bang("!", 0, 1);
+        assert_eq!(token.token_type, TokenType::Bang);
+        assert_eq!(token.range, 0..1);
+        assert_eq!(token.line, 1);
+        assert_eq!(token.source, "!");
     }
 }
