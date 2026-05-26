@@ -6,23 +6,23 @@ use crate::ast::expr::Expression;
 use crate::lexer::token::{Token, TokenType};
 use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
-use crate::parser::expr::infix::binary::BinaryOperator;
+use crate::parser::expr::infix::binary::BinaryExpressionParser;
 use crate::parser::expr::precedence::Precedence;
-use crate::parser::expr::prefix::boolean::Boolean;
-use crate::parser::expr::prefix::identifier::Identifier;
-use crate::parser::expr::prefix::string::String;
-use crate::parser::expr::prefix::whole_number::WholeNumber;
+use crate::parser::expr::prefix::boolean::BooleanParser;
+use crate::parser::expr::prefix::identifier::IdentifierParser;
+use crate::parser::expr::prefix::string::StringParser;
+use crate::parser::expr::prefix::whole_number::WholeNumberParser;
 use crate::parser::stream::ParserStream;
 
 pub(crate) struct ExpressionParser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
     stream: &'stream mut ParserStream<'src, I>,
 }
 
-pub(crate) trait PrefixRule<'src> {
+pub(crate) trait PrefixParser<'src> {
     fn parse(&mut self, token: &Token<'src>) -> Result<Expression, ParseError>;
 }
 
-pub(crate) trait InfixRule<'src> {
+pub(crate) trait InfixParser<'src> {
     fn parse(&mut self, left: Expression, token: &Token<'src>) -> Result<Expression, ParseError>;
 }
 
@@ -53,10 +53,10 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 
     fn parse_prefix(&self, token: &Token<'src>) -> Result<Expression, ParseError> {
         //TODO: missing '-' (minus) and '(' (open parentheses), and '!' (bang)
         match token.token_type {
-            TokenType::Identifier => Identifier.parse(token),
-            TokenType::WholeNumber => WholeNumber.parse(token),
-            TokenType::StringLiteral => String.parse(token),
-            TokenType::BooleanLiteral(_) => Boolean.parse(token),
+            TokenType::Identifier => IdentifierParser.parse(token),
+            TokenType::WholeNumber => WholeNumberParser.parse(token),
+            TokenType::StringLiteral => StringParser.parse(token),
+            TokenType::BooleanLiteral(_) => BooleanParser.parse(token),
             _ => Err(ParseError::UnsupportedPrefixExpression(
                 token.token_type,
                 token.line,
@@ -72,10 +72,10 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 
         //TODO: missing '(' for function call.
         match token.token_type {
             TokenType::Plus | TokenType::Minus => {
-                BinaryOperator::new(self, Precedence::Plus).parse(left, token)
+                BinaryExpressionParser::new(self, Precedence::Plus).parse(left, token)
             }
             TokenType::Star | TokenType::Slash => {
-                BinaryOperator::new(self, Precedence::Star).parse(left, token)
+                BinaryExpressionParser::new(self, Precedence::Star).parse(left, token)
             }
             _ => Err(ParseError::UnsupportedInfixExpression(
                 token.token_type,

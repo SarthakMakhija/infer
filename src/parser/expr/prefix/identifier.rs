@@ -1,11 +1,11 @@
 use crate::ast::expr::Expression;
 use crate::lexer::token::Token;
 use crate::parser::error::ParseError;
-use crate::parser::expr::PrefixRule;
+use crate::parser::expr::PrefixParser;
 
-pub(crate) struct Identifier;
+pub(crate) struct IdentifierParser;
 
-impl<'src> PrefixRule<'src> for Identifier {
+impl<'src> PrefixParser<'src> for IdentifierParser {
     fn parse(&mut self, token: &Token<'src>) -> Result<Expression, ParseError> {
         Ok(Expression::Identifier(token.value().to_owned()))
     }
@@ -19,7 +19,7 @@ mod tests {
     #[test]
     fn parse_identifier() {
         let token = Token::new(TokenType::Identifier, 0..10, 1, "first_name");
-        let mut identifier = Identifier;
+        let mut identifier = IdentifierParser;
 
         let expression = identifier.parse(&token).unwrap();
         assert_eq!(expression, Expression::Identifier("first_name".to_string()));

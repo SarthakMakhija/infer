@@ -3,16 +3,17 @@ use crate::lexer::token::Token;
 use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
 use crate::parser::expr::precedence::Precedence;
-use crate::parser::expr::{ExpressionParser, InfixRule};
+use crate::parser::expr::{ExpressionParser, InfixParser};
 use std::convert::TryInto;
 
-pub(crate) struct BinaryOperator<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
+pub(crate) struct BinaryExpressionParser<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>>
+{
     expression_parser: &'expr mut ExpressionParser<'src, 'stream, I>,
     precedence: Precedence,
 }
 
 impl<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>>
-    BinaryOperator<'expr, 'src, 'stream, I>
+    BinaryExpressionParser<'expr, 'src, 'stream, I>
 {
     pub(crate) fn new(
         expression_parser: &'expr mut ExpressionParser<'src, 'stream, I>,
@@ -25,8 +26,8 @@ impl<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>>
     }
 }
 
-impl<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>> InfixRule<'src>
-    for BinaryOperator<'expr, 'src, 'stream, I>
+impl<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>> InfixParser<'src>
+    for BinaryExpressionParser<'expr, 'src, 'stream, I>
 {
     fn parse(&mut self, left: Expression, token: &Token<'src>) -> Result<Expression, ParseError> {
         let right = self
@@ -55,7 +56,7 @@ mod tests {
         let lexer = Lexer::new("2", Keywords::new());
         let mut stream = ParserStream::new(lexer);
         let mut parser = ExpressionParser::new(&mut stream);
-        let mut binary_operator = BinaryOperator::new(&mut parser, Precedence::Plus);
+        let mut binary_operator = BinaryExpressionParser::new(&mut parser, Precedence::Plus);
 
         let left = Expression::I32(1);
         let token = Token::new(TokenType::Plus, 0..1, 1, "+");
@@ -76,7 +77,7 @@ mod tests {
         let lexer = Lexer::new("5", Keywords::new());
         let mut stream = ParserStream::new(lexer);
         let mut parser = ExpressionParser::new(&mut stream);
-        let mut binary_operator = BinaryOperator::new(&mut parser, Precedence::Plus);
+        let mut binary_operator = BinaryExpressionParser::new(&mut parser, Precedence::Plus);
 
         let left = Expression::I32(10);
         let token = Token::new(TokenType::Minus, 0..1, 1, "-");
@@ -97,7 +98,7 @@ mod tests {
         let lexer = Lexer::new("4", Keywords::new());
         let mut stream = ParserStream::new(lexer);
         let mut parser = ExpressionParser::new(&mut stream);
-        let mut binary_operator = BinaryOperator::new(&mut parser, Precedence::Star);
+        let mut binary_operator = BinaryExpressionParser::new(&mut parser, Precedence::Star);
 
         let left = Expression::I32(3);
         let token = Token::new(TokenType::Star, 0..1, 1, "*");
@@ -118,7 +119,7 @@ mod tests {
         let lexer = Lexer::new("4", Keywords::new());
         let mut stream = ParserStream::new(lexer);
         let mut parser = ExpressionParser::new(&mut stream);
-        let mut binary_operator = BinaryOperator::new(&mut parser, Precedence::Star);
+        let mut binary_operator = BinaryExpressionParser::new(&mut parser, Precedence::Star);
 
         let left = Expression::I32(20);
         let token = Token::new(TokenType::Slash, 0..1, 1, "/");
@@ -139,7 +140,7 @@ mod tests {
         let lexer = Lexer::new("2", Keywords::new());
         let mut stream = ParserStream::new(lexer);
         let mut parser = ExpressionParser::new(&mut stream);
-        let mut binary_operator = BinaryOperator::new(&mut parser, Precedence::Plus);
+        let mut binary_operator = BinaryExpressionParser::new(&mut parser, Precedence::Plus);
 
         let left = Expression::I32(1);
         let token = Token::new(TokenType::Identifier, 0..4, 1, "name");

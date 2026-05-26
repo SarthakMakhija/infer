@@ -1,16 +1,16 @@
 use crate::ast::expr::Expression;
 use crate::lexer::token::{Token, TokenType};
 use crate::parser::error::ParseError;
-use crate::parser::expr::PrefixRule;
+use crate::parser::expr::PrefixParser;
 
-pub(crate) struct Boolean;
+pub(crate) struct BooleanParser;
 
-impl<'src> PrefixRule<'src> for Boolean {
+impl<'src> PrefixParser<'src> for BooleanParser {
     fn parse(&mut self, token: &Token<'src>) -> Result<Expression, ParseError> {
         if let TokenType::BooleanLiteral(val) = token.token_type {
             Ok(Expression::Boolean(val))
         } else {
-            unreachable!("Boolean prefix rule only handles BooleanLiteral tokens")
+            unreachable!("Boolean parser only handles BooleanLiteral tokens")
         }
     }
 }
@@ -22,18 +22,18 @@ mod tests {
     #[test]
     fn parse_boolean_with_true() {
         let token = Token::new(TokenType::BooleanLiteral(true), 0..4, 1, "true");
-        let mut rule = Boolean;
+        let mut parser = BooleanParser;
 
-        let expression = rule.parse(&token).unwrap();
+        let expression = parser.parse(&token).unwrap();
         assert_eq!(expression, Expression::Boolean(true));
     }
 
     #[test]
     fn parse_boolean_with_false() {
         let token = Token::new(TokenType::BooleanLiteral(false), 0..5, 1, "false");
-        let mut rule = Boolean;
+        let mut parser = BooleanParser;
 
-        let expression = rule.parse(&token).unwrap();
+        let expression = parser.parse(&token).unwrap();
         assert_eq!(expression, Expression::Boolean(false));
     }
 }

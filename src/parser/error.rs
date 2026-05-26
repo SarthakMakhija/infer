@@ -20,10 +20,10 @@ pub(crate) enum ParseError {
     /// An error encountered while parsing or validating an individual expression.
     ExpressionError(ExpressionError),
 
-    /// An error encountered while parsing prefix expressions, with unsupported prefix parser rule.
+    /// An error encountered while parsing prefix expressions, with unsupported prefix parser.
     UnsupportedPrefixExpression(TokenType, usize),
 
-    /// An error encountered while parsing infix expressions, with unsupported infix parser rule.
+    /// An error encountered while parsing infix expressions, with unsupported infix parser.
     UnsupportedInfixExpression(TokenType, usize),
 }
 
