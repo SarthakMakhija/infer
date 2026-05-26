@@ -5,7 +5,7 @@ statement
     = declaration ;
 
 declaration
-    = "var" identifier [ ":" type ] [ "=" literal ] ";" ;
+    = "var" identifier [ ":" type ] [ "=" expression ] ";" ;
 
 identifier
     = IDENTIFIER ;
@@ -13,5 +13,17 @@ identifier
 type
     = "i32" | "i64" | "string" | "bool" ;
 
+expression
+    = primary | binary ;
+
+primary
+    = literal | identifier
+
+binary
+    = expression operator expression ;
+
+operator
+    = "+" | "-" | "*" | "/" ;
+
 literal
-    = LITERAL ;
+    = WHOLE_NUMBER | STRING_LITERAL | BOOLEAN_LITERAL ;
