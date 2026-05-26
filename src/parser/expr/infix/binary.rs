@@ -33,7 +33,7 @@ impl<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>> InfixRule<'src>
             .expression_parser
             .parse_with_precedence(self.precedence)?;
         let operator = token.try_into()?;
-        Ok(Expression::BinaryExpression(
+        Ok(Expression::Binary(
             Box::new(left),
             operator,
             Box::new(right),
@@ -63,7 +63,7 @@ mod tests {
 
         assert_eq!(
             expression,
-            Expression::BinaryExpression(
+            Expression::Binary(
                 Box::new(Expression::I32(1)),
                 Operator::Plus,
                 Box::new(Expression::I32(2))
@@ -84,7 +84,7 @@ mod tests {
 
         assert_eq!(
             expression,
-            Expression::BinaryExpression(
+            Expression::Binary(
                 Box::new(Expression::I32(10)),
                 Operator::Minus,
                 Box::new(Expression::I32(5))
@@ -105,7 +105,7 @@ mod tests {
 
         assert_eq!(
             expression,
-            Expression::BinaryExpression(
+            Expression::Binary(
                 Box::new(Expression::I32(3)),
                 Operator::Multiply,
                 Box::new(Expression::I32(4))
@@ -126,7 +126,7 @@ mod tests {
 
         assert_eq!(
             expression,
-            Expression::BinaryExpression(
+            Expression::Binary(
                 Box::new(Expression::I32(20)),
                 Operator::Divide,
                 Box::new(Expression::I32(4))

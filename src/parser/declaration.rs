@@ -155,4 +155,26 @@ mod tests {
             ParseError::UnexpectedTokenType(TokenType::Identifier, TokenType::Equals, 1)
         );
     }
+
+    #[test]
+    fn parse_variable_declaration_with_expression_on_rhs() {
+        let lexer = Lexer::new("var total = amount + interest;", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = VariableDeclarationParser::new(&mut stream);
+
+        let statement = parser.parse().unwrap();
+
+        assert_eq!(
+            statement,
+            Statement::variable_declaration(VariableDeclaration::new(
+                "total".to_string(),
+                None,
+                Some(Expression::Binary(
+                    Box::new(Expression::Identifier("amount".to_string())),
+                    crate::ast::expr::Operator::Plus,
+                    Box::new(Expression::Identifier("interest".to_string()))
+                ))
+            ))
+        );
+    }
 }

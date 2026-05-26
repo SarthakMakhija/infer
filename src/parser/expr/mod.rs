@@ -72,10 +72,10 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 
         //TODO: missing '(' for function call.
         match token.token_type {
             TokenType::Plus | TokenType::Minus => {
-                BinaryOperator::new(self, Precedence::Plus).parse(left, &token)
+                BinaryOperator::new(self, Precedence::Plus).parse(left, token)
             }
             TokenType::Star | TokenType::Slash => {
-                BinaryOperator::new(self, Precedence::Star).parse(left, &token)
+                BinaryOperator::new(self, Precedence::Star).parse(left, token)
             }
             _ => Err(ParseError::UnsupportedInfixExpression(
                 token.token_type,
@@ -171,8 +171,8 @@ mod complex_expression_tests {
         let expr = parser.parse().unwrap();
         assert_eq!(
             expr,
-            Expression::BinaryExpression(
-                Box::new(Expression::BinaryExpression(
+            Expression::Binary(
+                Box::new(Expression::Binary(
                     Box::new(Expression::I32(1)),
                     Operator::Plus,
                     Box::new(Expression::I32(3))
@@ -192,10 +192,10 @@ mod complex_expression_tests {
         let expr = parser.parse().unwrap();
         assert_eq!(
             expr,
-            Expression::BinaryExpression(
+            Expression::Binary(
                 Box::new(Expression::I32(1)),
                 Operator::Plus,
-                Box::new(Expression::BinaryExpression(
+                Box::new(Expression::Binary(
                     Box::new(Expression::I32(2)),
                     Operator::Multiply,
                     Box::new(Expression::I32(4))
@@ -213,10 +213,10 @@ mod complex_expression_tests {
         let expr = parser.parse().unwrap();
         assert_eq!(
             expr,
-            Expression::BinaryExpression(
+            Expression::Binary(
                 Box::new(Expression::Identifier("amount".to_string())),
                 Operator::Plus,
-                Box::new(Expression::BinaryExpression(
+                Box::new(Expression::Binary(
                     Box::new(Expression::Identifier("factor".to_string())),
                     Operator::Multiply,
                     Box::new(Expression::Identifier("rate".to_string()))
@@ -234,8 +234,8 @@ mod complex_expression_tests {
         let expr = parser.parse().unwrap();
         assert_eq!(
             expr,
-            Expression::BinaryExpression(
-                Box::new(Expression::BinaryExpression(
+            Expression::Binary(
+                Box::new(Expression::Binary(
                     Box::new(Expression::I32(10)),
                     Operator::Divide,
                     Box::new(Expression::I32(2))

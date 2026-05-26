@@ -44,7 +44,7 @@ pub(crate) enum Expression {
     String(String),
     Identifier(String),
     Boolean(bool),
-    BinaryExpression(Box<Expression>, Operator, Box<Expression>),
+    Binary(Box<Expression>, Operator, Box<Expression>),
 }
 
 #[derive(Debug, PartialEq)]
