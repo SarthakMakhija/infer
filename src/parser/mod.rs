@@ -8,7 +8,7 @@ use crate::parser::stream::ParserStream;
 
 pub(crate) mod declaration;
 pub(crate) mod error;
-pub(crate) mod expression;
+pub(crate) mod expr;
 pub(crate) mod stream;
 
 pub(crate) struct Parser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
