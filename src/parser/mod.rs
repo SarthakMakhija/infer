@@ -2,6 +2,7 @@ use crate::ast::program::{Program, ProgramBuilder};
 use crate::ast::statement::Statement;
 use crate::lexer::token::{Token, TokenType};
 use crate::lexer::LexResult;
+use crate::parser::assignment::AssignmentParser;
 use crate::parser::declaration::VariableDeclarationParser;
 use crate::parser::error::ParseError;
 use crate::parser::stream::ParserStream;
@@ -34,9 +35,26 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> Parser<'src, 'stream, I
     fn statement_beginning_at(&mut self, token: &Token) -> Result<Statement, ParseError> {
         let statement = match token.token_type {
             TokenType::Var => VariableDeclarationParser::new(self.stream).parse()?,
+            TokenType::Identifier => {
+                if let Some(assignment) = self.maybe_assignment()? {
+                    assignment
+                } else {
+                    unimplemented!()
+                }
+            }
             _ => unimplemented!(),
         };
         Ok(statement)
+    }
+
+    fn maybe_assignment(&mut self) -> Result<Option<Statement>, ParseError> {
+        if let Some(next_token) = self.stream.peek_second()? {
+            if next_token.token_type == TokenType::Equals {
+                let statement = AssignmentParser::new(self.stream).parse()?;
+                return Ok(Some(statement));
+            }
+        }
+        Ok(None)
     }
 }
 
@@ -109,5 +127,58 @@ mod tests {
             res.err().unwrap(),
             ParseError::LexError(crate::lexer::error::LexError::UnrecognizedChar('?', 1))
         ));
+    }
+
+    #[test]
+    fn parse_single_assignment() {
+        let lexer = Lexer::new("id = 200;", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = Parser::new(&mut stream);
+
+        let program = parser.parse().unwrap();
+        let expected = ProgramBuilder::new()
+            .add(Statement::assignment(
+                crate::ast::statement::Assignment::new("id".to_string(), Expression::I32(200)),
+            ))
+            .build();
+        assert_eq!(program, expected);
+    }
+
+    #[test]
+    fn parse_multiple_assignments() {
+        let lexer = Lexer::new("height = 200; weight = 300;", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = Parser::new(&mut stream);
+
+        let program = parser.parse().unwrap();
+        let expected = ProgramBuilder::new()
+            .add(Statement::assignment(
+                crate::ast::statement::Assignment::new("height".to_string(), Expression::I32(200)),
+            ))
+            .add(Statement::assignment(
+                crate::ast::statement::Assignment::new("weight".to_string(), Expression::I32(300)),
+            ))
+            .build();
+        assert_eq!(program, expected);
+    }
+
+    #[test]
+    fn parse_variable_declaration_and_assignment() {
+        let lexer = Lexer::new("var id = 100; id = 200;", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = Parser::new(&mut stream);
+
+        let program = parser.parse().unwrap();
+        let expected = ProgramBuilder::new()
+            .add(Statement::variable_declaration(VariableDeclaration::new(
+                "id".to_string(),
+                None,
+                Some(Expression::I32(100)),
+            )))
+            .add(Statement::assignment(
+                crate::ast::statement::Assignment::new("id".to_string(), Expression::I32(200)),
+            ))
+            .build();
+        assert_eq!(program, expected);
     }
 }
