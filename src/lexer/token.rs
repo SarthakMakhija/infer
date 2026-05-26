@@ -30,6 +30,10 @@ pub(crate) enum TokenType {
     Slash,
     /// The `!` logical NOT operator.
     Bang,
+    /// The `(` opening parentheses.
+    LeftParentheses,
+    /// The `)` closing parentheses.
+    RightParentheses,
 }
 
 impl TokenType {
@@ -151,6 +155,26 @@ impl<'src> Token<'src> {
     pub(crate) fn bang(source: &'src str, index: usize, line: usize) -> Self {
         Self {
             token_type: TokenType::Bang,
+            range: index..index + 1,
+            line,
+            source,
+        }
+    }
+
+    /// Creates a new `Token` representing the `(` character.
+    pub(crate) fn left_parentheses(source: &'src str, index: usize, line: usize) -> Self {
+        Self {
+            token_type: TokenType::LeftParentheses,
+            range: index..index + 1,
+            line,
+            source,
+        }
+    }
+
+    /// Creates a new `Token` representing the `)` character.
+    pub(crate) fn right_parentheses(source: &'src str, index: usize, line: usize) -> Self {
+        Self {
+            token_type: TokenType::RightParentheses,
             range: index..index + 1,
             line,
             source,
@@ -333,5 +357,23 @@ mod token_tests {
         assert_eq!(token.range, 0..1);
         assert_eq!(token.line, 1);
         assert_eq!(token.source, "!");
+    }
+
+    #[test]
+    fn token_left_parentheses() {
+        let token = Token::left_parentheses("(", 0, 1);
+        assert_eq!(token.token_type, TokenType::LeftParentheses);
+        assert_eq!(token.range, 0..1);
+        assert_eq!(token.line, 1);
+        assert_eq!(token.source, "(");
+    }
+
+    #[test]
+    fn token_right_parentheses() {
+        let token = Token::right_parentheses(")", 0, 1);
+        assert_eq!(token.token_type, TokenType::RightParentheses);
+        assert_eq!(token.range, 0..1);
+        assert_eq!(token.line, 1);
+        assert_eq!(token.source, ")");
     }
 }
