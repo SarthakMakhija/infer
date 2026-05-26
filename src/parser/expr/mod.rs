@@ -9,6 +9,7 @@ use crate::parser::error::ParseError;
 use crate::parser::expr::infix::binary::BinaryExpressionParser;
 use crate::parser::expr::precedence::Precedence;
 use crate::parser::expr::prefix::boolean::BooleanParser;
+use crate::parser::expr::prefix::group::GroupParser;
 use crate::parser::expr::prefix::identifier::IdentifierParser;
 use crate::parser::expr::prefix::string::StringParser;
 use crate::parser::expr::prefix::unary::UnaryExpressionParser;
@@ -52,13 +53,13 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 
     }
 
     fn parse_prefix(&mut self, token: &Token<'src>) -> Result<Expression, ParseError> {
-        //TODO: missing '(' (open parentheses).
         match token.token_type {
             TokenType::Identifier => IdentifierParser.parse(token),
             TokenType::WholeNumber => WholeNumberParser.parse(token),
             TokenType::StringLiteral => StringParser.parse(token),
             TokenType::BooleanLiteral(_) => BooleanParser.parse(token),
             TokenType::Minus | TokenType::Bang => UnaryExpressionParser::new(self).parse(token),
+            TokenType::LeftParentheses => GroupParser::new(self).parse(token),
             _ => Err(ParseError::UnsupportedPrefixExpression(
                 token.token_type,
                 token.line,
@@ -301,6 +302,48 @@ mod complex_expression_tests {
                     Box::new(Expression::Identifier("rate".to_string()))
                 ))
             )
+        );
+    }
+
+    #[test]
+    fn parse_grouped_expression() {
+        let lexer = Lexer::new("(1 + 2) * 3", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expr = parser.parse().unwrap();
+        assert_eq!(
+            expr,
+            Expression::Binary(
+                Box::new(Expression::Grouped(Box::new(Expression::Binary(
+                    Box::new(Expression::I32(1)),
+                    BinaryOperator::Plus,
+                    Box::new(Expression::I32(2))
+                )))),
+                BinaryOperator::Multiply,
+                Box::new(Expression::I32(3))
+            )
+        );
+    }
+
+    #[test]
+    fn parse_nested_grouped_expression() {
+        let lexer = Lexer::new("((1 + 2) * 3)", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expr = parser.parse().unwrap();
+        assert_eq!(
+            expr,
+            Expression::Grouped(Box::new(Expression::Binary(
+                Box::new(Expression::Grouped(Box::new(Expression::Binary(
+                    Box::new(Expression::I32(1)),
+                    BinaryOperator::Plus,
+                    Box::new(Expression::I32(2))
+                )))),
+                BinaryOperator::Multiply,
+                Box::new(Expression::I32(3))
+            )))
         );
     }
 }
