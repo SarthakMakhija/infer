@@ -51,7 +51,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 
     }
 
     fn parse_prefix(&self, token: &Token<'src>) -> Result<Expression, ParseError> {
-        //TODO: missing '-' (minus) and '(' (open parentheses)
+        //TODO: missing '-' (minus) and '(' (open parentheses), and '!' (bang)
         match token.token_type {
             TokenType::Identifier => Identifier.parse(token),
             TokenType::WholeNumber => WholeNumber.parse(token),
@@ -69,6 +69,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 
         left: Expression,
         token: &Token<'src>,
     ) -> Result<Expression, ParseError> {
+        //TODO: missing '(' for function call.
         match token.token_type {
             TokenType::Plus | TokenType::Minus => {
                 BinaryOperator::new(self, Precedence::Plus).parse(left, &token)
