@@ -1,4 +1,4 @@
-use crate::ast::expr::Expression;
+use crate::ast::expr::{BinaryOperator, Expression};
 use crate::lexer::token::Token;
 use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
@@ -30,10 +30,18 @@ impl<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>> InfixParser<'src
     for BinaryExpressionParser<'expr, 'src, 'stream, I>
 {
     fn parse(&mut self, left: Expression, token: &Token<'src>) -> Result<Expression, ParseError> {
+        let operator: BinaryOperator = token.try_into()?;
+        if operator.is_comparison() {
+            if let Expression::Binary(_, ref left_operator, _) = left {
+                if left_operator.is_comparison() {
+                    return Err(ParseError::ChainedComparison(token.line));
+                }
+            }
+        }
         let right = self
             .expression_parser
             .parse_with_precedence(self.precedence)?;
-        let operator = token.try_into()?;
+
         Ok(Expression::Binary(
             Box::new(left),
             operator,
@@ -153,5 +161,18 @@ mod tests {
                 1
             ))
         );
+    }
+
+    #[test]
+    fn parse_chained_comparison_error() {
+        let lexer = Lexer::new("score1 < score2 < score3", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let result = parser.parse();
+        assert!(matches!(
+            result.err().unwrap(),
+            ParseError::ChainedComparison(1)
+        ));
     }
 }

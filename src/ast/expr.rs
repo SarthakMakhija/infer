@@ -86,6 +86,20 @@ impl TryFrom<&Token<'_>> for BinaryOperator {
     }
 }
 
+impl BinaryOperator {
+    pub(crate) fn is_comparison(&self) -> bool {
+        matches!(
+            self,
+            BinaryOperator::GreaterThan
+                | BinaryOperator::GreaterThanEquals
+                | BinaryOperator::LessThan
+                | BinaryOperator::LessThanEquals
+                | BinaryOperator::EqualsEquals
+                | BinaryOperator::NotEquals
+        )
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub(crate) enum UnaryOperator {
     Minus,
@@ -189,6 +203,41 @@ mod binary_operator_tests {
         let token = Token::new(TokenType::BangEquals, 0..2, 1, "!=");
         let operator = BinaryOperator::try_from(&token).unwrap();
         assert_eq!(operator, BinaryOperator::NotEquals);
+    }
+
+    #[test]
+    fn greater_than_is_comparison() {
+        assert!(BinaryOperator::GreaterThan.is_comparison());
+    }
+
+    #[test]
+    fn greater_than_equals_is_comparison() {
+        assert!(BinaryOperator::GreaterThanEquals.is_comparison());
+    }
+
+    #[test]
+    fn less_than_is_comparison() {
+        assert!(BinaryOperator::LessThan.is_comparison());
+    }
+
+    #[test]
+    fn less_than_equals_is_comparison() {
+        assert!(BinaryOperator::LessThanEquals.is_comparison());
+    }
+
+    #[test]
+    fn equals_equals_is_comparison() {
+        assert!(BinaryOperator::EqualsEquals.is_comparison());
+    }
+
+    #[test]
+    fn not_equals_is_comparison() {
+        assert!(BinaryOperator::NotEquals.is_comparison());
+    }
+
+    #[test]
+    fn plus_is_not_comparison() {
+        assert!(!BinaryOperator::Plus.is_comparison());
     }
 }
 

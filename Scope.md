@@ -3,7 +3,7 @@
 - [x] Support variable assignment
 - [x] Support assignment
 - [x] Support If
-- [ ] Support If/Else
+- [x] Support If/Else
 - [ ] Support If/Else/ElseIf
 - [ ] Support loop
 - [ ] Support functions

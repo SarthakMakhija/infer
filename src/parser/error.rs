@@ -25,6 +25,9 @@ pub(crate) enum ParseError {
 
     /// An error encountered while parsing infix expressions, with unsupported infix parser.
     UnsupportedInfixExpression(TokenType, usize),
+
+    /// An error encountered while parsing chained comparison operations like a < b < c.
+    ChainedComparison(usize),
 }
 
 impl From<LexError> for ParseError {
@@ -70,6 +73,13 @@ impl fmt::Display for ParseError {
                     formatter,
                     "no supported infix parser for '{:?}' on line {}",
                     actual, line
+                )
+            }
+            ParseError::ChainedComparison(line) => {
+                write!(
+                    formatter,
+                    "chained comparison operations are not supported on line {}",
+                    line
                 )
             }
         }
@@ -120,6 +130,15 @@ mod tests {
         assert_eq!(
             err.to_string(),
             "no supported infix parser for 'Plus' on line 10"
+        );
+    }
+
+    #[test]
+    fn display_chained_comparison_error() {
+        let err = ParseError::ChainedComparison(12);
+        assert_eq!(
+            err.to_string(),
+            "chained comparison operations are not supported on line 12"
         );
     }
 }
