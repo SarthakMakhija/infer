@@ -359,6 +359,18 @@ mod tests {
     }
 
     #[test]
+    fn lex_if_keyword() {
+        let mut lexer = Lexer::new("if", Keywords::new());
+        assert_token!(lexer.next(), TokenType::If, 0..2);
+    }
+
+    #[test]
+    fn lex_else_keyword() {
+        let mut lexer = Lexer::new("else", Keywords::new());
+        assert_token!(lexer.next(), TokenType::Else, 0..4);
+    }
+
+    #[test]
     fn lex_var_case_sensitive() {
         let mut lexer = Lexer::new("VAR", Keywords::new());
         assert_token!(lexer.next(), TokenType::Identifier, 0..3);

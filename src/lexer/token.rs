@@ -53,6 +53,8 @@ pub(crate) enum TokenType {
 
     /// The `if` conditional keyword.
     If,
+    /// The `else` conditional keyword.
+    Else,
 }
 
 impl TokenType {
@@ -64,6 +66,7 @@ impl TokenType {
             "true" => Ok(TokenType::BooleanLiteral(true)),
             "false" => Ok(TokenType::BooleanLiteral(false)),
             "if" => Ok(TokenType::If),
+            "else" => Ok(TokenType::Else),
             _ => Err(LexError::UnsupportedKeyword(token.to_string(), line)),
         }
     }
@@ -335,6 +338,11 @@ mod token_type_tests {
     #[test]
     fn keyword_type_if() {
         assert_eq!(TokenType::keyword_type("if", 1).unwrap(), TokenType::If);
+    }
+
+    #[test]
+    fn keyword_type_else() {
+        assert_eq!(TokenType::keyword_type("else", 1).unwrap(), TokenType::Else);
     }
 
     #[test]
