@@ -1,0 +1,20 @@
+- [ ] Grammar
+- [x] Support variable declaration
+- [x] Support variable assignment
+- [x] Support assignment
+- [ ] Support If
+- [ ] Support If/Else
+- [ ] Support If/Else/ElseIf
+- [ ] Support loop
+- [ ] Support functions
+  - [ ] Without parameters
+  - [ ] Without return type
+  - [ ] With parameters
+  - [ ] With return type
+- [ ] Support expressions
+    - [x] Support arithmetic + - * /
+    - [x] Support !
+    - [x] Support unary minus
+    - [ ] Support function calls
+    - [ ] Support > < >= <= == !=
+    - [ ] Support function calls with other expressions
