@@ -34,6 +34,10 @@ pub(crate) enum TokenType {
     LeftParentheses,
     /// The `)` closing parentheses.
     RightParentheses,
+    /// The `{` opening curly brace.
+    LeftBrace,
+    /// The `}` closing curly brace.
+    RightBrace,
     /// The `>` comparison operator.
     GreaterThan,
     /// The `<` comparison operator.
@@ -47,6 +51,7 @@ pub(crate) enum TokenType {
     /// The `!=` comparison operator.
     BangEquals,
 
+    /// The `if` conditional keyword.
     If,
 }
 
@@ -190,6 +195,26 @@ impl<'src> Token<'src> {
     pub(crate) fn right_parentheses(source: &'src str, index: usize, line: usize) -> Self {
         Self {
             token_type: TokenType::RightParentheses,
+            range: index..index + 1,
+            line,
+            source,
+        }
+    }
+
+    /// Creates a new `Token` representing the `{` character.
+    pub(crate) fn left_brace(source: &'src str, index: usize, line: usize) -> Self {
+        Self {
+            token_type: TokenType::LeftBrace,
+            range: index..index + 1,
+            line,
+            source,
+        }
+    }
+
+    /// Creates a new `Token` representing the `}` character.
+    pub(crate) fn right_brace(source: &'src str, index: usize, line: usize) -> Self {
+        Self {
+            token_type: TokenType::RightBrace,
             range: index..index + 1,
             line,
             source,
@@ -455,6 +480,24 @@ mod token_tests {
         assert_eq!(token.range, 0..1);
         assert_eq!(token.line, 1);
         assert_eq!(token.source, ")");
+    }
+
+    #[test]
+    fn token_left_brace() {
+        let token = Token::left_brace("{", 0, 1);
+        assert_eq!(token.token_type, TokenType::LeftBrace);
+        assert_eq!(token.range, 0..1);
+        assert_eq!(token.line, 1);
+        assert_eq!(token.source, "{");
+    }
+
+    #[test]
+    fn token_right_brace() {
+        let token = Token::right_brace("}", 0, 1);
+        assert_eq!(token.token_type, TokenType::RightBrace);
+        assert_eq!(token.range, 0..1);
+        assert_eq!(token.line, 1);
+        assert_eq!(token.source, "}");
     }
 
     #[test]

@@ -240,6 +240,14 @@ impl<'src> Iterator for Lexer<'src> {
                     self.move_ahead();
                     Some(Ok(Token::right_parentheses(self.source, index, self.line)))
                 }
+                '{' => {
+                    self.move_ahead();
+                    Some(Ok(Token::left_brace(self.source, index, self.line)))
+                }
+                '}' => {
+                    self.move_ahead();
+                    Some(Ok(Token::right_brace(self.source, index, self.line)))
+                }
                 '"' => {
                     self.move_ahead();
                     Some(self.string(index))
@@ -494,5 +502,17 @@ mod tests {
     fn lex_less_than_equals() {
         let mut lexer = Lexer::new("<=", Keywords::new());
         assert_token!(lexer.next(), TokenType::LessThanEquals, 0..2);
+    }
+
+    #[test]
+    fn lex_left_brace() {
+        let mut lexer = Lexer::new("{", Keywords::new());
+        assert_token!(lexer.next(), TokenType::LeftBrace, 0..1);
+    }
+
+    #[test]
+    fn lex_right_brace() {
+        let mut lexer = Lexer::new("}", Keywords::new());
+        assert_token!(lexer.next(), TokenType::RightBrace, 0..1);
     }
 }
