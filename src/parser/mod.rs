@@ -1,16 +1,14 @@
 use crate::ast::program::{Program, ProgramBuilder};
-use crate::ast::statement::Statement;
-use crate::lexer::token::{Token, TokenType};
 use crate::lexer::LexResult;
-use crate::parser::assignment::AssignmentParser;
-use crate::parser::declaration::VariableDeclarationParser;
 use crate::parser::error::ParseError;
+use crate::parser::statement::StatementParser;
 use crate::parser::stream::ParserStream;
 
 pub(crate) mod assignment;
 pub(crate) mod declaration;
 pub(crate) mod error;
 pub(crate) mod expr;
+pub(crate) mod statement;
 pub(crate) mod stream;
 
 pub(crate) struct Parser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
@@ -24,37 +22,12 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> Parser<'src, 'stream, I
 
     pub(crate) fn parse(&mut self) -> Result<Program, ParseError> {
         let mut builder = ProgramBuilder::new();
-        while let Some(token_ref) = self.stream.peek()? {
-            let token = token_ref.clone();
-            let statement = self.statement_beginning_at(&token)?;
+
+        while self.stream.peek()?.is_some() {
+            let statement = StatementParser::new(self.stream).parse()?;
             builder = builder.add(statement);
         }
         Ok(builder.build())
-    }
-
-    fn statement_beginning_at(&mut self, token: &Token) -> Result<Statement, ParseError> {
-        let statement = match token.token_type {
-            TokenType::Var => VariableDeclarationParser::new(self.stream).parse()?,
-            TokenType::Identifier => {
-                if let Some(assignment) = self.maybe_assignment()? {
-                    assignment
-                } else {
-                    unimplemented!()
-                }
-            }
-            _ => unimplemented!(),
-        };
-        Ok(statement)
-    }
-
-    fn maybe_assignment(&mut self) -> Result<Option<Statement>, ParseError> {
-        if let Some(next_token) = self.stream.peek_second()? {
-            if next_token.token_type == TokenType::Equals {
-                let statement = AssignmentParser::new(self.stream).parse()?;
-                return Ok(Some(statement));
-            }
-        }
-        Ok(None)
     }
 }
 
@@ -62,6 +35,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> Parser<'src, 'stream, I
 mod tests {
     use super::*;
     use crate::ast::expr::Expression;
+    use crate::ast::statement::Statement;
     use crate::ast::statement::VariableDeclaration;
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
@@ -187,6 +161,7 @@ mod tests {
 mod assignment_expression_tests {
     use super::*;
     use crate::ast::expr::{BinaryOperator, Expression};
+    use crate::ast::statement::Statement;
     use crate::ast::statement::{Assignment, VariableDeclaration};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;

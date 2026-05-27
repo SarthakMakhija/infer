@@ -16,5 +16,5 @@
     - [x] Support !
     - [x] Support unary minus
     - [ ] Support function calls
-    - [ ] Support > < >= <= == !=
+    - [x] Support > < >= <= == !=
     - [ ] Support function calls with other expressions
