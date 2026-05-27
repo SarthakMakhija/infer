@@ -1,4 +1,4 @@
-- [ ] Grammar
+- [ ] Grammar (_Continuously updated_)
 - [x] Support variable declaration
 - [x] Support variable assignment
 - [x] Support assignment

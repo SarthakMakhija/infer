@@ -147,6 +147,16 @@ impl<'src> Lexer<'src> {
     fn looks_like_whole_number(ch: char) -> bool {
         ch.is_ascii_digit()
     }
+
+    fn match_next(&mut self, expected: char) -> bool {
+        if let Some(&(_, ch)) = self.peek() {
+            if ch == expected {
+                self.move_ahead();
+                return true;
+            }
+        }
+        false
+    }
 }
 
 impl<'src> Iterator for Lexer<'src> {
@@ -164,7 +174,11 @@ impl<'src> Iterator for Lexer<'src> {
             return match char {
                 '=' => {
                     self.move_ahead();
-                    Some(Ok(Token::equals(self.source, index, self.line)))
+                    if self.match_next('=') {
+                        Some(Ok(Token::equals_equals(self.source, index, self.line)))
+                    } else {
+                        Some(Ok(Token::equals(self.source, index, self.line)))
+                    }
                 }
                 ';' => {
                     self.move_ahead();
@@ -192,7 +206,31 @@ impl<'src> Iterator for Lexer<'src> {
                 }
                 '!' => {
                     self.move_ahead();
-                    Some(Ok(Token::bang(self.source, index, self.line)))
+                    if self.match_next('=') {
+                        Some(Ok(Token::bang_equals(self.source, index, self.line)))
+                    } else {
+                        Some(Ok(Token::bang(self.source, index, self.line)))
+                    }
+                }
+                '>' => {
+                    self.move_ahead();
+                    if self.match_next('=') {
+                        Some(Ok(Token::greater_than_equals(
+                            self.source,
+                            index,
+                            self.line,
+                        )))
+                    } else {
+                        Some(Ok(Token::greater_than(self.source, index, self.line)))
+                    }
+                }
+                '<' => {
+                    self.move_ahead();
+                    if self.match_next('=') {
+                        Some(Ok(Token::less_than_equals(self.source, index, self.line)))
+                    } else {
+                        Some(Ok(Token::less_than(self.source, index, self.line)))
+                    }
                 }
                 '(' => {
                     self.move_ahead();
@@ -420,5 +458,41 @@ mod tests {
         assert_token!(lexer.next(), TokenType::Slash, 2..3);
         assert_token!(lexer.next(), TokenType::Identifier, 4..5);
         assert!(lexer.next().is_none());
+    }
+
+    #[test]
+    fn lex_equals_equals() {
+        let mut lexer = Lexer::new("==", Keywords::new());
+        assert_token!(lexer.next(), TokenType::EqualsEquals, 0..2);
+    }
+
+    #[test]
+    fn lex_bang_equals() {
+        let mut lexer = Lexer::new("!=", Keywords::new());
+        assert_token!(lexer.next(), TokenType::BangEquals, 0..2);
+    }
+
+    #[test]
+    fn lex_greater_than() {
+        let mut lexer = Lexer::new(">", Keywords::new());
+        assert_token!(lexer.next(), TokenType::GreaterThan, 0..1);
+    }
+
+    #[test]
+    fn lex_greater_than_equals() {
+        let mut lexer = Lexer::new(">=", Keywords::new());
+        assert_token!(lexer.next(), TokenType::GreaterThanEquals, 0..2);
+    }
+
+    #[test]
+    fn lex_less_than() {
+        let mut lexer = Lexer::new("<", Keywords::new());
+        assert_token!(lexer.next(), TokenType::LessThan, 0..1);
+    }
+
+    #[test]
+    fn lex_less_than_equals() {
+        let mut lexer = Lexer::new("<=", Keywords::new());
+        assert_token!(lexer.next(), TokenType::LessThanEquals, 0..2);
     }
 }

@@ -34,6 +34,18 @@ pub(crate) enum TokenType {
     LeftParentheses,
     /// The `)` closing parentheses.
     RightParentheses,
+    /// The `>` comparison operator.
+    GreaterThan,
+    /// The `<` comparison operator.
+    LessThan,
+    /// The `>=` comparison operator.
+    GreaterThanEquals,
+    /// The `<=` comparison operator.
+    LessThanEquals,
+    /// The `==` comparison operator.
+    EqualsEquals,
+    /// The `!=` comparison operator.
+    BangEquals,
 }
 
 impl TokenType {
@@ -176,6 +188,66 @@ impl<'src> Token<'src> {
         Self {
             token_type: TokenType::RightParentheses,
             range: index..index + 1,
+            line,
+            source,
+        }
+    }
+
+    /// Creates a new `Token` representing the `>` character.
+    pub(crate) fn greater_than(source: &'src str, index: usize, line: usize) -> Self {
+        Self {
+            token_type: TokenType::GreaterThan,
+            range: index..index + 1,
+            line,
+            source,
+        }
+    }
+
+    /// Creates a new `Token` representing the `<` character.
+    pub(crate) fn less_than(source: &'src str, index: usize, line: usize) -> Self {
+        Self {
+            token_type: TokenType::LessThan,
+            range: index..index + 1,
+            line,
+            source,
+        }
+    }
+
+    /// Creates a new `Token` representing the `>=` sequence.
+    pub(crate) fn greater_than_equals(source: &'src str, index: usize, line: usize) -> Self {
+        Self {
+            token_type: TokenType::GreaterThanEquals,
+            range: index..index + 2,
+            line,
+            source,
+        }
+    }
+
+    /// Creates a new `Token` representing the `<=` sequence.
+    pub(crate) fn less_than_equals(source: &'src str, index: usize, line: usize) -> Self {
+        Self {
+            token_type: TokenType::LessThanEquals,
+            range: index..index + 2,
+            line,
+            source,
+        }
+    }
+
+    /// Creates a new `Token` representing the `==` sequence.
+    pub(crate) fn equals_equals(source: &'src str, index: usize, line: usize) -> Self {
+        Self {
+            token_type: TokenType::EqualsEquals,
+            range: index..index + 2,
+            line,
+            source,
+        }
+    }
+
+    /// Creates a new `Token` representing the `!=` sequence.
+    pub(crate) fn bang_equals(source: &'src str, index: usize, line: usize) -> Self {
+        Self {
+            token_type: TokenType::BangEquals,
+            range: index..index + 2,
             line,
             source,
         }
@@ -375,5 +447,59 @@ mod token_tests {
         assert_eq!(token.range, 0..1);
         assert_eq!(token.line, 1);
         assert_eq!(token.source, ")");
+    }
+
+    #[test]
+    fn token_greater_than() {
+        let token = Token::greater_than(">", 0, 1);
+        assert_eq!(token.token_type, TokenType::GreaterThan);
+        assert_eq!(token.range, 0..1);
+        assert_eq!(token.line, 1);
+        assert_eq!(token.source, ">");
+    }
+
+    #[test]
+    fn token_less_than() {
+        let token = Token::less_than("<", 0, 1);
+        assert_eq!(token.token_type, TokenType::LessThan);
+        assert_eq!(token.range, 0..1);
+        assert_eq!(token.line, 1);
+        assert_eq!(token.source, "<");
+    }
+
+    #[test]
+    fn token_greater_than_equals() {
+        let token = Token::greater_than_equals(">=", 0, 1);
+        assert_eq!(token.token_type, TokenType::GreaterThanEquals);
+        assert_eq!(token.range, 0..2);
+        assert_eq!(token.line, 1);
+        assert_eq!(token.source, ">=");
+    }
+
+    #[test]
+    fn token_less_than_equals() {
+        let token = Token::less_than_equals("<=", 0, 1);
+        assert_eq!(token.token_type, TokenType::LessThanEquals);
+        assert_eq!(token.range, 0..2);
+        assert_eq!(token.line, 1);
+        assert_eq!(token.source, "<=");
+    }
+
+    #[test]
+    fn token_equals_equals() {
+        let token = Token::equals_equals("==", 0, 1);
+        assert_eq!(token.token_type, TokenType::EqualsEquals);
+        assert_eq!(token.range, 0..2);
+        assert_eq!(token.line, 1);
+        assert_eq!(token.source, "==");
+    }
+
+    #[test]
+    fn token_bang_equals() {
+        let token = Token::bang_equals("!=", 0, 1);
+        assert_eq!(token.token_type, TokenType::BangEquals);
+        assert_eq!(token.range, 0..2);
+        assert_eq!(token.line, 1);
+        assert_eq!(token.source, "!=");
     }
 }
