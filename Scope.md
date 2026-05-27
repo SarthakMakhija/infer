@@ -2,7 +2,7 @@
 - [x] Support variable declaration
 - [x] Support variable assignment
 - [x] Support assignment
-- [ ] Support If
+- [x] Support If
 - [ ] Support If/Else
 - [ ] Support If/Else/ElseIf
 - [ ] Support loop

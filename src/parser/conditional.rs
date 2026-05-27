@@ -6,11 +6,11 @@ use crate::parser::expr::ExpressionParser;
 use crate::parser::statement::StatementParser;
 use crate::parser::stream::ParserStream;
 
-pub(crate) struct IfParser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
+pub(crate) struct ConditionalParser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
     stream: &'stream mut ParserStream<'src, I>,
 }
 
-impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> IfParser<'src, 'stream, I> {
+impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ConditionalParser<'src, 'stream, I> {
     pub(crate) fn new(stream: &'stream mut ParserStream<'src, I>) -> Self {
         Self { stream }
     }
@@ -18,9 +18,14 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> IfParser<'src, 'stream,
     pub(crate) fn parse(&mut self) -> Result<Statement, ParseError> {
         self.stream.expect(TokenType::If)?;
         let condition = ExpressionParser::new(self.stream).parse()?;
-
         self.stream.expect(TokenType::LeftBrace)?;
+        let body = self.parse_body()?;
+        self.stream.expect(TokenType::RightBrace)?;
 
+        Ok(Statement::conditional(Conditional::new(condition, body)))
+    }
+
+    fn parse_body(&mut self) -> Result<Vec<Statement>, ParseError> {
         let mut body = Vec::new();
         while let Some(next_token) = self.stream.peek()? {
             if next_token.token_type == TokenType::RightBrace {
@@ -29,9 +34,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> IfParser<'src, 'stream,
             let statement = StatementParser::new(self.stream).parse()?;
             body.push(statement);
         }
-        self.stream.expect(TokenType::RightBrace)?;
-
-        Ok(Statement::conditional(Conditional::new(condition, body)))
+        Ok(body)
     }
 }
 
@@ -51,7 +54,7 @@ mod tests {
             Keywords::new(),
         );
         let mut stream = ParserStream::new(lexer);
-        let mut parser = IfParser::new(&mut stream);
+        let mut parser = ConditionalParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
         assert_eq!(
@@ -77,7 +80,7 @@ mod tests {
             Keywords::new(),
         );
         let mut stream = ParserStream::new(lexer);
-        let mut parser = IfParser::new(&mut stream);
+        let mut parser = ConditionalParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
         assert_eq!(
@@ -110,7 +113,7 @@ mod tests {
     fn parse_conditional_with_empty_body() {
         let lexer = Lexer::new("if debug_mode_enabled == true {}", Keywords::new());
         let mut stream = ParserStream::new(lexer);
-        let mut parser = IfParser::new(&mut stream);
+        let mut parser = ConditionalParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
         assert_eq!(
@@ -133,7 +136,7 @@ mod tests {
             Keywords::new(),
         );
         let mut stream = ParserStream::new(lexer);
-        let mut parser = IfParser::new(&mut stream);
+        let mut parser = ConditionalParser::new(&mut stream);
 
         let result = parser.parse();
         assert!(matches!(
