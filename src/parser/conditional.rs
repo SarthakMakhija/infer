@@ -1,3 +1,4 @@
+use crate::ast::expr::Expression;
 use crate::ast::statement::{Conditional, Statement};
 use crate::lexer::token::TokenType;
 use crate::lexer::LexResult;
@@ -16,13 +17,36 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ConditionalParser<'src,
     }
 
     pub(crate) fn parse(&mut self) -> Result<Statement, ParseError> {
+        let (condition, body) = self.parse_if()?;
+        let else_body = self.maybe_parse_else()?;
+
+        Ok(Statement::conditional(Conditional::new(
+            condition, body, else_body,
+        )))
+    }
+
+    fn parse_if(&mut self) -> Result<(Expression, Vec<Statement>), ParseError> {
         self.stream.expect(TokenType::If)?;
         let condition = ExpressionParser::new(self.stream).parse()?;
         self.stream.expect(TokenType::LeftBrace)?;
         let body = self.parse_body()?;
         self.stream.expect(TokenType::RightBrace)?;
+        Ok((condition, body))
+    }
 
-        Ok(Statement::conditional(Conditional::new(condition, body)))
+    fn maybe_parse_else(&mut self) -> Result<Option<Vec<Statement>>, ParseError> {
+        let mut else_body = None;
+        if self.stream.maybe_matches(TokenType::Else) {
+            else_body = Some(self.parse_else()?);
+        }
+        Ok(else_body)
+    }
+
+    fn parse_else(&mut self) -> Result<Vec<Statement>, ParseError> {
+        self.stream.expect(TokenType::LeftBrace)?;
+        let body = self.parse_body()?;
+        self.stream.expect(TokenType::RightBrace)?;
+        Ok(body)
     }
 
     fn parse_body(&mut self) -> Result<Vec<Statement>, ParseError> {
@@ -68,7 +92,8 @@ mod tests {
                 vec![Statement::assignment(Assignment::new(
                     "is_eligible".to_string(),
                     Expression::Boolean(true),
-                ))]
+                ))],
+                None
             ))
         );
     }
@@ -104,7 +129,8 @@ mod tests {
                             Box::new(Expression::Identifier("excess_fee".to_string())),
                         ),
                     )),
-                ]
+                ],
+                None
             ))
         );
     }
@@ -124,7 +150,38 @@ mod tests {
                     BinaryOperator::EqualsEquals,
                     Box::new(Expression::Boolean(true)),
                 ),
-                vec![]
+                vec![],
+                None
+            ))
+        );
+    }
+
+    #[test]
+    fn parse_conditional_with_else() {
+        let lexer = Lexer::new(
+            "if total_price > budget { status = \"over_budget\"; } else { status = \"within_budget\"; }",
+            Keywords::new(),
+        );
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ConditionalParser::new(&mut stream);
+
+        let statement = parser.parse().unwrap();
+        assert_eq!(
+            statement,
+            Statement::conditional(Conditional::new(
+                Expression::Binary(
+                    Box::new(Expression::Identifier("total_price".to_string())),
+                    BinaryOperator::GreaterThan,
+                    Box::new(Expression::Identifier("budget".to_string())),
+                ),
+                vec![Statement::assignment(Assignment::new(
+                    "status".to_string(),
+                    Expression::String("over_budget".to_string()),
+                ))],
+                Some(vec![Statement::assignment(Assignment::new(
+                    "status".to_string(),
+                    Expression::String("within_budget".to_string()),
+                ))])
             ))
         );
     }

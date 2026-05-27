@@ -61,11 +61,20 @@ impl Assignment {
 pub(crate) struct Conditional {
     pub(crate) condition: Expression,
     pub(crate) body: Vec<Statement>,
+    pub(crate) else_body: Option<Vec<Statement>>,
 }
 
 impl Conditional {
-    pub(crate) fn new(condition: Expression, body: Vec<Statement>) -> Self {
-        Self { condition, body }
+    pub(crate) fn new(
+        condition: Expression,
+        body: Vec<Statement>,
+        else_body: Option<Vec<Statement>>,
+    ) -> Self {
+        Self {
+            condition,
+            body,
+            else_body,
+        }
     }
 }
 

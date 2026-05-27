@@ -182,6 +182,7 @@ mod tests {
                         Box::new(Expression::Identifier("savings".to_string())),
                     ),
                 ))],
+                None,
             )))
             .build();
         assert_eq!(program, expected);
