@@ -80,6 +80,15 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 
             TokenType::Star | TokenType::Slash => {
                 BinaryExpressionParser::new(self, Precedence::Star).parse(left, token)
             }
+            TokenType::EqualsEquals | TokenType::BangEquals => {
+                BinaryExpressionParser::new(self, Precedence::Equality).parse(left, token)
+            }
+            TokenType::GreaterThan
+            | TokenType::GreaterThanEquals
+            | TokenType::LessThan
+            | TokenType::LessThanEquals => {
+                BinaryExpressionParser::new(self, Precedence::Comparison).parse(left, token)
+            }
             _ => Err(ParseError::UnsupportedInfixExpression(
                 token.token_type,
                 token.line,
@@ -109,8 +118,8 @@ mod tests {
         let mut stream = ParserStream::new(lexer);
         let mut parser = ExpressionParser::new(&mut stream);
 
-        let expr = parser.parse().unwrap();
-        assert_eq!(expr, Expression::I32(123));
+        let expression = parser.parse().unwrap();
+        assert_eq!(expression, Expression::I32(123));
     }
 
     #[test]
@@ -119,8 +128,8 @@ mod tests {
         let mut stream = ParserStream::new(lexer);
         let mut parser = ExpressionParser::new(&mut stream);
 
-        let expr = parser.parse().unwrap();
-        assert_eq!(expr, Expression::String("infer".to_string()));
+        let expression = parser.parse().unwrap();
+        assert_eq!(expression, Expression::String("infer".to_string()));
     }
 
     #[test]
@@ -129,8 +138,8 @@ mod tests {
         let mut stream = ParserStream::new(lexer);
         let mut parser = ExpressionParser::new(&mut stream);
 
-        let expr = parser.parse().unwrap();
-        assert_eq!(expr, Expression::Identifier("my_var".to_string()));
+        let expression = parser.parse().unwrap();
+        assert_eq!(expression, Expression::Identifier("my_var".to_string()));
     }
 
     #[test]
@@ -158,7 +167,7 @@ mod tests {
 }
 
 #[cfg(test)]
-mod complex_expression_tests {
+mod arithmetic_expression_tests {
     use super::*;
     use crate::ast::expr::BinaryOperator;
     use crate::lexer::keywords::Keywords;
@@ -166,14 +175,14 @@ mod complex_expression_tests {
     use crate::parser::stream::ParserStream;
 
     #[test]
-    fn parse_complex_addition_and_subtraction() {
+    fn parse_addition_and_subtraction() {
         let lexer = Lexer::new("1 + 3 - 2", Keywords::new());
         let mut stream = ParserStream::new(lexer);
         let mut parser = ExpressionParser::new(&mut stream);
 
-        let expr = parser.parse().unwrap();
+        let expression = parser.parse().unwrap();
         assert_eq!(
-            expr,
+            expression,
             Expression::Binary(
                 Box::new(Expression::Binary(
                     Box::new(Expression::I32(1)),
@@ -187,14 +196,14 @@ mod complex_expression_tests {
     }
 
     #[test]
-    fn parse_complex_addition_and_multiplication() {
+    fn parse_addition_and_multiplication() {
         let lexer = Lexer::new("1 + 2 * 4", Keywords::new());
         let mut stream = ParserStream::new(lexer);
         let mut parser = ExpressionParser::new(&mut stream);
 
-        let expr = parser.parse().unwrap();
+        let expression = parser.parse().unwrap();
         assert_eq!(
-            expr,
+            expression,
             Expression::Binary(
                 Box::new(Expression::I32(1)),
                 BinaryOperator::Plus,
@@ -213,9 +222,9 @@ mod complex_expression_tests {
         let mut stream = ParserStream::new(lexer);
         let mut parser = ExpressionParser::new(&mut stream);
 
-        let expr = parser.parse().unwrap();
+        let expression = parser.parse().unwrap();
         assert_eq!(
-            expr,
+            expression,
             Expression::Binary(
                 Box::new(Expression::Identifier("amount".to_string())),
                 BinaryOperator::Plus,
@@ -229,14 +238,14 @@ mod complex_expression_tests {
     }
 
     #[test]
-    fn parse_complex_division_and_subtraction() {
+    fn parse_division_and_subtraction() {
         let lexer = Lexer::new("10 / 2 - 3", Keywords::new());
         let mut stream = ParserStream::new(lexer);
         let mut parser = ExpressionParser::new(&mut stream);
 
-        let expr = parser.parse().unwrap();
+        let expression = parser.parse().unwrap();
         assert_eq!(
-            expr,
+            expression,
             Expression::Binary(
                 Box::new(Expression::Binary(
                     Box::new(Expression::I32(10)),
@@ -255,9 +264,9 @@ mod complex_expression_tests {
         let mut stream = ParserStream::new(lexer);
         let mut parser = ExpressionParser::new(&mut stream);
 
-        let expr = parser.parse().unwrap();
+        let expression = parser.parse().unwrap();
         assert_eq!(
-            expr,
+            expression,
             Expression::Unary(
                 Box::new(Expression::I32(10)),
                 crate::ast::expr::UnaryOperator::Minus
@@ -271,9 +280,9 @@ mod complex_expression_tests {
         let mut stream = ParserStream::new(lexer);
         let mut parser = ExpressionParser::new(&mut stream);
 
-        let expr = parser.parse().unwrap();
+        let expression = parser.parse().unwrap();
         assert_eq!(
-            expr,
+            expression,
             Expression::Unary(
                 Box::new(Expression::Boolean(true)),
                 crate::ast::expr::UnaryOperator::Negation
@@ -287,9 +296,9 @@ mod complex_expression_tests {
         let mut stream = ParserStream::new(lexer);
         let mut parser = ExpressionParser::new(&mut stream);
 
-        let expr = parser.parse().unwrap();
+        let expression = parser.parse().unwrap();
         assert_eq!(
-            expr,
+            expression,
             Expression::Binary(
                 Box::new(Expression::Unary(
                     Box::new(Expression::Identifier("amount".to_string())),
@@ -311,9 +320,9 @@ mod complex_expression_tests {
         let mut stream = ParserStream::new(lexer);
         let mut parser = ExpressionParser::new(&mut stream);
 
-        let expr = parser.parse().unwrap();
+        let expression = parser.parse().unwrap();
         assert_eq!(
-            expr,
+            expression,
             Expression::Binary(
                 Box::new(Expression::Grouped(Box::new(Expression::Binary(
                     Box::new(Expression::I32(1)),
@@ -332,9 +341,9 @@ mod complex_expression_tests {
         let mut stream = ParserStream::new(lexer);
         let mut parser = ExpressionParser::new(&mut stream);
 
-        let expr = parser.parse().unwrap();
+        let expression = parser.parse().unwrap();
         assert_eq!(
-            expr,
+            expression,
             Expression::Grouped(Box::new(Expression::Binary(
                 Box::new(Expression::Grouped(Box::new(Expression::Binary(
                     Box::new(Expression::I32(1)),
@@ -344,6 +353,162 @@ mod complex_expression_tests {
                 BinaryOperator::Multiply,
                 Box::new(Expression::I32(3))
             )))
+        );
+    }
+}
+
+#[cfg(test)]
+mod comparison_expression_tests {
+    use super::*;
+    use crate::ast::expr::BinaryOperator;
+    use crate::lexer::keywords::Keywords;
+    use crate::lexer::Lexer;
+    use crate::parser::stream::ParserStream;
+
+    #[test]
+    fn parse_equality_equals_equals() {
+        let lexer = Lexer::new("status == active", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expression = parser.parse().unwrap();
+        assert_eq!(
+            expression,
+            Expression::Binary(
+                Box::new(Expression::Identifier("status".to_string())),
+                BinaryOperator::EqualsEquals,
+                Box::new(Expression::Identifier("active".to_string()))
+            )
+        );
+    }
+
+    #[test]
+    fn parse_equality_bang_equals() {
+        let lexer = Lexer::new("status != disabled", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expression = parser.parse().unwrap();
+        assert_eq!(
+            expression,
+            Expression::Binary(
+                Box::new(Expression::Identifier("status".to_string())),
+                BinaryOperator::NotEquals,
+                Box::new(Expression::Identifier("disabled".to_string()))
+            )
+        );
+    }
+
+    #[test]
+    fn parse_comparison_greater_than() {
+        let lexer = Lexer::new("score > passing_score", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expression = parser.parse().unwrap();
+        assert_eq!(
+            expression,
+            Expression::Binary(
+                Box::new(Expression::Identifier("score".to_string())),
+                BinaryOperator::GreaterThan,
+                Box::new(Expression::Identifier("passing_score".to_string()))
+            )
+        );
+    }
+
+    #[test]
+    fn parse_comparison_greater_than_equals() {
+        let lexer = Lexer::new("score >= target_score", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expression = parser.parse().unwrap();
+        assert_eq!(
+            expression,
+            Expression::Binary(
+                Box::new(Expression::Identifier("score".to_string())),
+                BinaryOperator::GreaterThanEquals,
+                Box::new(Expression::Identifier("target_score".to_string()))
+            )
+        );
+    }
+
+    #[test]
+    fn parse_comparison_less_than() {
+        let lexer = Lexer::new("weight < limit", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expression = parser.parse().unwrap();
+        assert_eq!(
+            expression,
+            Expression::Binary(
+                Box::new(Expression::Identifier("weight".to_string())),
+                BinaryOperator::LessThan,
+                Box::new(Expression::Identifier("limit".to_string()))
+            )
+        );
+    }
+
+    #[test]
+    fn parse_comparison_less_than_equals() {
+        let lexer = Lexer::new("weight <= max_weight", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expression = parser.parse().unwrap();
+        assert_eq!(
+            expression,
+            Expression::Binary(
+                Box::new(Expression::Identifier("weight".to_string())),
+                BinaryOperator::LessThanEquals,
+                Box::new(Expression::Identifier("max_weight".to_string()))
+            )
+        );
+    }
+
+    #[test]
+    fn parse_comparison_and_arithmetic_precedence() {
+        let lexer = Lexer::new("base_price + tax_rate > budget", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expression = parser.parse().unwrap();
+        assert_eq!(
+            expression,
+            Expression::Binary(
+                Box::new(Expression::Binary(
+                    Box::new(Expression::Identifier("base_price".to_string())),
+                    BinaryOperator::Plus,
+                    Box::new(Expression::Identifier("tax_rate".to_string()))
+                )),
+                BinaryOperator::GreaterThan,
+                Box::new(Expression::Identifier("budget".to_string()))
+            )
+        );
+    }
+
+    #[test]
+    fn parse_comparison_and_equality_precedence() {
+        let lexer = Lexer::new(
+            "adjusted_score == threshold_score > base_score",
+            Keywords::new(),
+        );
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expression = parser.parse().unwrap();
+        assert_eq!(
+            expression,
+            Expression::Binary(
+                Box::new(Expression::Identifier("adjusted_score".to_string())),
+                BinaryOperator::EqualsEquals,
+                Box::new(Expression::Binary(
+                    Box::new(Expression::Identifier("threshold_score".to_string())),
+                    BinaryOperator::GreaterThan,
+                    Box::new(Expression::Identifier("base_score".to_string()))
+                ))
+            )
         );
     }
 }
