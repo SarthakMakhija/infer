@@ -2,13 +2,16 @@ program
     = { statement } EOF ;
 
 statement
-    = declaration | assignment ;
+    = declaration | assignment | conditional ;
 
 declaration
     = "var" identifier [ ":" type ] [ "=" expression ] ";" ;
 
 assignment
     = identifier "=" expression ";" ;
+
+conditional
+    = "if" expression "{" { statement } "}" [ "else" "{" { statement } "}" ] ;
 
 identifier
     = IDENTIFIER ;
@@ -29,7 +32,7 @@ binary
     = expression operator expression ;
 
 operator
-    = "+" | "-" | "*" | "/" ;
+    = "+" | "-" | "*" | "/" | "==" | "!=" | ">" | ">=" | "<" | "<=" ;
 
 literal
     = WHOLE_NUMBER | STRING_LITERAL | BOOLEAN_LITERAL ;

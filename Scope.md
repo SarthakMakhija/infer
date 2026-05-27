@@ -17,4 +17,5 @@
     - [x] Support unary minus
     - [ ] Support function calls
     - [x] Support > < >= <= == !=
+    - [x] Prohibit chained comparisons a < b < c
     - [ ] Support function calls with other expressions
