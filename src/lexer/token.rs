@@ -46,6 +46,8 @@ pub(crate) enum TokenType {
     EqualsEquals,
     /// The `!=` comparison operator.
     BangEquals,
+
+    If,
 }
 
 impl TokenType {
@@ -56,6 +58,7 @@ impl TokenType {
             "var" => Ok(TokenType::Var),
             "true" => Ok(TokenType::BooleanLiteral(true)),
             "false" => Ok(TokenType::BooleanLiteral(false)),
+            "if" => Ok(TokenType::If),
             _ => Err(LexError::UnsupportedKeyword(token.to_string(), line)),
         }
     }
@@ -302,6 +305,11 @@ mod token_type_tests {
             TokenType::keyword_type("false", 1).unwrap(),
             TokenType::BooleanLiteral(false)
         );
+    }
+
+    #[test]
+    fn keyword_type_if() {
+        assert_eq!(TokenType::keyword_type("if", 1).unwrap(), TokenType::If);
     }
 
     #[test]
