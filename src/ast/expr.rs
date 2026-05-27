@@ -55,6 +55,12 @@ pub(crate) enum BinaryOperator {
     Minus,
     Multiply,
     Divide,
+    GreaterThan,
+    LessThan,
+    GreaterThanEquals,
+    LessThanEquals,
+    EqualsEquals,
+    NotEquals,
 }
 
 impl TryFrom<&Token<'_>> for BinaryOperator {
@@ -66,6 +72,12 @@ impl TryFrom<&Token<'_>> for BinaryOperator {
             TokenType::Minus => Ok(BinaryOperator::Minus),
             TokenType::Star => Ok(BinaryOperator::Multiply),
             TokenType::Slash => Ok(BinaryOperator::Divide),
+            TokenType::GreaterThan => Ok(BinaryOperator::GreaterThan),
+            TokenType::LessThan => Ok(BinaryOperator::LessThan),
+            TokenType::GreaterThanEquals => Ok(BinaryOperator::GreaterThanEquals),
+            TokenType::LessThanEquals => Ok(BinaryOperator::LessThanEquals),
+            TokenType::EqualsEquals => Ok(BinaryOperator::EqualsEquals),
+            TokenType::BangEquals => Ok(BinaryOperator::NotEquals),
             _ => Err(ExpressionError::UnsupportedOperator(
                 token.token_type,
                 token.line,
@@ -135,6 +147,48 @@ mod binary_operator_tests {
             result.err().unwrap(),
             ExpressionError::UnsupportedOperator(TokenType::Identifier, 2)
         );
+    }
+
+    #[test]
+    fn try_from_greater_than_token_to_greater_than_operator() {
+        let token = Token::new(TokenType::GreaterThan, 0..1, 1, ">");
+        let operator = BinaryOperator::try_from(&token).unwrap();
+        assert_eq!(operator, BinaryOperator::GreaterThan);
+    }
+
+    #[test]
+    fn try_from_less_than_token_to_less_than_operator() {
+        let token = Token::new(TokenType::LessThan, 0..1, 1, "<");
+        let operator = BinaryOperator::try_from(&token).unwrap();
+        assert_eq!(operator, BinaryOperator::LessThan);
+    }
+
+    #[test]
+    fn try_from_greater_than_equals_token_to_greater_than_equals_operator() {
+        let token = Token::new(TokenType::GreaterThanEquals, 0..2, 1, ">=");
+        let operator = BinaryOperator::try_from(&token).unwrap();
+        assert_eq!(operator, BinaryOperator::GreaterThanEquals);
+    }
+
+    #[test]
+    fn try_from_less_than_equals_token_to_less_than_equals_operator() {
+        let token = Token::new(TokenType::LessThanEquals, 0..2, 1, "<=");
+        let operator = BinaryOperator::try_from(&token).unwrap();
+        assert_eq!(operator, BinaryOperator::LessThanEquals);
+    }
+
+    #[test]
+    fn try_from_equals_equals_token_to_equals_equals_operator() {
+        let token = Token::new(TokenType::EqualsEquals, 0..2, 1, "==");
+        let operator = BinaryOperator::try_from(&token).unwrap();
+        assert_eq!(operator, BinaryOperator::EqualsEquals);
+    }
+
+    #[test]
+    fn try_from_bang_equals_token_to_not_equals_operator() {
+        let token = Token::new(TokenType::BangEquals, 0..2, 1, "!=");
+        let operator = BinaryOperator::try_from(&token).unwrap();
+        assert_eq!(operator, BinaryOperator::NotEquals);
     }
 }
 
