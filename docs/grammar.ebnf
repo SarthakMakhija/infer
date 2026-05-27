@@ -11,7 +11,13 @@ assignment
     = identifier "=" expression ";" ;
 
 conditional
-    = "if" expression "{" { statement } "}" [ "else" "{" { statement } "}" ] ;
+    = "if" expression "{" { statement } "}" { elseif } [ else ] ;
+
+elseif
+    = "else" "if" expression "{" { statement } "}" ;
+
+else
+    = "else" "{" { statement } "}" ;
 
 identifier
     = IDENTIFIER ;

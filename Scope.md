@@ -4,7 +4,7 @@
 - [x] Support assignment
 - [x] Support If
 - [x] Support If/Else
-- [ ] Support If/Else/ElseIf
+- [x] Support If/Else/ElseIf
 - [ ] Support loop
 - [ ] Support functions
   - [ ] Without parameters
