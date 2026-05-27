@@ -2,6 +2,7 @@ use crate::ast::statement::Statement;
 use crate::lexer::token::{Token, TokenType};
 use crate::lexer::LexResult;
 use crate::parser::assignment::AssignmentParser;
+use crate::parser::conditional::IfParser;
 use crate::parser::declaration::VariableDeclarationParser;
 use crate::parser::error::ParseError;
 use crate::parser::stream::ParserStream;
@@ -27,6 +28,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, '
     fn statement_beginning_at(&mut self, token: &Token) -> Result<Statement, ParseError> {
         let statement = match token.token_type {
             TokenType::Var => VariableDeclarationParser::new(self.stream).parse()?,
+            TokenType::If => IfParser::new(self.stream).parse()?,
             TokenType::Identifier => {
                 if let Some(assignment) = self.maybe_assignment()? {
                     assignment

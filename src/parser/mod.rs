@@ -5,6 +5,7 @@ use crate::parser::statement::StatementParser;
 use crate::parser::stream::ParserStream;
 
 pub(crate) mod assignment;
+pub(crate) mod conditional;
 pub(crate) mod declaration;
 pub(crate) mod error;
 pub(crate) mod expr;
@@ -34,9 +35,9 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> Parser<'src, 'stream, I
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::Expression;
-    use crate::ast::statement::Statement;
+    use crate::ast::expr::{BinaryOperator, Expression};
     use crate::ast::statement::VariableDeclaration;
+    use crate::ast::statement::{Assignment, Conditional, Statement};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
 
@@ -152,6 +153,36 @@ mod tests {
             .add(Statement::assignment(
                 crate::ast::statement::Assignment::new("id".to_string(), Expression::I32(200)),
             ))
+            .build();
+        assert_eq!(program, expected);
+    }
+
+    #[test]
+    fn parse_program_with_conditional() {
+        let lexer = Lexer::new(
+            "if discount_rate > 0 { final_price = regular_price - savings; }",
+            Keywords::new(),
+        );
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = Parser::new(&mut stream);
+
+        let program = parser.parse().unwrap();
+        let expected = ProgramBuilder::new()
+            .add(Statement::conditional(Conditional::new(
+                Expression::Binary(
+                    Box::new(Expression::Identifier("discount_rate".to_string())),
+                    BinaryOperator::GreaterThan,
+                    Box::new(Expression::I32(0)),
+                ),
+                vec![Statement::assignment(Assignment::new(
+                    "final_price".to_string(),
+                    Expression::Binary(
+                        Box::new(Expression::Identifier("regular_price".to_string())),
+                        BinaryOperator::Minus,
+                        Box::new(Expression::Identifier("savings".to_string())),
+                    ),
+                ))],
+            )))
             .build();
         assert_eq!(program, expected);
     }

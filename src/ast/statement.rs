@@ -4,6 +4,7 @@ use crate::ast::expr::Expression;
 pub(crate) enum Statement {
     VariableDeclaration(VariableDeclaration),
     Assignment(Assignment),
+    Conditional(Conditional),
 }
 
 impl Statement {
@@ -13,6 +14,10 @@ impl Statement {
 
     pub(crate) fn assignment(statement: Assignment) -> Self {
         Statement::Assignment(statement)
+    }
+
+    pub(crate) fn conditional(statement: Conditional) -> Self {
+        Statement::Conditional(statement)
     }
 }
 
@@ -49,6 +54,18 @@ impl Assignment {
             variable,
             expression,
         }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) struct Conditional {
+    pub(crate) condition: Expression,
+    pub(crate) body: Vec<Statement>,
+}
+
+impl Conditional {
+    pub(crate) fn new(condition: Expression, body: Vec<Statement>) -> Self {
+        Self { condition, body }
     }
 }
 
