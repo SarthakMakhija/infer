@@ -79,4 +79,27 @@ mod tests {
             ]))
         );
     }
+
+    #[test]
+    fn parse_loop_missing_left_brace() {
+        let lexer = Lexer::new("loop break;", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = LoopParser::new(&mut stream);
+
+        let error = parser.parse().unwrap_err();
+        assert_eq!(
+            error,
+            ParseError::UnexpectedTokenType(TokenType::LeftBrace, TokenType::Break, 1)
+        );
+    }
+
+    #[test]
+    fn parse_loop_missing_right_brace() {
+        let lexer = Lexer::new("loop { break;", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = LoopParser::new(&mut stream);
+
+        let error = parser.parse().unwrap_err();
+        assert_eq!(error, ParseError::UnexpectedEof);
+    }
 }
