@@ -6,6 +6,7 @@ use crate::parser::conditional::ConditionalParser;
 use crate::parser::control_flow::BreakParser;
 use crate::parser::declaration::VariableDeclarationParser;
 use crate::parser::error::ParseError;
+use crate::parser::expr::ExpressionParser;
 use crate::parser::function::FnParser;
 use crate::parser::iteration::LoopParser;
 use crate::parser::stream::ParserStream;
@@ -53,11 +54,21 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, '
             TokenType::Identifier => {
                 if let Some(assignment) = self.maybe_assignment()? {
                     assignment
+                } else if let Some(call) = self.maybe_function_call()? {
+                    call
                 } else {
-                    unimplemented!()
+                    return Err(ParseError::UnsupportedStatement(
+                        token.token_type,
+                        token.line,
+                    ));
                 }
             }
-            _ => unimplemented!(),
+            _ => {
+                return Err(ParseError::UnsupportedStatement(
+                    token.token_type,
+                    token.line,
+                ))
+            }
         };
         Ok(statement)
     }
@@ -71,12 +82,23 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, '
         }
         Ok(None)
     }
+
+    fn maybe_function_call(&mut self) -> Result<Option<Statement>, ParseError> {
+        if let Some(next_token) = self.stream.peek_second()? {
+            if next_token.token_type == TokenType::LeftParentheses {
+                let expression = ExpressionParser::new(self.stream).parse()?;
+                self.stream.expect(TokenType::Semicolon)?;
+                return Ok(Some(Statement::FunctionCall(expression)));
+            }
+        }
+        Ok(None)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::Expression;
+    use crate::ast::expr::{BinaryOperator, Expression};
     use crate::ast::statement::{
         Assignment, Break, FunctionDefinition, FunctionParameter, Loop, VariableDeclaration,
     };
@@ -124,13 +146,39 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "not implemented")]
     fn parse_unsupported_statement() {
         let lexer = Lexer::new("123;", Keywords::new());
         let mut stream = ParserStream::new(lexer);
         let mut parser = StatementParser::new(&mut stream);
 
-        let _ = parser.parse();
+        let result = parser.parse();
+        assert_eq!(
+            result.err().unwrap(),
+            ParseError::UnsupportedStatement(TokenType::WholeNumber, 1)
+        );
+    }
+
+    #[test]
+    fn parse_unsupported_identifier_statement() {
+        let lexer = Lexer::new("score;", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = StatementParser::new(&mut stream);
+
+        let result = parser.parse();
+        assert_eq!(
+            result.err().unwrap(),
+            ParseError::UnsupportedStatement(TokenType::Identifier, 1)
+        );
+    }
+
+    #[test]
+    fn parse_assignment_statement_missing_semicolon() {
+        let lexer = Lexer::new("score = 100", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = StatementParser::new(&mut stream);
+
+        let result = parser.parse();
+        assert_eq!(result.err().unwrap(), ParseError::UnexpectedEof);
     }
 
     #[test]
@@ -222,5 +270,64 @@ mod tests {
                 ))]
             ))
         );
+    }
+
+    #[test]
+    fn parse_standalone_function_call_statement() {
+        let lexer = Lexer::new("adjust_risk(45);", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = StatementParser::new(&mut stream);
+
+        let statement = parser.parse().unwrap();
+        assert_eq!(
+            statement,
+            Statement::FunctionCall(Expression::FunctionCall(
+                Box::new(Expression::Identifier("adjust_risk".to_string())),
+                vec![Expression::I32(45)]
+            ))
+        );
+    }
+
+    #[test]
+    fn parse_standalone_function_call_with_expressions() {
+        let lexer = Lexer::new("adjust_risk(base_score + 10);", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = StatementParser::new(&mut stream);
+
+        let statement = parser.parse().unwrap();
+        assert_eq!(
+            statement,
+            Statement::FunctionCall(Expression::FunctionCall(
+                Box::new(Expression::Identifier("adjust_risk".to_string())),
+                vec![Expression::Binary(
+                    Box::new(Expression::Identifier("base_score".to_string())),
+                    BinaryOperator::Plus,
+                    Box::new(Expression::I32(10))
+                )]
+            ))
+        );
+    }
+
+    #[test]
+    fn parse_standalone_function_call_unexpected_token_instead_of_semicolon() {
+        let lexer = Lexer::new("adjust_risk(45) loop", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = StatementParser::new(&mut stream);
+
+        let result = parser.parse();
+        assert_eq!(
+            result.err().unwrap(),
+            ParseError::UnexpectedTokenType(TokenType::Semicolon, TokenType::Loop, 1)
+        );
+    }
+
+    #[test]
+    fn parse_standalone_function_call_missing_semicolon() {
+        let lexer = Lexer::new("adjust_risk(45)", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = StatementParser::new(&mut stream);
+
+        let result = parser.parse();
+        assert_eq!(result.err().unwrap(), ParseError::UnexpectedEof);
     }
 }

@@ -26,6 +26,9 @@ pub(crate) enum ParseError {
     /// An error encountered while parsing infix expressions, with unsupported infix parser.
     UnsupportedInfixExpression(TokenType, usize),
 
+    /// An error encountered while parsing statements, with unsupported statement start token type.
+    UnsupportedStatement(TokenType, usize),
+
     /// An error encountered while parsing chained comparison operations like a < b < c.
     ChainedComparison(usize),
 }
@@ -72,6 +75,13 @@ impl fmt::Display for ParseError {
                 write!(
                     formatter,
                     "no supported infix parser for '{:?}' on line {}",
+                    actual, line
+                )
+            }
+            ParseError::UnsupportedStatement(actual, line) => {
+                write!(
+                    formatter,
+                    "no supported statement parser for '{:?}' on line {}",
                     actual, line
                 )
             }
@@ -130,6 +140,15 @@ mod tests {
         assert_eq!(
             err.to_string(),
             "no supported infix parser for 'Plus' on line 10"
+        );
+    }
+
+    #[test]
+    fn display_unsupported_statement() {
+        let err = ParseError::UnsupportedStatement(TokenType::WholeNumber, 15);
+        assert_eq!(
+            err.to_string(),
+            "no supported statement parser for 'WholeNumber' on line 15"
         );
     }
 

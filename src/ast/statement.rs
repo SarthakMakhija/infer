@@ -8,6 +8,7 @@ pub(crate) enum Statement {
     Loop(Loop),
     Break(Break),
     FunctionDefinition(FunctionDefinition),
+    FunctionCall(Expression),
 }
 
 impl Statement {
@@ -33,6 +34,10 @@ impl Statement {
 
     pub(crate) fn function_definition(statement: FunctionDefinition) -> Self {
         Statement::FunctionDefinition(statement)
+    }
+
+    pub(crate) fn function_call(expression: Expression) -> Self {
+        Statement::FunctionCall(expression)
     }
 }
 
