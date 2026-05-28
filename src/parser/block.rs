@@ -1,6 +1,6 @@
 use crate::ast::statement::{Block, Statement};
-use crate::lexer::LexResult;
 use crate::lexer::token::TokenType;
+use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
 use crate::parser::statement::StatementParser;
 use crate::parser::stream::ParserStream;
@@ -36,7 +36,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> BlockParser<'src, 'stre
             let statement = StatementParser::new(self.stream).parse()?;
             body.push(statement);
         }
-        
+
         self.stream.expect(TokenType::RightBrace)?;
         Ok(Statement::block(Block::new(body)))
     }
@@ -100,13 +100,13 @@ mod tests {
                     None,
                     Some(crate::ast::expr::Expression::I32(10))
                 )),
-                Statement::block(Block::new(vec![
-                    Statement::variable_declaration(VariableDeclaration::new(
+                Statement::block(Block::new(vec![Statement::variable_declaration(
+                    VariableDeclaration::new(
                         "risk_level".to_string(),
                         None,
                         Some(crate::ast::expr::Expression::I32(20))
-                    ))
-                ])),
+                    )
+                )])),
                 Statement::variable_declaration(VariableDeclaration::new(
                     "threshold".to_string(),
                     None,
@@ -129,20 +129,20 @@ mod tests {
         assert_eq!(
             statement,
             Statement::block(Block::new(vec![
-                Statement::block(Block::new(vec![
-                    Statement::variable_declaration(VariableDeclaration::new(
+                Statement::block(Block::new(vec![Statement::variable_declaration(
+                    VariableDeclaration::new(
                         "score".to_string(),
                         None,
                         Some(crate::ast::expr::Expression::I32(10))
-                    ))
-                ])),
-                Statement::block(Block::new(vec![
-                    Statement::variable_declaration(VariableDeclaration::new(
+                    )
+                )])),
+                Statement::block(Block::new(vec![Statement::variable_declaration(
+                    VariableDeclaration::new(
                         "risk_level".to_string(),
                         None,
                         Some(crate::ast::expr::Expression::I32(20))
-                    ))
-                ]))
+                    )
+                )]))
             ]))
         );
     }

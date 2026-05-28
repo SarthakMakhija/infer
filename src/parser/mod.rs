@@ -7,6 +7,7 @@ use crate::parser::function::FnParser;
 use crate::parser::stream::ParserStream;
 
 pub(crate) mod assignment;
+pub(crate) mod block;
 pub(crate) mod conditional;
 pub(crate) mod control_flow;
 pub(crate) mod declaration;
@@ -16,7 +17,6 @@ pub(crate) mod function;
 pub(crate) mod iteration;
 pub(crate) mod statement;
 pub(crate) mod stream;
-pub(crate) mod block;
 
 /// The top-level parser for the `infer` language.
 ///
