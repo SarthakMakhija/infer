@@ -17,6 +17,8 @@ pub enum Statement {
     FunctionDefinition(FunctionDefinition),
     /// A standalone expression evaluated as a statement (typically a function call).
     FunctionCall(Expression),
+    /// A standalone block statement containing a sequence of statements (e.g. `{ var score = 10; }`).
+    Block(Block),
 }
 
 impl Statement {
@@ -55,6 +57,11 @@ impl Statement {
     /// The caller is expected to pass a [`Expression::FunctionCall`] variant.
     pub(crate) fn function_call(expression: Expression) -> Self {
         Statement::FunctionCall(expression)
+    }
+
+    /// Wraps a [`Block`] into a [`Statement::Block`].
+    pub(crate) fn block(block: Block) -> Self {
+        Statement::Block(block)
     }
 }
 
@@ -264,6 +271,26 @@ impl FunctionParameter {
     /// Returns the explicit type annotation of the parameter, if provided.
     pub fn data_type(&self) -> Option<&str> {
         self.data_type.as_deref()
+    }
+}
+
+/// Represents a block statement `{ ... }` in the AST.
+///
+/// A block contains a sequence of statements executed in a new lexical scope.
+#[derive(Debug, PartialEq)]
+pub struct Block {
+    pub(crate) body: Vec<Statement>,
+}
+
+impl Block {
+    /// Creates a new `Block` enclosing the given body of statements.
+    pub(crate) fn new(body: Vec<Statement>) -> Self {
+        Self { body }
+    }
+
+    /// Returns a slice of statements in the block's body.
+    pub fn body(&self) -> &[Statement] {
+        &self.body
     }
 }
 

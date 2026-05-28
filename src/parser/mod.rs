@@ -16,6 +16,7 @@ pub(crate) mod function;
 pub(crate) mod iteration;
 pub(crate) mod statement;
 pub(crate) mod stream;
+pub(crate) mod block;
 
 /// The top-level parser for the `infer` language.
 ///
