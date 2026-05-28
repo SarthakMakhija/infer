@@ -62,6 +62,8 @@ pub(crate) enum BinaryOperator {
     LessThanEquals,
     EqualsEquals,
     NotEquals,
+    And,
+    Or,
 }
 
 impl TryFrom<&Token<'_>> for BinaryOperator {
@@ -79,6 +81,8 @@ impl TryFrom<&Token<'_>> for BinaryOperator {
             TokenType::LessThanEquals => Ok(BinaryOperator::LessThanEquals),
             TokenType::EqualsEquals => Ok(BinaryOperator::EqualsEquals),
             TokenType::BangEquals => Ok(BinaryOperator::NotEquals),
+            TokenType::And => Ok(BinaryOperator::And),
+            TokenType::Or => Ok(BinaryOperator::Or),
             _ => Err(ExpressionError::UnsupportedOperator(
                 token.token_type,
                 token.line,
@@ -204,6 +208,20 @@ mod binary_operator_tests {
         let token = Token::new(TokenType::BangEquals, 0..2, 1, "!=");
         let operator = BinaryOperator::try_from(&token).unwrap();
         assert_eq!(operator, BinaryOperator::NotEquals);
+    }
+
+    #[test]
+    fn try_from_and_token_to_and_operator() {
+        let token = Token::new(TokenType::And, 0..3, 1, "and");
+        let operator = BinaryOperator::try_from(&token).unwrap();
+        assert_eq!(operator, BinaryOperator::And);
+    }
+
+    #[test]
+    fn try_from_or_token_to_or_operator() {
+        let token = Token::new(TokenType::Or, 0..2, 1, "or");
+        let operator = BinaryOperator::try_from(&token).unwrap();
+        assert_eq!(operator, BinaryOperator::Or);
     }
 
     #[test]
