@@ -38,37 +38,70 @@ impl fmt::Display for ExpressionError {
 
 impl std::error::Error for ExpressionError {}
 
+/// Represents a parsed expression in the AST.
+///
+/// Expressions evaluate to values and can appear on the right-hand side
+/// of declarations, in conditions, as function arguments, and more.
 #[derive(Debug, PartialEq)]
 pub enum Expression {
+    /// A 32-bit signed integer literal (e.g., `42`).
     I32(i32),
+    /// A string literal (e.g., `"hello"`).
     String(String),
+    /// A reference to a named variable or function (e.g., `score`).
     Identifier(String),
+    /// A boolean literal: `true` or `false`.
     Boolean(bool),
+    /// A unary expression applying an operator to a single operand (e.g., `-x`, `!flag`).
     Unary(Box<Expression>, UnaryOperator),
+    /// A binary expression applying an operator to a left and right operand (e.g., `a + b`).
     Binary(Box<Expression>, BinaryOperator, Box<Expression>),
+    /// A parenthesised expression that controls evaluation order (e.g., `(a + b)`).
     Grouped(Box<Expression>),
+    /// A function call expression with a callee expression and a list of argument expressions.
     FunctionCall(Box<Expression>, Vec<Expression>),
 }
 
+/// Represents a binary operator used between two expressions.
+///
+/// Arithmetic operators follow standard mathematical precedence:
+/// multiplication and division bind tighter than addition and subtraction.
+/// Comparison and logical operators bind at a lower level.
 #[derive(Debug, PartialEq)]
 pub enum BinaryOperator {
+    /// The `+` addition operator.
     Plus,
+    /// The `-` subtraction operator.
     Minus,
+    /// The `*` multiplication operator.
     Multiply,
+    /// The `/` division operator.
     Divide,
+    /// The `>` comparison operator.
     GreaterThan,
+    /// The `<` comparison operator.
     LessThan,
+    /// The `>=` comparison operator.
     GreaterThanEquals,
+    /// The `<=` comparison operator.
     LessThanEquals,
+    /// The `==` equality operator.
     EqualsEquals,
+    /// The `!=` inequality operator.
     NotEquals,
+    /// The `and` logical conjunction operator.
     And,
+    /// The `or` logical disjunction operator.
     Or,
 }
 
 impl TryFrom<&Token<'_>> for BinaryOperator {
     type Error = ExpressionError;
 
+    /// Attempts to convert a `Token` reference into a `BinaryOperator`.
+    ///
+    /// Returns `Err(ExpressionError::UnsupportedOperator)` if the token's type
+    /// cannot be mapped to any known binary operator.
     fn try_from(token: &Token<'_>) -> Result<Self, Self::Error> {
         match token.token_type {
             TokenType::Plus => Ok(BinaryOperator::Plus),
@@ -92,6 +125,10 @@ impl TryFrom<&Token<'_>> for BinaryOperator {
 }
 
 impl BinaryOperator {
+    /// Returns `true` if this operator is a relational or equality comparison
+    /// (`>`, `>=`, `<`, `<=`, `==`, `!=`).
+    ///
+    /// Used to detect chained comparisons (e.g., `a < b < c`) which are not supported.
     pub(crate) fn is_comparison(&self) -> bool {
         matches!(
             self,
@@ -105,15 +142,22 @@ impl BinaryOperator {
     }
 }
 
+/// Represents a unary operator applied to a single operand.
 #[derive(Debug, PartialEq)]
 pub enum UnaryOperator {
+    /// The unary `-` negation operator (e.g., `-10`).
     Minus,
+    /// The logical NOT `!` operator (e.g., `!active`).
     Negation,
 }
 
 impl TryFrom<&Token<'_>> for UnaryOperator {
     type Error = ExpressionError;
 
+    /// Attempts to convert a `Token` reference into a `UnaryOperator`.
+    ///
+    /// Returns `Err(ExpressionError::UnsupportedOperator)` if the token's type
+    /// cannot be mapped to a known unary operator.
     fn try_from(token: &Token<'_>) -> Result<Self, Self::Error> {
         match token.token_type {
             TokenType::Minus => Ok(UnaryOperator::Minus),

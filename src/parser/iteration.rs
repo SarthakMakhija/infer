@@ -5,15 +5,23 @@ use crate::parser::error::ParseError;
 use crate::parser::statement::StatementParser;
 use crate::parser::stream::ParserStream;
 
+/// A sub-parser responsible for parsing `loop` iteration statements.
+///
+/// See [grammar.ebnf](../../docs/grammar.ebnf) for the full language grammar.
 pub(crate) struct LoopParser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
     stream: &'stream mut ParserStream<'src, I>,
 }
 
 impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> LoopParser<'src, 'stream, I> {
+    /// Creates a new `LoopParser` sharing the parser stream borrow.
     pub(crate) fn new(stream: &'stream mut ParserStream<'src, I>) -> Self {
         Self { stream }
     }
 
+    /// Parses a `loop { ... }` block from the token stream.
+    ///
+    /// Expects the `loop` keyword, an opening `{`, zero or more inner statements,
+    /// and a closing `}`.
     pub(crate) fn parse(&mut self) -> Result<Statement, ParseError> {
         self.stream.expect(TokenType::Loop)?;
         self.stream.expect(TokenType::LeftBrace)?;

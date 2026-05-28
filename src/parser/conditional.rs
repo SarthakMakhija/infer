@@ -7,15 +7,21 @@ use crate::parser::expr::ExpressionParser;
 use crate::parser::statement::StatementParser;
 use crate::parser::stream::ParserStream;
 
+/// A sub-parser responsible for parsing `if` / `else if` / `else` conditional statements.
+///
+/// Recursively handles `else if` chains by delegating back to `parse`.
+/// See [grammar.ebnf](../../docs/grammar.ebnf) for the full language grammar.
 pub(crate) struct ConditionalParser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
     stream: &'stream mut ParserStream<'src, I>,
 }
 
 impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ConditionalParser<'src, 'stream, I> {
+    /// Creates a new `ConditionalParser` sharing the parser stream borrow.
     pub(crate) fn new(stream: &'stream mut ParserStream<'src, I>) -> Self {
         Self { stream }
     }
 
+    /// Parses a complete `if` statement (with optional `else if` / `else` branches).
     pub(crate) fn parse(&mut self) -> Result<Statement, ParseError> {
         let (condition, body) = self.parse_if()?;
         let else_body = self.maybe_parse_else()?;

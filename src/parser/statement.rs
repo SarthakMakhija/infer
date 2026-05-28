@@ -11,15 +11,24 @@ use crate::parser::function::FnParser;
 use crate::parser::iteration::LoopParser;
 use crate::parser::stream::ParserStream;
 
+/// A dispatcher that routes statement parsing to the appropriate specialised sub-parser.
+///
+/// `StatementParser` reads the leading token to determine which statement construct
+/// follows, then delegates to one of: `VariableDeclarationParser`, `AssignmentParser`,
+/// `ConditionalParser`, `LoopParser`, `BreakParser`, `FnParser`, or expression-call handling.
 pub(crate) struct StatementParser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
     stream: &'stream mut ParserStream<'src, I>,
 }
 
 impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, 'stream, I> {
+    /// Creates a new `StatementParser` sharing the parser stream borrow.
     pub(crate) fn new(stream: &'stream mut ParserStream<'src, I>) -> Self {
         Self { stream }
     }
 
+    /// Parses the next single statement from the token stream.
+    ///
+    /// Returns `Err(ParseError::UnexpectedEof)` if the stream is already at EOF.
     pub(crate) fn parse(&mut self) -> Result<Statement, ParseError> {
         if let Some(token_ref) = self.stream.peek()? {
             let token = token_ref.clone();
@@ -29,6 +38,10 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, '
         Err(ParseError::UnexpectedEof)
     }
 
+    /// Parses statements from the stream until the next token matches `token_type`.
+    ///
+    /// This is used to parse block bodies (e.g., the contents of an `if` or `loop`)
+    /// where a closing `}` is the sentinel. The sentinel token is **not** consumed.
     pub(crate) fn parse_statements_till(
         &mut self,
         token_type: TokenType,

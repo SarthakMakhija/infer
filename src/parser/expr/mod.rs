@@ -17,27 +17,47 @@ use crate::parser::expr::prefix::unary::UnaryExpressionParser;
 use crate::parser::expr::prefix::whole_number::WholeNumberParser;
 use crate::parser::stream::ParserStream;
 
+/// A Pratt (top-down operator precedence) expression parser.
+///
+/// `ExpressionParser` drives the main parse loop, calling `parse_prefix` for the
+/// first token, then repeatedly calling `parse_infix` while the next token's
+/// precedence is higher than the current binding power.
 pub(crate) struct ExpressionParser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
-    stream: &'stream mut ParserStream<'src, I>,
+    pub(crate) stream: &'stream mut ParserStream<'src, I>,
 }
 
+/// Trait implemented by parsers that handle prefix positions (i.e., the start of an expression).
+///
+/// A `PrefixParser` receives the leading token that triggered it and produces an expression.
 pub(crate) trait PrefixParser<'src> {
+    /// Parse an expression starting at the given `token`.
     fn parse(&mut self, token: &Token<'src>) -> Result<Expression, ParseError>;
 }
 
+/// Trait implemented by parsers that handle infix positions (i.e., between two expressions).
+///
+/// An `InfixParser` receives the already-parsed left expression and the operator token,
+/// then consumes the right-hand side from the stream.
 pub(crate) trait InfixParser<'src> {
+    /// Parse an infix expression given the `left` sub-expression and the operator `token`.
     fn parse(&mut self, left: Expression, token: &Token<'src>) -> Result<Expression, ParseError>;
 }
 
 impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 'stream, I> {
+    /// Creates a new `ExpressionParser` sharing the parser stream borrow.
     pub(crate) fn new(stream: &'stream mut ParserStream<'src, I>) -> Self {
         Self { stream }
     }
 
+    /// Parses a complete expression using the lowest precedence binding power.
     pub(crate) fn parse(&mut self) -> Result<Expression, ParseError> {
         self.parse_with_precedence(Precedence::None)
     }
 
+    /// Parses an expression using Pratt parsing with the given minimum `precedence`.
+    ///
+    /// Continues consuming infix tokens as long as the next token's precedence
+    /// exceeds `precedence`, building up a nested expression tree.
     pub(crate) fn parse_with_precedence(
         &mut self,
         precedence: Precedence,

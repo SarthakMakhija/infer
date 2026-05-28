@@ -1,13 +1,21 @@
 use crate::ast::expr::Expression;
 
+/// Represents a structural statement in the toy language's Abstract Syntax Tree (AST).
 #[derive(Debug, PartialEq)]
 pub enum Statement {
+    /// A variable declaration statement (e.g. `var age: int = 30;`).
     VariableDeclaration(VariableDeclaration),
+    /// A variable assignment statement (e.g. `age = 31;`).
     Assignment(Assignment),
+    /// An if-else conditional block.
     If(If),
+    /// A loop iteration block.
     Loop(Loop),
+    /// A break control flow statement.
     Break(Break),
+    /// A function definition statement.
     FunctionDefinition(FunctionDefinition),
+    /// A standalone expression evaluated as a statement (typically a function call).
     FunctionCall(Expression),
 }
 
@@ -41,6 +49,9 @@ impl Statement {
     }
 }
 
+/// Represents a variable declaration statement with optional type annotation and initialization.
+///
+/// Example: `var score: int = 100;`
 #[derive(Debug, PartialEq)]
 pub struct VariableDeclaration {
     pub(crate) variable: String,
@@ -61,19 +72,25 @@ impl VariableDeclaration {
         }
     }
 
+    /// Returns the name of the declared variable.
     pub fn variable(&self) -> &str {
         &self.variable
     }
 
+    /// Returns the explicit type annotation of the variable, if provided.
     pub fn data_type(&self) -> Option<&str> {
         self.data_type.as_deref()
     }
 
+    /// Returns the initialization expression of the variable, if provided.
     pub fn expression(&self) -> Option<&Expression> {
         self.expression.as_ref()
     }
 }
 
+/// Represents a variable assignment statement.
+///
+/// Example: `score = 200;`
 #[derive(Debug, PartialEq)]
 pub struct Assignment {
     pub(crate) variable: String,
@@ -88,15 +105,20 @@ impl Assignment {
         }
     }
 
+    /// Returns the name of the variable being assigned to.
     pub fn variable(&self) -> &str {
         &self.variable
     }
 
+    /// Returns the expression being assigned to the variable.
     pub fn expression(&self) -> &Expression {
         &self.expression
     }
 }
 
+/// Represents an if-else conditional block in the AST.
+///
+/// Example: `if x == 10 { var y = 1; } else { var y = 2; }`
 #[derive(Debug, PartialEq)]
 pub struct If {
     pub(crate) condition: Expression,
@@ -117,19 +139,25 @@ impl If {
         }
     }
 
+    /// Returns the condition expression governing the conditional execution.
     pub fn condition(&self) -> &Expression {
         &self.condition
     }
 
+    /// Returns a slice of statements in the `then` branch body.
     pub fn body(&self) -> &[Statement] {
         &self.body
     }
 
+    /// Returns a slice of statements in the `else` branch body, if provided.
     pub fn else_body(&self) -> Option<&[Statement]> {
         self.else_body.as_deref()
     }
 }
 
+/// Represents a loop iteration block in the AST.
+///
+/// Example: `loop { break; }`
 #[derive(Debug, PartialEq)]
 pub struct Loop {
     pub(crate) body: Vec<Statement>,
@@ -140,11 +168,15 @@ impl Loop {
         Self { body }
     }
 
+    /// Returns a slice of statements in the loop body.
     pub fn body(&self) -> &[Statement] {
         &self.body
     }
 }
 
+/// Represents a break control flow statement.
+///
+/// Example: `break;`
 #[derive(Debug, PartialEq)]
 pub struct Break;
 
@@ -154,6 +186,9 @@ impl Break {
     }
 }
 
+/// Represents a function definition statement in the AST.
+///
+/// Example: `fn add(a: int, b: int): int { var sum = a + b; }`
 #[derive(Debug, PartialEq)]
 pub struct FunctionDefinition {
     pub(crate) name: String,
@@ -177,23 +212,30 @@ impl FunctionDefinition {
         }
     }
 
+    /// Returns the name of the function.
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    /// Returns a slice of the function's parameters.
     pub fn parameters(&self) -> &[FunctionParameter] {
         &self.parameters
     }
 
+    /// Returns the explicit return type annotation, if provided.
     pub fn return_type(&self) -> Option<&str> {
         self.return_type.as_deref()
     }
 
+    /// Returns a slice of statements in the function's body.
     pub fn body(&self) -> &[Statement] {
         &self.body
     }
 }
 
+/// Represents a parameter in a function definition signature.
+///
+/// Example: `first: int`
 #[derive(Debug, PartialEq)]
 pub struct FunctionParameter {
     pub(crate) name: String,
@@ -205,10 +247,12 @@ impl FunctionParameter {
         Self { name, data_type }
     }
 
+    /// Returns the name of the parameter.
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    /// Returns the explicit type annotation of the parameter, if provided.
     pub fn data_type(&self) -> Option<&str> {
         self.data_type.as_deref()
     }

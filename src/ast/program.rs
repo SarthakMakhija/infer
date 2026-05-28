@@ -1,5 +1,9 @@
 use crate::ast::statement::Statement;
 
+/// Represents a fully parsed toy language program.
+///
+/// A `Program` consists of a list of top-level structural statements (like functions
+/// and variable declarations) that represent the root of the parsed AST.
 #[derive(Debug, PartialEq)]
 pub struct Program {
     statements: Vec<Statement>,
@@ -10,6 +14,7 @@ impl Program {
         Program { statements }
     }
 
+    /// Returns a read-only slice of all top-level statements in this program.
     pub fn statements(&self) -> &[Statement] {
         &self.statements
     }

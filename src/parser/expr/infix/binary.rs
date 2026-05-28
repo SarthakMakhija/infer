@@ -6,6 +6,11 @@ use crate::parser::expr::precedence::Precedence;
 use crate::parser::expr::{ExpressionParser, InfixParser};
 use std::convert::TryInto;
 
+/// An infix parser that handles binary arithmetic, comparison, and logical expressions.
+///
+/// Parses the right-hand side using the provided `precedence` level,
+/// enforcing operator associativity and rejecting chained comparisons
+/// (e.g., `a < b < c`) which are not supported.
 pub(crate) struct BinaryExpressionParser<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>>
 {
     expression_parser: &'expr mut ExpressionParser<'src, 'stream, I>,
@@ -15,6 +20,7 @@ pub(crate) struct BinaryExpressionParser<'expr, 'src, 'stream, I: Iterator<Item 
 impl<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>>
     BinaryExpressionParser<'expr, 'src, 'stream, I>
 {
+    /// Creates a new `BinaryExpressionParser` with the given `ExpressionParser` and binding `precedence`.
     pub(crate) fn new(
         expression_parser: &'expr mut ExpressionParser<'src, 'stream, I>,
         precedence: Precedence,

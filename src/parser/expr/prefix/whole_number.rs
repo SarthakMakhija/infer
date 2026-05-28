@@ -4,6 +4,10 @@ use crate::parser::error::ParseError;
 use crate::parser::expr::PrefixParser;
 use std::str::FromStr;
 
+/// A prefix parser that converts a `WholeNumber` token into an [`Expression::I32`].
+///
+/// Returns `ParseError::ExpressionError(ExpressionError::ParseIntError)` if the
+/// token's text cannot be parsed as an `i32` (e.g., due to overflow).
 pub(crate) struct WholeNumberParser;
 
 impl<'src> PrefixParser<'src> for WholeNumberParser {

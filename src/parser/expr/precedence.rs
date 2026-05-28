@@ -1,35 +1,52 @@
 use crate::lexer::token::TokenType;
 
+/// Operator precedence levels used by the Pratt expression parser.
+///
+/// Higher numeric values bind tighter. The parser uses these levels to decide
+/// whether to continue consuming infix tokens for the current expression.
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub(crate) enum Precedence {
+    /// No precedence: used as the initial floor when parsing an expression.
     None = 0,
 
     // or
+    /// Logical `or`: lowest binary operator precedence.
     Or = 10,
 
     // and
+    /// Logical `and`: higher than `or`.
     And = 20,
 
     // ==, !=
+    /// Equality comparison (`==`, `!=`).
     Equality = 30,
 
     // >, <, >=, <=
+    /// Relational comparison (`>`, `<`, `>=`, `<=`).
     Comparison = 40,
 
     // + -
+    /// Addition and subtraction.
     Plus = 50,
 
     // * /
+    /// Multiplication and division: highest arithmetic precedence.
     Star = 60,
 
     // ! -
+    /// Unary prefix operators (`!`, `-`).
     Unary = 70,
 
     // f()
+    /// Function call: tightest binding.
     Call = 80,
 }
 
 impl Precedence {
+    /// Returns the `Precedence` level associated with the given `TokenType`.
+    ///
+    /// Tokens that are not operators return `Precedence::None`, signalling to the
+    /// Pratt loop that no infix expression should follow.
     pub(crate) fn of(token_type: TokenType) -> Precedence {
         match token_type {
             TokenType::LeftParentheses => Precedence::Call,

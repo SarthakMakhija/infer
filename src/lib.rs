@@ -7,6 +7,17 @@ pub use infer::{Infer, InferenceError};
 pub(crate) mod lexer;
 pub(crate) mod parser;
 
+/// Asserts that a [`Statement`] is a `VariableDeclaration` and checks its fields.
+///
+/// Panics with a descriptive message if the statement variant does not match.
+/// Returns the inner `VariableDeclaration` reference so callers can chain further assertions.
+///
+/// # Arguments
+///
+/// * `$statement` - the `Statement` to inspect.
+/// * `$expected_name` - expected variable name (`&str`).
+/// * `$expected_type` - expected type annotation (`Option<&str>`).
+/// * `$expected_expression` - expected initialiser expression (`Option<&Expression>`).
 #[macro_export]
 macro_rules! assert_variable_declaration {
     ($statement:expr, $expected_name:expr, $expected_type:expr, $expected_expression:expr) => {{
@@ -21,6 +32,10 @@ macro_rules! assert_variable_declaration {
     }};
 }
 
+/// Asserts that a [`Statement`] is a `FunctionDefinition` and extracts it.
+///
+/// Panics with a descriptive message if the statement variant does not match.
+/// Returns the inner `FunctionDefinition` reference so callers can chain further assertions.
 #[macro_export]
 macro_rules! assert_function_definition {
     ($statement:expr) => {{
@@ -32,6 +47,7 @@ macro_rules! assert_function_definition {
     }};
 }
 
+/// Asserts that a function's name matches the expected value.
 #[macro_export]
 macro_rules! assert_function_name {
     ($function:expr, $expected_name:expr) => {{
@@ -39,6 +55,9 @@ macro_rules! assert_function_name {
     }};
 }
 
+/// Asserts that a function's parameters match the expected list.
+///
+/// Accepts either `[]` for an empty parameter list, or a list of `(name, type)` pairs.
 #[macro_export]
 macro_rules! assert_function_parameters {
     ($function:expr, []) => {{
@@ -58,6 +77,7 @@ macro_rules! assert_function_parameters {
     }};
 }
 
+/// Asserts that a function's return type matches the expected value.
 #[macro_export]
 macro_rules! assert_function_return_type {
     ($function:expr, $expected_return_type:expr) => {{
@@ -65,6 +85,7 @@ macro_rules! assert_function_return_type {
     }};
 }
 
+/// Asserts that the number of statements in a function's body equals the expected count.
 #[macro_export]
 macro_rules! assert_function_body_len {
     ($function:expr, $expected_body_len:expr) => {{
@@ -72,6 +93,9 @@ macro_rules! assert_function_body_len {
     }};
 }
 
+/// Asserts that a [`Statement`] is an `Assignment` and checks its variable and expression.
+///
+/// Returns the inner `Assignment` reference so callers can chain further assertions.
 #[macro_export]
 macro_rules! assert_assignment {
     ($statement:expr, $expected_variable:expr, $expected_expression:expr) => {{
@@ -85,6 +109,10 @@ macro_rules! assert_assignment {
     }};
 }
 
+/// Asserts that a [`Statement`] is an `If` conditional and checks its condition, body length,
+/// and optional else-body length.
+///
+/// Returns the inner `If` reference so callers can chain further assertions.
 #[macro_export]
 macro_rules! assert_conditional {
     ($statement:expr, $expected_condition:expr, $expected_body_len:expr, $expected_else_len:expr) => {{
@@ -99,6 +127,9 @@ macro_rules! assert_conditional {
     }};
 }
 
+/// Asserts that a [`Statement`] is a `Loop` and checks its body length.
+///
+/// Returns the inner `Loop` reference so callers can chain further assertions.
 #[macro_export]
 macro_rules! assert_loop {
     ($statement:expr, $expected_body_len:expr) => {{

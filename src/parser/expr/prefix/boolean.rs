@@ -3,6 +3,7 @@ use crate::lexer::token::{Token, TokenType};
 use crate::parser::error::ParseError;
 use crate::parser::expr::PrefixParser;
 
+/// A prefix parser that converts a `BooleanLiteral` token into an [`Expression::Boolean`].
 pub(crate) struct BooleanParser;
 
 impl<'src> PrefixParser<'src> for BooleanParser {

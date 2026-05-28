@@ -3,6 +3,7 @@ use crate::lexer::token::Token;
 use crate::parser::error::ParseError;
 use crate::parser::expr::PrefixParser;
 
+/// A prefix parser that converts an `Identifier` token into an [`Expression::Identifier`].
 pub(crate) struct IdentifierParser;
 
 impl<'src> PrefixParser<'src> for IdentifierParser {

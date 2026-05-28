@@ -6,15 +6,22 @@ use crate::parser::error::ParseError;
 use crate::parser::expr::ExpressionParser;
 use crate::parser::stream::ParserStream;
 
+/// A sub-parser responsible for parsing variable assignment statements.
+///
+/// See [grammar.ebnf](../../docs/grammar.ebnf) for the full language grammar.
 pub(crate) struct AssignmentParser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
     stream: &'stream mut ParserStream<'src, I>,
 }
 
 impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> AssignmentParser<'src, 'stream, I> {
+    /// Creates a new `AssignmentParser` sharing the parser stream borrow.
     pub(crate) fn new(stream: &'stream mut ParserStream<'src, I>) -> Self {
         Self { stream }
     }
 
+    /// Parses a variable assignment from the token stream.
+    ///
+    /// Expects an identifier, followed by `=`, an expression, and a trailing `;`.
     pub(crate) fn parse(&mut self) -> Result<Statement, ParseError> {
         let name = self.stream.expect_identifier()?;
         self.stream.expect(TokenType::Equals)?;

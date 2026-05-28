@@ -4,15 +4,22 @@ use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
 use crate::parser::stream::ParserStream;
 
+/// A sub-parser responsible for parsing `break` statements inside loops.
+///
+/// See [grammar.ebnf](../../docs/grammar.ebnf) for the full language grammar.
 pub(crate) struct BreakParser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
     stream: &'stream mut ParserStream<'src, I>,
 }
 
 impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> BreakParser<'src, 'stream, I> {
+    /// Creates a new `BreakParser` sharing the parser stream borrow.
     pub(crate) fn new(stream: &'stream mut ParserStream<'src, I>) -> Self {
         Self { stream }
     }
 
+    /// Parses a `break;` statement.
+    ///
+    /// Expects the `break` keyword followed by a `;` terminator.
     pub(crate) fn parse(&mut self) -> Result<Statement, ParseError> {
         self.stream.expect(TokenType::Break)?;
         self.stream.expect(TokenType::Semicolon)?;

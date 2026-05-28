@@ -4,6 +4,10 @@ use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
 use crate::parser::expr::{ExpressionParser, PrefixParser};
 
+/// A prefix parser that handles grouped (parenthesised) expressions like `(a + b)`.
+///
+/// The `(` token is received as the trigger token by the [`PrefixParser::parse`] contract.
+/// It parses the inner expression and then expects a closing `)`.
 pub(crate) struct GroupParser<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
     expression_parser: &'expr mut ExpressionParser<'src, 'stream, I>,
 }
@@ -11,6 +15,7 @@ pub(crate) struct GroupParser<'expr, 'src, 'stream, I: Iterator<Item = LexResult
 impl<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>>
     GroupParser<'expr, 'src, 'stream, I>
 {
+    /// Creates a new `GroupParser` delegating to the given `ExpressionParser`.
     pub(crate) fn new(expression_parser: &'expr mut ExpressionParser<'src, 'stream, I>) -> Self {
         Self { expression_parser }
     }

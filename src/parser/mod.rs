@@ -17,15 +17,30 @@ pub(crate) mod iteration;
 pub(crate) mod statement;
 pub(crate) mod stream;
 
+/// The top-level parser for the `infer` language.
+///
+/// `Parser` reads from a `ParserStream` and constructs a fully-parsed [`Program`].
+/// It only allows `var` declarations and `fn` definitions at the top level;
+/// any other statement token results in a `ParseError::UnsupportedTopLevelStatement`.
 pub(crate) struct Parser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
     stream: &'stream mut ParserStream<'src, I>,
 }
 
 impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> Parser<'src, 'stream, I> {
+    /// Creates a new `Parser` instance backed by the given `ParserStream`.
     pub(crate) fn new(stream: &'stream mut ParserStream<'src, I>) -> Self {
         Self { stream }
     }
 
+    /// Parses the entire token stream into a [`Program`].
+    ///
+    /// Iterates over all top-level statements, delegating each to the
+    /// appropriate sub-parser based on the leading token type.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err(ParseError)` if any token violates the top-level grammar,
+    /// including unsupported statement types and lexer errors propagated from the stream.
     pub(crate) fn parse(&mut self) -> Result<Program, ParseError> {
         let mut builder = ProgramBuilder::new();
 

@@ -5,6 +5,10 @@ use crate::parser::error::ParseError;
 use crate::parser::expr::precedence::Precedence;
 use crate::parser::expr::{ExpressionParser, PrefixParser};
 
+/// A prefix parser that handles unary expressions such as `-x` and `!flag`.
+///
+/// Parses the operand expression at `Precedence::Unary` so that the operand
+/// binds tightly (e.g., `-a * b` is `(-a) * b`, not `-(a * b)`).
 pub(crate) struct UnaryExpressionParser<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
     expression_parser: &'expr mut ExpressionParser<'src, 'stream, I>,
 }
@@ -12,6 +16,7 @@ pub(crate) struct UnaryExpressionParser<'expr, 'src, 'stream, I: Iterator<Item =
 impl<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>>
     UnaryExpressionParser<'expr, 'src, 'stream, I>
 {
+    /// Creates a new `UnaryExpressionParser` delegating to the given `ExpressionParser`.
     pub(crate) fn new(expression_parser: &'expr mut ExpressionParser<'src, 'stream, I>) -> Self {
         Self { expression_parser }
     }

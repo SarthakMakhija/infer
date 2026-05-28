@@ -4,6 +4,10 @@ use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
 use crate::parser::expr::{ExpressionParser, InfixParser};
 
+/// An infix parser that handles function call expressions like `f(a, b)`.
+///
+/// The `(` token is received as the infix operator token by the [`InfixParser::parse`] contract.
+/// It parses comma-separated argument expressions and expects a closing `)`.
 pub(crate) struct FunctionCallParser<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
     expression_parser: &'expr mut ExpressionParser<'src, 'stream, I>,
 }
@@ -11,6 +15,7 @@ pub(crate) struct FunctionCallParser<'expr, 'src, 'stream, I: Iterator<Item = Le
 impl<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>>
     FunctionCallParser<'expr, 'src, 'stream, I>
 {
+    /// Creates a new `FunctionCallParser` delegating to the given `ExpressionParser`.
     pub(crate) fn new(expression_parser: &'expr mut ExpressionParser<'src, 'stream, I>) -> Self {
         Self { expression_parser }
     }

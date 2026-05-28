@@ -3,6 +3,9 @@ use crate::lexer::token::Token;
 use crate::parser::error::ParseError;
 use crate::parser::expr::PrefixParser;
 
+/// A prefix parser that converts a `StringLiteral` token into an [`Expression::String`].
+///
+/// Strips the surrounding double-quote characters from the raw lexeme via [`Token::string_value`].
 pub(crate) struct StringParser;
 
 impl<'src> PrefixParser<'src> for StringParser {

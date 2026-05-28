@@ -6,10 +6,9 @@ use crate::parser::error::ParseError;
 use crate::parser::expr::ExpressionParser;
 use crate::parser::stream::ParserStream;
 
-/// A sub-parser responsible for parsing variable declaration and assignment statements.
+/// A sub-parser responsible for parsing variable declaration statements.
 ///
-/// `VariableDeclarationParser` parses constructs following the grammar:
-/// `declaration = "var" identifier [ ":" type ] [ "=" literal ] ";" ;`
+/// See [grammar.ebnf](../../docs/grammar.ebnf) for the full language grammar.
 pub(crate) struct VariableDeclarationParser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
     stream: &'stream mut ParserStream<'src, I>,
 }

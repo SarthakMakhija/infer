@@ -5,15 +5,24 @@ use crate::parser::error::ParseError;
 use crate::parser::statement::StatementParser;
 use crate::parser::stream::ParserStream;
 
+/// A sub-parser responsible for parsing function definition statements.
+///
+/// Optional return type and parameter type annotations are supported.
+/// See [grammar.ebnf](../../docs/grammar.ebnf) for the full language grammar.
 pub(crate) struct FnParser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
     stream: &'stream mut ParserStream<'src, I>,
 }
 
 impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> FnParser<'src, 'stream, I> {
+    /// Creates a new `FnParser` sharing the parser stream borrow.
     pub(crate) fn new(stream: &'stream mut ParserStream<'src, I>) -> Self {
         Self { stream }
     }
 
+    /// Parses a complete function definition from the token stream.
+    ///
+    /// Returns a [`Statement::FunctionDefinition`] containing the function's name,
+    /// parameters (with optional type annotations), optional return type, and body.
     pub(crate) fn parse(&mut self) -> Result<Statement, ParseError> {
         self.stream.expect(TokenType::Fn)?;
         let name = self.stream.expect(TokenType::Identifier)?.owned_value();

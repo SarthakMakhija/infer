@@ -6,8 +6,10 @@ use crate::parser::stream::ParserStream;
 use crate::parser::Parser;
 use std::fmt;
 
+/// Represents errors encountered during the type inference or parsing phases.
 #[derive(Debug, PartialEq)]
 pub enum InferenceError {
+    /// A syntax or grammatical error occurred during the lexical analysis or parsing phase.
     ParseError(String),
 }
 
@@ -27,19 +29,31 @@ impl fmt::Display for InferenceError {
 
 impl std::error::Error for InferenceError {}
 
+/// The main entry point to the type inference compiler pipeline.
+///
+/// `Infer` orchestrates the conversion of raw source code strings into a parsed
+/// Abstract Syntax Tree (AST) representation, preparing it for type inference.
 pub struct Infer;
 
 impl Default for Infer {
+    /// Creates a default instance of the type inference orchestrator.
     fn default() -> Self {
         Self::new()
     }
 }
 
 impl Infer {
+    /// Creates a new instance of the `Infer` orchestrator.
     pub fn new() -> Self {
         Infer
     }
 
+    /// Compiles the raw source code into an untyped Abstract Syntax Tree (`Program`).
+    ///
+    /// # Errors
+    ///
+    /// Returns an `InferenceError::ParseError` if lexical analysis or recursive descent
+    /// parsing encounters a syntax or structural violation.
     pub fn infer(&self, source: &str) -> Result<Program, InferenceError> {
         let lexer = Lexer::new(source, Keywords::new());
         let mut stream = ParserStream::new(lexer);
