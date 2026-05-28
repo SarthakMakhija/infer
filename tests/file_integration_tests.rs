@@ -8,7 +8,7 @@ use infer::{
 use std::path::Path;
 
 #[test]
-fn test_parse_factorial_example() {
+fn parse_factorial_example() {
     let compiler = Infer::new();
     let result = compiler.infer_file(Path::new("examples/factorial.toy"));
 
@@ -44,7 +44,7 @@ fn test_parse_factorial_example() {
     );
 
     let else_body = conditional.else_body().unwrap();
-    let expected_else_expr = Expression::Binary(
+    let expected_else_expression = Expression::Binary(
         Box::new(Expression::Identifier("n".to_string())),
         BinaryOperator::Multiply,
         Box::new(Expression::FunctionCall(
@@ -56,11 +56,16 @@ fn test_parse_factorial_example() {
             )],
         )),
     );
-    assert_variable_declaration!(&else_body[0], "result", None, Some(&expected_else_expr));
+    assert_variable_declaration!(
+        &else_body[0],
+        "result",
+        None,
+        Some(&expected_else_expression)
+    );
 }
 
 #[test]
-fn test_parse_loops_example() {
+fn parse_loops_example() {
     let compiler = Infer::new();
     let result = compiler.infer_file(Path::new("examples/loops.toy"));
 
@@ -95,16 +100,16 @@ fn test_parse_loops_example() {
         panic!("Expected Break statement");
     };
 
-    let expected_assignment_expr = Expression::Binary(
+    let expected_assignment_expression = Expression::Binary(
         Box::new(Expression::Identifier("count".to_string())),
         BinaryOperator::Plus,
         Box::new(Expression::I32(1)),
     );
-    assert_assignment!(&loop_body[1], "count", &expected_assignment_expr);
+    assert_assignment!(&loop_body[1], "count", &expected_assignment_expression);
 }
 
 #[test]
-fn test_parse_variables_example() {
+fn parse_variables_example() {
     let compiler = Infer::new();
     let result = compiler.infer_file(Path::new("examples/variables.toy"));
 
@@ -120,13 +125,13 @@ fn test_parse_variables_example() {
     assert_eq!(statements.len(), 4);
     assert_variable_declaration!(&statements[0], "x", None, Some(&Expression::I32(42)));
 
-    let expected_y_expr = Expression::Binary(
+    let expected_expression = Expression::Binary(
         Box::new(Expression::Identifier("x".to_string())),
         BinaryOperator::Multiply,
         Box::new(Expression::I32(2)),
     );
 
-    assert_variable_declaration!(&statements[1], "y", Some("i32"), Some(&expected_y_expr));
+    assert_variable_declaration!(&statements[1], "y", Some("i32"), Some(&expected_expression));
     assert_variable_declaration!(
         &statements[2],
         "active",
@@ -164,7 +169,7 @@ fn parse_functions_example() {
     assert_function_body_len!(calculate_function, 1);
 
     let calculate_body = calculate_function.body();
-    let expected_total_expr = Expression::Binary(
+    let expected_total_expression = Expression::Binary(
         Box::new(Expression::Identifier("a".to_string())),
         BinaryOperator::Plus,
         Box::new(Expression::Identifier("b".to_string())),
@@ -173,7 +178,7 @@ fn parse_functions_example() {
         &calculate_body[0],
         "total",
         None,
-        Some(&expected_total_expr)
+        Some(&expected_total_expression)
     );
 
     // 2. Validate "execute" function: calls "calculate" as initializer
@@ -184,7 +189,7 @@ fn parse_functions_example() {
     assert_function_body_len!(execute_function, 1);
 
     let execute_body = execute_function.body();
-    let expected_result_expr = Expression::FunctionCall(
+    let expected_result_expression = Expression::FunctionCall(
         Box::new(Expression::Identifier("calculate".to_string())),
         vec![Expression::I32(10), Expression::I32(20)],
     );
@@ -192,6 +197,81 @@ fn parse_functions_example() {
         &execute_body[0],
         "result",
         None,
-        Some(&expected_result_expr)
+        Some(&expected_result_expression)
+    );
+}
+
+#[test]
+fn parse_nested_blocks_example() {
+    let compiler = Infer::new();
+    let result = compiler.infer_file(Path::new("examples/nested_blocks.toy"));
+
+    assert!(
+        result.is_ok(),
+        "Failed to parse examples/nested_blocks.toy: {:?}",
+        result.err()
+    );
+
+    let program = result.unwrap();
+    let statements = program.statements();
+    assert_eq!(statements.len(), 1);
+
+    let function = assert_function_definition!(&statements[0]);
+    assert_function_name!(function, "run_blocks");
+    assert_function_parameters!(function, []);
+    assert_function_return_type!(function, None::<&str>);
+    assert_function_body_len!(function, 2);
+
+    let body = function.body();
+    assert_variable_declaration!(&body[0], "outer_val", None, Some(&Expression::I32(10)));
+
+    let Statement::Block(ref block) = body[1] else {
+        panic!("Expected Block statement, found {:?}", body[1]);
+    };
+
+    let outer_block_statements = block.statements();
+    assert_eq!(outer_block_statements.len(), 3);
+
+    assert_variable_declaration!(
+        &outer_block_statements[0],
+        "inner_val",
+        None,
+        Some(&Expression::I32(20))
+    );
+
+    assert_assignment!(
+        &outer_block_statements[1],
+        "outer_val",
+        &Expression::Binary(
+            Box::new(Expression::Identifier("outer_val".to_string())),
+            BinaryOperator::Plus,
+            Box::new(Expression::Identifier("inner_val".to_string()))
+        )
+    );
+
+    let Statement::Block(ref inner_block) = outer_block_statements[2] else {
+        panic!(
+            "Expected nested Block statement, found {:?}",
+            outer_block_statements[2]
+        );
+    };
+
+    let inner_block_statements = inner_block.statements();
+    assert_eq!(inner_block_statements.len(), 2);
+    assert_variable_declaration!(
+        &inner_block_statements[0],
+        "deep_val",
+        None,
+        Some(&Expression::I32(30))
+    );
+
+    assert_assignment!(
+        &inner_block_statements[1],
+        "outer_val",
+        &Expression::Binary(
+            Box::new(Expression::Identifier("outer_val".to_string())),
+            BinaryOperator::Plus,
+            Box::new(Expression::Identifier("deep_val".to_string()))
+        )
     );
 }

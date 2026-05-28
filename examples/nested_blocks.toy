@@ -1,0 +1,11 @@
+fn run_blocks() {
+    var outer_val = 10;
+    {
+        var inner_val = 20;
+        outer_val = outer_val + inner_val;
+        {
+            var deep_val = 30;
+            outer_val = outer_val + deep_val;
+        }
+    }
+}
