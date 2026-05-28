@@ -4,14 +4,16 @@
 
 _infer_ is an educational project for a statically typed toy programming language implemented in Rust. **Note: We are not building a full-featured, production-ready programming language.** The primary objective of this project is to serve as an educational showcase for designing and implementing **Constraint-Based Type Inference (Hindley-Milner style)** from scratch over a minimal set of language features.
 
-The target language is a tiny programming language supporting:
+The target language is a _toy_ (`.toy`) programming language supporting:
 *   **Variable Declarations** (with optional explicit type annotations).
 *   **Expressions** (arithmetic operations, variable lookups, comparison operators, and logical composition).
 *   **Conditionals** (`if`-`else` and `else-if` branches).
 *   **For Loops** (iterative loops and `break` statements).
 *   **Functions** (function declarations, parameters, return types, and invocation).
 
-You can read the formal specification of the language in the [EBNF grammar file](./docs/grammar.ebnf), and track our completed milestones in the [Scope document](./docs/Scope.md).
+You can read the formal specification of the language in the [EBNF grammar file](./docs/grammar.ebnf), track 
+completed milestones in the [Scope document](./docs/Scope.md), and explore concrete code snippets of the `.toy` language 
+in the [examples directory](./examples).
 
 ---
 

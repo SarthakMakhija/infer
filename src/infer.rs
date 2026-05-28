@@ -200,7 +200,7 @@ mod tests {
     fn infer_file_not_found() {
         let infer = Infer::new();
         let file_path = Path::new("does_not_exist.toy");
-        let result = infer.infer_file(&file_path);
+        let result = infer.infer_file(file_path);
 
         assert!(result.is_err());
         let err = result.err().unwrap();
