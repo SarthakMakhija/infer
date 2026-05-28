@@ -387,4 +387,83 @@ mod tests {
             ParseError::UnexpectedTokenType(TokenType::RightParentheses, TokenType::Identifier, 1)
         );
     }
+
+    #[test]
+    fn parse_function_missing_name() {
+        let lexer = Lexer::new("fn () {}", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = FnParser::new(&mut stream);
+
+        let error = parser.parse().unwrap_err();
+        assert_eq!(
+            error,
+            ParseError::UnexpectedTokenType(TokenType::Identifier, TokenType::LeftParentheses, 1)
+        );
+    }
+
+    #[test]
+    fn parse_function_missing_left_parenthesis() {
+        let lexer = Lexer::new("fn calculate) {}", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = FnParser::new(&mut stream);
+
+        let error = parser.parse().unwrap_err();
+        assert_eq!(
+            error,
+            ParseError::UnexpectedTokenType(
+                TokenType::LeftParentheses,
+                TokenType::RightParentheses,
+                1
+            )
+        );
+    }
+
+    #[test]
+    fn parse_function_missing_right_parenthesis() {
+        let lexer = Lexer::new("fn calculate(a: int {}", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = FnParser::new(&mut stream);
+
+        let error = parser.parse().unwrap_err();
+        assert_eq!(
+            error,
+            ParseError::UnexpectedTokenType(TokenType::RightParentheses, TokenType::LeftBrace, 1)
+        );
+    }
+
+    #[test]
+    fn parse_function_missing_left_brace() {
+        let lexer = Lexer::new("fn calculate() }", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = FnParser::new(&mut stream);
+
+        let error = parser.parse().unwrap_err();
+        assert_eq!(
+            error,
+            ParseError::UnexpectedTokenType(TokenType::LeftBrace, TokenType::RightBrace, 1)
+        );
+    }
+
+    #[test]
+    fn parse_function_missing_right_brace() {
+        let lexer = Lexer::new("fn calculate() {", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = FnParser::new(&mut stream);
+
+        let error = parser.parse().unwrap_err();
+        assert_eq!(error, ParseError::UnexpectedEof);
+    }
+
+    #[test]
+    fn parse_function_missing_parameter_colon() {
+        let lexer = Lexer::new("fn calculate(a int) {}", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = FnParser::new(&mut stream);
+
+        let error = parser.parse().unwrap_err();
+        assert_eq!(
+            error,
+            ParseError::UnexpectedTokenType(TokenType::RightParentheses, TokenType::Identifier, 1)
+        );
+    }
 }
