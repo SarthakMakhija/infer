@@ -2,10 +2,10 @@ program
     = { top_level_statement } EOF ;
 
 top_level_statement
-    = declaration | assignment | function;
+    = declaration | assignment | function ;
 
 statement
-    = declaration | assignment | conditional | iteration | control_flow ;
+    = declaration | assignment | conditional | iteration | control_flow | function_call ";" ;
 
 declaration
     = "var" identifier [ ":" type ] [ "=" expression ] ";" ;
@@ -28,6 +28,15 @@ control_flow
 function
     = "fn" identifier "(" [ parameters ] ")" [ return_type ] "{" { statement } "}" ;
 
+function_call
+    = identifier "(" [ arguments ] ")" ;
+
+arguments
+    = argument { "," argument } ;
+
+argument
+    = expression ;
+
 parameters
     = parameter { "," parameter } ;
 
@@ -47,7 +56,7 @@ expression
     = primary | unary | binary ;
 
 primary
-    = literal | identifier | "(" expression ")" ;
+    = literal | identifier | "(" expression ")" | function_call ;
 
 unary
     = ( "-" | "!" ) expression ;

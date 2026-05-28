@@ -1,4 +1,4 @@
-- [ ] Grammar (_Continuously updated_)
+- [x] Grammar
 - [x] Support variable declaration
 - [x] Support variable assignment along with declaration
 - [x] Support assignment
@@ -14,11 +14,11 @@
   - [x] With return type
   - [x] With type annotations
   - [x] Without type annotations
-- [ ] Support expressions
+- [x] Support expressions
     - [x] Support arithmetic + - * /
     - [x] Support !
     - [x] Support unary minus
-    - [ ] Support function calls
+    - [x] Support function calls
     - [x] Support > < >= <= == !=
     - [x] Prohibit chained comparisons a < b < c
-    - [ ] Support function calls with other expressions
+    - [x] Support function calls with other expressions
