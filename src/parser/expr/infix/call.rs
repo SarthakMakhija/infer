@@ -166,4 +166,55 @@ mod tests {
             )
         );
     }
+
+    #[test]
+    fn parse_call_argument_syntax_error() {
+        let lexer = Lexer::new("*)", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+        let mut call_parser = FunctionCallParser::new(&mut parser);
+
+        let left = Expression::Identifier("calculate".to_string());
+        let token = Token::new(TokenType::LeftParentheses, 0..1, 1, "(");
+        let error = call_parser.parse(left, &token).unwrap_err();
+
+        assert!(matches!(
+            error,
+            ParseError::UnsupportedPrefixExpression(TokenType::Star, 1)
+        ));
+    }
+
+    #[test]
+    fn parse_call_lex_error_in_argument() {
+        let lexer = Lexer::new("?)", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+        let mut call_parser = FunctionCallParser::new(&mut parser);
+
+        let left = Expression::Identifier("calculate".to_string());
+        let token = Token::new(TokenType::LeftParentheses, 0..1, 1, "(");
+        let error = call_parser.parse(left, &token).unwrap_err();
+
+        assert!(matches!(
+            error,
+            ParseError::LexError(crate::lexer::error::LexError::UnrecognizedChar('?', 1))
+        ));
+    }
+
+    #[test]
+    fn parse_call_lex_error_after_argument() {
+        let lexer = Lexer::new("a ?", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+        let mut call_parser = FunctionCallParser::new(&mut parser);
+
+        let left = Expression::Identifier("calculate".to_string());
+        let token = Token::new(TokenType::LeftParentheses, 0..1, 1, "(");
+        let error = call_parser.parse(left, &token).unwrap_err();
+
+        assert!(matches!(
+            error,
+            ParseError::LexError(crate::lexer::error::LexError::UnrecognizedChar('?', 1))
+        ));
+    }
 }
