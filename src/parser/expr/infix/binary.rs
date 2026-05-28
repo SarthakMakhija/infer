@@ -38,7 +38,7 @@ impl<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>> InfixParser<'src
     fn parse(&mut self, left: Expression, token: &Token<'src>) -> Result<Expression, ParseError> {
         let operator: BinaryOperator = token.try_into()?;
         if operator.is_comparison() {
-            if let Expression::Binary(_, ref left_operator, _) = left {
+            if let Expression::Binary(_, ref left_operator, _) = left.unwrap_grouped() {
                 if left_operator.is_comparison() {
                     return Err(ParseError::ChainedComparison(token.line));
                 }
@@ -172,6 +172,32 @@ mod tests {
     #[test]
     fn parse_chained_comparison_error() {
         let lexer = Lexer::new("score1 < score2 < score3", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let result = parser.parse();
+        assert!(matches!(
+            result.err().unwrap(),
+            ParseError::ChainedComparison(1)
+        ));
+    }
+
+    #[test]
+    fn parse_grouped_chained_comparison_error() {
+        let lexer = Lexer::new("(score1 < score2) < score3", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let result = parser.parse();
+        assert!(matches!(
+            result.err().unwrap(),
+            ParseError::ChainedComparison(1)
+        ));
+    }
+
+    #[test]
+    fn parse_deeply_nested_grouped_chained_comparison_error() {
+        let lexer = Lexer::new("((score1 < score2)) < score3", Keywords::new());
         let mut stream = ParserStream::new(lexer);
         let mut parser = ExpressionParser::new(&mut stream);
 

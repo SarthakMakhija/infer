@@ -62,6 +62,16 @@ pub enum Expression {
     FunctionCall(Box<Expression>, Vec<Expression>),
 }
 
+impl Expression {
+    /// Recursively unwraps nested `Grouped` expressions, returning the innermost non-grouped expression.
+    pub(crate) fn unwrap_grouped(&self) -> &Expression {
+        match self {
+            Expression::Grouped(inner) => inner.unwrap_grouped(),
+            _ => self,
+        }
+    }
+}
+
 /// Represents a binary operator used between two expressions.
 ///
 /// Arithmetic operators follow standard mathematical precedence:
@@ -301,6 +311,31 @@ mod binary_operator_tests {
     #[test]
     fn plus_is_not_comparison() {
         assert!(!BinaryOperator::Plus.is_comparison());
+    }
+}
+
+#[cfg(test)]
+mod expression_tests {
+    use super::*;
+
+    #[test]
+    fn unwrap_grouped_returns_inner_expression() {
+        let inner = Expression::I32(42);
+        let grouped = Expression::Grouped(Box::new(inner));
+        assert_eq!(grouped.unwrap_grouped(), &Expression::I32(42));
+    }
+
+    #[test]
+    fn unwrap_grouped_returns_self_for_non_grouped() {
+        let expr = Expression::I32(42);
+        assert_eq!(expr.unwrap_grouped(), &Expression::I32(42));
+    }
+
+    #[test]
+    fn unwrap_grouped_unwraps_multiple_levels() {
+        let inner = Expression::I32(42);
+        let nested = Expression::Grouped(Box::new(Expression::Grouped(Box::new(inner))));
+        assert_eq!(nested.unwrap_grouped(), &Expression::I32(42));
     }
 }
 
