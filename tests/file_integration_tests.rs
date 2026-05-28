@@ -144,11 +144,11 @@ fn test_parse_variables_example() {
 #[test]
 fn parse_functions_example() {
     let compiler = Infer::new();
-    let result = compiler.infer_file(Path::new("examples/functions.toy"));
+    let result = compiler.infer_file(Path::new("examples/functions_no_type_annotations.toy"));
 
     assert!(
         result.is_ok(),
-        "Failed to parse examples/functions.toy: {:?}",
+        "Failed to parse examples/functions_no_type_annotations.toy: {:?}",
         result.err()
     );
 
