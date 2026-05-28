@@ -89,6 +89,8 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 
             | TokenType::LessThanEquals => {
                 BinaryExpressionParser::new(self, Precedence::Comparison).parse(left, token)
             }
+            TokenType::And => BinaryExpressionParser::new(self, Precedence::And).parse(left, token),
+            TokenType::Or => BinaryExpressionParser::new(self, Precedence::Or).parse(left, token),
             TokenType::LeftParentheses => FunctionCallParser::new(self).parse(left, token),
             _ => Err(ParseError::UnsupportedInfixExpression(
                 token.token_type,
@@ -509,6 +511,145 @@ mod comparison_expression_tests {
                     BinaryOperator::GreaterThan,
                     Box::new(Expression::Identifier("base_score".to_string()))
                 ))
+            )
+        );
+    }
+}
+
+#[cfg(test)]
+mod logical_expression_tests {
+    use super::*;
+    use crate::ast::expr::BinaryOperator;
+    use crate::lexer::keywords::Keywords;
+    use crate::lexer::Lexer;
+    use crate::parser::stream::ParserStream;
+
+    #[test]
+    fn parse_logical_and() {
+        let lexer = Lexer::new("active and validated", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expression = parser.parse().unwrap();
+        assert_eq!(
+            expression,
+            Expression::Binary(
+                Box::new(Expression::Identifier("active".to_string())),
+                BinaryOperator::And,
+                Box::new(Expression::Identifier("validated".to_string()))
+            )
+        );
+    }
+
+    #[test]
+    fn parse_logical_or() {
+        let lexer = Lexer::new("cached or retrieved", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expression = parser.parse().unwrap();
+        assert_eq!(
+            expression,
+            Expression::Binary(
+                Box::new(Expression::Identifier("cached".to_string())),
+                BinaryOperator::Or,
+                Box::new(Expression::Identifier("retrieved".to_string()))
+            )
+        );
+    }
+
+    #[test]
+    fn parse_logical_and_and_or_precedence() {
+        // 'and' has higher precedence
+        let lexer = Lexer::new("a and b or c", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expression = parser.parse().unwrap();
+        assert_eq!(
+            expression,
+            Expression::Binary(
+                Box::new(Expression::Binary(
+                    Box::new(Expression::Identifier("a".to_string())),
+                    BinaryOperator::And,
+                    Box::new(Expression::Identifier("b".to_string()))
+                )),
+                BinaryOperator::Or,
+                Box::new(Expression::Identifier("c".to_string()))
+            )
+        );
+    }
+
+    #[test]
+    fn parse_logical_and_and_comparison_precedence() {
+        // Comparisons (40) have higher precedence
+        let lexer = Lexer::new("a < b and c > d", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expression = parser.parse().unwrap();
+        assert_eq!(
+            expression,
+            Expression::Binary(
+                Box::new(Expression::Binary(
+                    Box::new(Expression::Identifier("a".to_string())),
+                    BinaryOperator::LessThan,
+                    Box::new(Expression::Identifier("b".to_string()))
+                )),
+                BinaryOperator::And,
+                Box::new(Expression::Binary(
+                    Box::new(Expression::Identifier("c".to_string())),
+                    BinaryOperator::GreaterThan,
+                    Box::new(Expression::Identifier("d".to_string()))
+                ))
+            )
+        );
+    }
+
+    #[test]
+    fn parse_logical_or_and_equality_precedence() {
+        // Equality (30) has higher precedence
+        let lexer = Lexer::new("a == b or c != d", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expression = parser.parse().unwrap();
+        assert_eq!(
+            expression,
+            Expression::Binary(
+                Box::new(Expression::Binary(
+                    Box::new(Expression::Identifier("a".to_string())),
+                    BinaryOperator::EqualsEquals,
+                    Box::new(Expression::Identifier("b".to_string()))
+                )),
+                BinaryOperator::Or,
+                Box::new(Expression::Binary(
+                    Box::new(Expression::Identifier("c".to_string())),
+                    BinaryOperator::NotEquals,
+                    Box::new(Expression::Identifier("d".to_string()))
+                ))
+            )
+        );
+    }
+
+    #[test]
+    fn parse_logical_precedence_with_grouping() {
+        // Grouping overrides default precedence: a and (b or c)
+        let lexer = Lexer::new("a and (b or c)", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expression = parser.parse().unwrap();
+        assert_eq!(
+            expression,
+            Expression::Binary(
+                Box::new(Expression::Identifier("a".to_string())),
+                BinaryOperator::And,
+                Box::new(Expression::Grouped(Box::new(Expression::Binary(
+                    Box::new(Expression::Identifier("b".to_string())),
+                    BinaryOperator::Or,
+                    Box::new(Expression::Identifier("c".to_string()))
+                ))))
             )
         );
     }
