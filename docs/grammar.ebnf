@@ -2,7 +2,7 @@ program
     = { statement } EOF ;
 
 statement
-    = declaration | assignment | conditional | iteration
+    = declaration | assignment | conditional | iteration | control_flow ;
 
 declaration
     = "var" identifier [ ":" type ] [ "=" expression ] ";" ;
@@ -11,16 +11,16 @@ assignment
     = identifier "=" expression ";" ;
 
 conditional
-    = "if" expression "{" { statement } "}" { elseif } [ else ] ;
-
-elseif
-    = "else" "if" expression "{" { statement } "}" ;
+    = "if" expression "{" { statement } "}" [ else ] ;
 
 else
-    = "else" "{" { statement } "}" ;
+    = "else" ( "{" { statement } "}" | conditional ) ;
 
 iteration
     = "loop" "{" { statement } "}" ;
+
+control_flow
+    = "break" ";" ;
 
 identifier
     = IDENTIFIER ;
