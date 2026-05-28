@@ -1,8 +1,8 @@
-use crate::ast::statement::{Loop, Statement};
+use crate::ast::statement::{Block, Loop, Statement};
 use crate::lexer::token::TokenType;
 use crate::lexer::LexResult;
+use crate::parser::block::BlockParser;
 use crate::parser::error::ParseError;
-use crate::parser::statement::StatementParser;
 use crate::parser::stream::ParserStream;
 
 /// A sub-parser responsible for parsing `loop` iteration statements.
@@ -24,15 +24,13 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> LoopParser<'src, 'strea
     /// and a closing `}`.
     pub(crate) fn parse(&mut self) -> Result<Statement, ParseError> {
         self.stream.expect(TokenType::Loop)?;
-        self.stream.expect(TokenType::LeftBrace)?;
         let body = self.parse_body()?;
-        self.stream.expect(TokenType::RightBrace)?;
 
         Ok(Statement::iteration(Loop::new(body)))
     }
 
-    fn parse_body(&mut self) -> Result<Vec<Statement>, ParseError> {
-        StatementParser::new(self.stream).parse_statements_till(TokenType::RightBrace)
+    fn parse_body(&mut self) -> Result<Block, ParseError> {
+        BlockParser::new(self.stream).parse()
     }
 }
 
@@ -40,7 +38,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> LoopParser<'src, 'strea
 mod tests {
     use super::*;
     use crate::ast::expr::{BinaryOperator, Expression};
-    use crate::ast::statement::{Assignment, Loop, Statement};
+    use crate::ast::statement::{Assignment, Block, Loop, Statement};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
     use crate::parser::stream::ParserStream;
@@ -52,7 +50,10 @@ mod tests {
         let mut parser = LoopParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
-        assert_eq!(statement, Statement::iteration(Loop::new(vec![])));
+        assert_eq!(
+            statement,
+            Statement::iteration(Loop::new(Block::new(vec![])))
+        );
     }
 
     #[test]
@@ -67,7 +68,7 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::iteration(Loop::new(vec![
+            Statement::iteration(Loop::new(Block::new(vec![
                 Statement::assignment(Assignment::new(
                     "counter".to_string(),
                     Expression::Binary(
@@ -84,7 +85,7 @@ mod tests {
                         Box::new(Expression::Identifier("counter".to_string()))
                     )
                 ))
-            ]))
+            ])))
         );
     }
 

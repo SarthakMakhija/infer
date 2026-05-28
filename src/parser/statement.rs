@@ -231,7 +231,10 @@ mod tests {
         let mut parser = StatementParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
-        assert_eq!(statement, Statement::iteration(Loop::new(vec![])));
+        assert_eq!(
+            statement,
+            Statement::iteration(Loop::new(Block::new(vec![])))
+        );
     }
 
     #[test]
@@ -253,7 +256,9 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::iteration(Loop::new(vec![Statement::control_flow(Break::new())]))
+            Statement::iteration(Loop::new(Block::new(vec![Statement::control_flow(
+                Break::new()
+            )])))
         );
     }
 

@@ -176,17 +176,17 @@ impl If {
 /// Example: `loop { break; }`
 #[derive(Debug, PartialEq)]
 pub struct Loop {
-    pub(crate) body: Vec<Statement>,
+    pub(crate) body: Block,
 }
 
 impl Loop {
-    pub(crate) fn new(body: Vec<Statement>) -> Self {
+    pub(crate) fn new(body: Block) -> Self {
         Self { body }
     }
 
     /// Returns a slice of statements in the loop body.
     pub fn body(&self) -> &[Statement] {
-        &self.body
+        &self.body.statements
     }
 }
 
