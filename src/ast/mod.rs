@@ -1,3 +1,3 @@
-pub(crate) mod expr;
-pub(crate) mod program;
-pub(crate) mod statement;
+pub mod expr;
+pub mod program;
+pub mod statement;

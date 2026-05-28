@@ -1,13 +1,17 @@
 use crate::ast::statement::Statement;
 
 #[derive(Debug, PartialEq)]
-pub(crate) struct Program {
+pub struct Program {
     statements: Vec<Statement>,
 }
 
 impl Program {
     pub(crate) fn new(statements: Vec<Statement>) -> Self {
         Program { statements }
+    }
+
+    pub fn statements(&self) -> &[Statement] {
+        &self.statements
     }
 }
 

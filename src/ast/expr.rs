@@ -39,7 +39,7 @@ impl fmt::Display for ExpressionError {
 impl std::error::Error for ExpressionError {}
 
 #[derive(Debug, PartialEq)]
-pub(crate) enum Expression {
+pub enum Expression {
     I32(i32),
     String(String),
     Identifier(String),
@@ -51,7 +51,7 @@ pub(crate) enum Expression {
 }
 
 #[derive(Debug, PartialEq)]
-pub(crate) enum BinaryOperator {
+pub enum BinaryOperator {
     Plus,
     Minus,
     Multiply,
@@ -106,7 +106,7 @@ impl BinaryOperator {
 }
 
 #[derive(Debug, PartialEq)]
-pub(crate) enum UnaryOperator {
+pub enum UnaryOperator {
     Minus,
     Negation,
 }

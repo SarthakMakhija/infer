@@ -22,7 +22,7 @@
     - [x] Support unary minus
     - [x] Support function calls
     - [x] Support > < >= <= == !=
-    - [ ] Support compositions (AND, OR)
+    - [x] Support compositions (AND, OR)
     - [x] Prohibit chained comparisons a < b < c
     - [x] Support function calls with other expressions
 

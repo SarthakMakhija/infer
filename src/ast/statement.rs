@@ -1,7 +1,7 @@
 use crate::ast::expr::Expression;
 
 #[derive(Debug, PartialEq)]
-pub(crate) enum Statement {
+pub enum Statement {
     VariableDeclaration(VariableDeclaration),
     Assignment(Assignment),
     If(If),
@@ -42,7 +42,7 @@ impl Statement {
 }
 
 #[derive(Debug, PartialEq)]
-pub(crate) struct VariableDeclaration {
+pub struct VariableDeclaration {
     pub(crate) variable: String,
     pub(crate) data_type: Option<String>,
     pub(crate) expression: Option<Expression>,
@@ -60,10 +60,22 @@ impl VariableDeclaration {
             expression,
         }
     }
+
+    pub fn variable(&self) -> &str {
+        &self.variable
+    }
+
+    pub fn data_type(&self) -> Option<&str> {
+        self.data_type.as_deref()
+    }
+
+    pub fn expression(&self) -> Option<&Expression> {
+        self.expression.as_ref()
+    }
 }
 
 #[derive(Debug, PartialEq)]
-pub(crate) struct Assignment {
+pub struct Assignment {
     pub(crate) variable: String,
     pub(crate) expression: Expression,
 }
@@ -75,10 +87,18 @@ impl Assignment {
             expression,
         }
     }
+
+    pub fn variable(&self) -> &str {
+        &self.variable
+    }
+
+    pub fn expression(&self) -> &Expression {
+        &self.expression
+    }
 }
 
 #[derive(Debug, PartialEq)]
-pub(crate) struct If {
+pub struct If {
     pub(crate) condition: Expression,
     pub(crate) body: Vec<Statement>,
     pub(crate) else_body: Option<Vec<Statement>>,
@@ -96,10 +116,22 @@ impl If {
             else_body,
         }
     }
+
+    pub fn condition(&self) -> &Expression {
+        &self.condition
+    }
+
+    pub fn body(&self) -> &[Statement] {
+        &self.body
+    }
+
+    pub fn else_body(&self) -> Option<&[Statement]> {
+        self.else_body.as_deref()
+    }
 }
 
 #[derive(Debug, PartialEq)]
-pub(crate) struct Loop {
+pub struct Loop {
     pub(crate) body: Vec<Statement>,
 }
 
@@ -107,10 +139,14 @@ impl Loop {
     pub(crate) fn new(body: Vec<Statement>) -> Self {
         Self { body }
     }
+
+    pub fn body(&self) -> &[Statement] {
+        &self.body
+    }
 }
 
 #[derive(Debug, PartialEq)]
-pub(crate) struct Break;
+pub struct Break;
 
 impl Break {
     pub(crate) fn new() -> Self {
@@ -119,7 +155,7 @@ impl Break {
 }
 
 #[derive(Debug, PartialEq)]
-pub(crate) struct FunctionDefinition {
+pub struct FunctionDefinition {
     pub(crate) name: String,
     pub(crate) parameters: Vec<FunctionParameter>,
     pub(crate) return_type: Option<String>,
@@ -140,10 +176,26 @@ impl FunctionDefinition {
             body,
         }
     }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn parameters(&self) -> &[FunctionParameter] {
+        &self.parameters
+    }
+
+    pub fn return_type(&self) -> Option<&str> {
+        self.return_type.as_deref()
+    }
+
+    pub fn body(&self) -> &[Statement] {
+        &self.body
+    }
 }
 
 #[derive(Debug, PartialEq)]
-pub(crate) struct FunctionParameter {
+pub struct FunctionParameter {
     pub(crate) name: String,
     pub(crate) data_type: Option<String>,
 }
@@ -151,6 +203,14 @@ pub(crate) struct FunctionParameter {
 impl FunctionParameter {
     pub(crate) fn new(name: String, data_type: Option<String>) -> Self {
         Self { name, data_type }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn data_type(&self) -> Option<&str> {
+        self.data_type.as_deref()
     }
 }
 
