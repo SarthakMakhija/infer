@@ -62,6 +62,10 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> FnParser<'src, 'stream,
                         ));
                     }
                 }
+            } else if let Some(after) = self.stream.peek()? {
+                if after.token_type == TokenType::RightParentheses {
+                    return Err(ParseError::TrailingComma(after.line));
+                }
             }
         }
         Ok(parameters)
@@ -474,5 +478,25 @@ mod tests {
             error,
             ParseError::UnexpectedTokenType(TokenType::RightParentheses, TokenType::Identifier, 1)
         );
+    }
+
+    #[test]
+    fn parse_function_trailing_comma_single_parameter() {
+        let lexer = Lexer::new("fn calculate(a,) {}", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = FnParser::new(&mut stream);
+
+        let error = parser.parse().unwrap_err();
+        assert_eq!(error, ParseError::TrailingComma(1));
+    }
+
+    #[test]
+    fn parse_function_trailing_comma_multiple_parameters() {
+        let lexer = Lexer::new("fn calculate(a: i32, b: i32,) {}", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = FnParser::new(&mut stream);
+
+        let error = parser.parse().unwrap_err();
+        assert_eq!(error, ParseError::TrailingComma(1));
     }
 }

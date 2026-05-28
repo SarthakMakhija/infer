@@ -47,6 +47,10 @@ impl<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>> InfixParser<'src
                         ));
                     }
                 }
+            } else if let Some(after) = self.expression_parser.stream.peek()? {
+                if after.token_type == TokenType::RightParentheses {
+                    return Err(ParseError::TrailingComma(after.line));
+                }
             }
         }
 
@@ -221,5 +225,33 @@ mod tests {
             error,
             ParseError::LexError(crate::lexer::error::LexError::UnrecognizedChar('?', 1))
         ));
+    }
+
+    #[test]
+    fn parse_call_trailing_comma_single_argument() {
+        let lexer = Lexer::new("income,)", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+        let mut call_parser = FunctionCallParser::new(&mut parser);
+
+        let left = Expression::Identifier("calculate_tax".to_string());
+        let token = Token::new(TokenType::LeftParentheses, 0..1, 1, "(");
+        let error = call_parser.parse(left, &token).unwrap_err();
+
+        assert_eq!(error, ParseError::TrailingComma(1));
+    }
+
+    #[test]
+    fn parse_call_trailing_comma_multiple_arguments() {
+        let lexer = Lexer::new("score, is_active,)", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+        let mut call_parser = FunctionCallParser::new(&mut parser);
+
+        let left = Expression::Identifier("update_profile".to_string());
+        let token = Token::new(TokenType::LeftParentheses, 0..1, 1, "(");
+        let error = call_parser.parse(left, &token).unwrap_err();
+
+        assert_eq!(error, ParseError::TrailingComma(1));
     }
 }
