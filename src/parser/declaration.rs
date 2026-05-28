@@ -177,4 +177,27 @@ mod tests {
             ))
         );
     }
+
+    #[test]
+    fn parse_variable_declaration_missing_type_identifier() {
+        let lexer = Lexer::new("var attempts: = 10;", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = VariableDeclarationParser::new(&mut stream);
+
+        let error = parser.parse().unwrap_err();
+        assert_eq!(
+            error,
+            ParseError::UnexpectedTokenType(TokenType::Identifier, TokenType::Equals, 1)
+        );
+    }
+
+    #[test]
+    fn parse_variable_declaration_immediate_eof() {
+        let lexer = Lexer::new("var", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = VariableDeclarationParser::new(&mut stream);
+
+        let error = parser.parse().unwrap_err();
+        assert_eq!(error, ParseError::UnexpectedEof);
+    }
 }
