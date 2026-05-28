@@ -1,0 +1,7 @@
+fn factorial(n: i32): i32 {
+    if n <= 1 {
+        var result = 1;
+    } else {
+        var result = n * factorial(n - 1);
+    }
+}

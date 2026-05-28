@@ -5,12 +5,16 @@ use crate::parser::error::ParseError;
 use crate::parser::stream::ParserStream;
 use crate::parser::Parser;
 use std::fmt;
+use std::fs;
+use std::path::Path;
 
 /// Represents errors encountered during the type inference or parsing phases.
 #[derive(Debug, PartialEq)]
 pub enum InferenceError {
     /// A syntax or grammatical error occurred during the lexical analysis or parsing phase.
     ParseError(String),
+    /// An error occurred during file I/O or file validation (e.g. invalid extension, missing file).
+    FileError(String),
 }
 
 impl From<ParseError> for InferenceError {
@@ -23,6 +27,7 @@ impl fmt::Display for InferenceError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             InferenceError::ParseError(msg) => write!(formatter, "{}", msg),
+            InferenceError::FileError(msg) => write!(formatter, "{}", msg),
         }
     }
 }
@@ -60,6 +65,29 @@ impl Infer {
         let mut parser = Parser::new(&mut stream);
 
         parser.parse().map_err(|err| err.into())
+    }
+
+    /// Compiles a source file, verifying that it has the `.toy` extension.
+    ///
+    /// # Errors
+    ///
+    /// Returns an `InferenceError` if:
+    /// - The file extension is not `.toy` (`InferenceError::FileError`).
+    /// - The file cannot be read from the filesystem (`InferenceError::FileError`).
+    /// - Lexical analysis or parsing encounters a syntax or structural violation (`InferenceError::ParseError`).
+    pub fn infer_file<P: AsRef<Path>>(&self, path: P) -> Result<Program, InferenceError> {
+        let path = path.as_ref();
+        if path.extension().and_then(|extension| extension.to_str()) != Some("toy") {
+            return Err(InferenceError::FileError(format!(
+                "invalid file extension, expected '.toy' for file: {}",
+                path.display()
+            )));
+        }
+
+        let source = fs::read_to_string(path)
+            .map_err(|err| InferenceError::FileError(format!("failed to read file: {}", err)))?;
+
+        self.infer(&source)
     }
 }
 
@@ -131,5 +159,52 @@ mod tests {
             result.err().unwrap(),
             InferenceError::ParseError("unrecognized character '?' on line 1".to_string())
         );
+    }
+
+    #[test]
+    fn infer_file() {
+        let infer = Infer::new();
+        let temp_dir = std::env::temp_dir();
+        let file_path = temp_dir.join("test_program.toy");
+        fs::write(&file_path, "var x = 10;").unwrap();
+
+        let result = infer.infer_file(&file_path);
+        let _ = fs::remove_file(&file_path);
+
+        assert!(result.is_ok());
+        let program = result.unwrap();
+        assert_eq!(program.statements().len(), 1);
+    }
+
+    #[test]
+    fn infer_file_invalid_extension() {
+        let infer = Infer::new();
+        let temp_dir = std::env::temp_dir();
+        let file_path = temp_dir.join("test_program.txt");
+        fs::write(&file_path, "var x = 10;").unwrap();
+
+        let result = infer.infer_file(&file_path);
+        let _ = fs::remove_file(&file_path);
+
+        assert!(result.is_err());
+        assert_eq!(
+            result.err().unwrap(),
+            InferenceError::FileError(format!(
+                "invalid file extension, expected '.toy' for file: {}",
+                file_path.display()
+            ))
+        );
+    }
+
+    #[test]
+    fn infer_file_not_found() {
+        let infer = Infer::new();
+        let file_path = Path::new("does_not_exist.toy");
+        let result = infer.infer_file(&file_path);
+
+        assert!(result.is_err());
+        let err = result.err().unwrap();
+        assert!(matches!(err, InferenceError::FileError(_)));
+        assert!(err.to_string().contains("failed to read file"));
     }
 }
