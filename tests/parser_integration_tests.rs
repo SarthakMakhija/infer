@@ -7,7 +7,7 @@ use infer::{
 };
 
 #[test]
-fn test_parse_function_with_parameters_and_return_type() {
+fn parse_function_with_parameters_and_return_type() {
     let compiler = Infer::new();
     let program = compiler
         .infer("fn calculate_sum(first: int, second: int): int {}")
@@ -23,7 +23,7 @@ fn test_parse_function_with_parameters_and_return_type() {
 }
 
 #[test]
-fn test_parse_function_with_assignments() {
+fn parse_function_with_assignments() {
     let compiler = Infer::new();
     let program = compiler
         .infer("fn track_attempts() { var attempts = 1; attempts = 2; }")
@@ -43,7 +43,7 @@ fn test_parse_function_with_assignments() {
 }
 
 #[test]
-fn test_parse_function_with_conditional() {
+fn parse_function_with_conditional() {
     let compiler = Infer::new();
     let program = compiler.infer("fn check_status(code: int) { if code == 200 { var success = 1; } else { var success = 0; } }").unwrap();
     let statements = program.statements();
@@ -78,7 +78,7 @@ fn test_parse_function_with_conditional() {
 }
 
 #[test]
-fn test_parse_function_with_loop() {
+fn parse_function_with_loop() {
     let compiler = Infer::new();
     let program = compiler
         .infer("fn retry_connection() { loop { break; } }")
@@ -100,7 +100,7 @@ fn test_parse_function_with_loop() {
 }
 
 #[test]
-fn test_parse_invalid_top_level_statement() {
+fn parse_invalid_top_level_statement() {
     let compiler = Infer::new();
     let result = compiler.infer("attempts = 10;");
 
