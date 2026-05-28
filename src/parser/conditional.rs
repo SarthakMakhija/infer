@@ -1,5 +1,5 @@
 use crate::ast::expr::Expression;
-use crate::ast::statement::{Conditional, Statement};
+use crate::ast::statement::{If, Statement};
 use crate::lexer::token::TokenType;
 use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
@@ -20,9 +20,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ConditionalParser<'src,
         let (condition, body) = self.parse_if()?;
         let else_body = self.maybe_parse_else()?;
 
-        Ok(Statement::conditional(Conditional::new(
-            condition, body, else_body,
-        )))
+        Ok(Statement::conditional(If::new(condition, body, else_body)))
     }
 
     fn parse_if(&mut self) -> Result<(Expression, Vec<Statement>), ParseError> {
@@ -80,7 +78,7 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::conditional(Conditional::new(
+            Statement::conditional(If::new(
                 Expression::Binary(
                     Box::new(Expression::Identifier("score".to_string())),
                     BinaryOperator::GreaterThanEquals,
@@ -107,7 +105,7 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::conditional(Conditional::new(
+            Statement::conditional(If::new(
                 Expression::Binary(
                     Box::new(Expression::Identifier("total_price".to_string())),
                     BinaryOperator::GreaterThan,
@@ -141,7 +139,7 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::conditional(Conditional::new(
+            Statement::conditional(If::new(
                 Expression::Binary(
                     Box::new(Expression::Identifier("debug_mode_enabled".to_string())),
                     BinaryOperator::EqualsEquals,
@@ -165,7 +163,7 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::conditional(Conditional::new(
+            Statement::conditional(If::new(
                 Expression::Binary(
                     Box::new(Expression::Identifier("total_price".to_string())),
                     BinaryOperator::GreaterThan,
@@ -221,7 +219,7 @@ mod else_if_tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::conditional(Conditional::new(
+            Statement::conditional(If::new(
                 Expression::Binary(
                     Box::new(Expression::Identifier("score".to_string())),
                     BinaryOperator::GreaterThanEquals,
@@ -231,7 +229,7 @@ mod else_if_tests {
                     "grade".to_string(),
                     Expression::String("A".to_string()),
                 ))],
-                Some(vec![Statement::conditional(Conditional::new(
+                Some(vec![Statement::conditional(If::new(
                     Expression::Binary(
                         Box::new(Expression::Identifier("score".to_string())),
                         BinaryOperator::GreaterThanEquals,
@@ -262,7 +260,7 @@ mod else_if_tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::conditional(Conditional::new(
+            Statement::conditional(If::new(
                 Expression::Binary(
                     Box::new(Expression::Identifier("risk_level".to_string())),
                     BinaryOperator::GreaterThan,
@@ -272,7 +270,7 @@ mod else_if_tests {
                     "status".to_string(),
                     Expression::String("high".to_string()),
                 ))],
-                Some(vec![Statement::conditional(Conditional::new(
+                Some(vec![Statement::conditional(If::new(
                     Expression::Binary(
                         Box::new(Expression::Identifier("risk_level".to_string())),
                         BinaryOperator::GreaterThan,
@@ -300,7 +298,7 @@ mod else_if_tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::conditional(Conditional::new(
+            Statement::conditional(If::new(
                 Expression::Binary(
                     Box::new(Expression::Identifier("income".to_string())),
                     BinaryOperator::GreaterThan,
@@ -310,7 +308,7 @@ mod else_if_tests {
                     "rate".to_string(),
                     Expression::I32(30),
                 ))],
-                Some(vec![Statement::conditional(Conditional::new(
+                Some(vec![Statement::conditional(If::new(
                     Expression::Binary(
                         Box::new(Expression::Identifier("income".to_string())),
                         BinaryOperator::GreaterThan,
@@ -320,7 +318,7 @@ mod else_if_tests {
                         "rate".to_string(),
                         Expression::I32(20),
                     ))],
-                    Some(vec![Statement::conditional(Conditional::new(
+                    Some(vec![Statement::conditional(If::new(
                         Expression::Binary(
                             Box::new(Expression::Identifier("income".to_string())),
                             BinaryOperator::GreaterThan,

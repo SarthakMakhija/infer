@@ -1,4 +1,4 @@
-use crate::ast::statement::{Iteration, Statement};
+use crate::ast::statement::{Loop, Statement};
 use crate::lexer::token::TokenType;
 use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
@@ -20,7 +20,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> LoopParser<'src, 'strea
         let body = self.parse_body()?;
         self.stream.expect(TokenType::RightBrace)?;
 
-        Ok(Statement::iteration(Iteration::new(body)))
+        Ok(Statement::iteration(Loop::new(body)))
     }
 
     fn parse_body(&mut self) -> Result<Vec<Statement>, ParseError> {
@@ -32,7 +32,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> LoopParser<'src, 'strea
 mod tests {
     use super::*;
     use crate::ast::expr::{BinaryOperator, Expression};
-    use crate::ast::statement::{Assignment, Iteration, Statement};
+    use crate::ast::statement::{Assignment, Loop, Statement};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
     use crate::parser::stream::ParserStream;
@@ -44,7 +44,7 @@ mod tests {
         let mut parser = LoopParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
-        assert_eq!(statement, Statement::iteration(Iteration::new(vec![])));
+        assert_eq!(statement, Statement::iteration(Loop::new(vec![])));
     }
 
     #[test]
@@ -59,7 +59,7 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::iteration(Iteration::new(vec![
+            Statement::iteration(Loop::new(vec![
                 Statement::assignment(Assignment::new(
                     "counter".to_string(),
                     Expression::Binary(

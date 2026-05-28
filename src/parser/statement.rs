@@ -3,6 +3,7 @@ use crate::lexer::token::{Token, TokenType};
 use crate::lexer::LexResult;
 use crate::parser::assignment::AssignmentParser;
 use crate::parser::conditional::ConditionalParser;
+use crate::parser::control_flow::BreakParser;
 use crate::parser::declaration::VariableDeclarationParser;
 use crate::parser::error::ParseError;
 use crate::parser::iteration::LoopParser;
@@ -46,6 +47,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, '
             TokenType::Var => VariableDeclarationParser::new(self.stream).parse()?,
             TokenType::If => ConditionalParser::new(self.stream).parse()?,
             TokenType::Loop => LoopParser::new(self.stream).parse()?,
+            TokenType::Break => BreakParser::new(self.stream).parse()?,
             TokenType::Identifier => {
                 if let Some(assignment) = self.maybe_assignment()? {
                     assignment
@@ -73,7 +75,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, '
 mod tests {
     use super::*;
     use crate::ast::expr::Expression;
-    use crate::ast::statement::{Assignment, VariableDeclaration};
+    use crate::ast::statement::{Assignment, Break, Loop, VariableDeclaration};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
 
@@ -164,9 +166,29 @@ mod tests {
         let mut parser = StatementParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        assert_eq!(statement, Statement::iteration(Loop::new(vec![])));
+    }
+
+    #[test]
+    fn parse_break_statement() {
+        let lexer = Lexer::new("break;", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = StatementParser::new(&mut stream);
+
+        let statement = parser.parse().unwrap();
+        assert_eq!(statement, Statement::control_flow(Break::new()));
+    }
+
+    #[test]
+    fn parse_loop_with_break_statement() {
+        let lexer = Lexer::new("loop { break; }", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = StatementParser::new(&mut stream);
+
+        let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::iteration(crate::ast::statement::Iteration::new(vec![]))
+            Statement::iteration(Loop::new(vec![Statement::control_flow(Break::new())]))
         );
     }
 }

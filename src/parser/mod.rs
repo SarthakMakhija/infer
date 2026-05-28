@@ -6,6 +6,7 @@ use crate::parser::stream::ParserStream;
 
 pub(crate) mod assignment;
 pub(crate) mod conditional;
+pub(crate) mod control_flow;
 pub(crate) mod declaration;
 pub(crate) mod error;
 pub(crate) mod expr;
@@ -38,7 +39,7 @@ mod tests {
     use super::*;
     use crate::ast::expr::{BinaryOperator, Expression};
     use crate::ast::statement::VariableDeclaration;
-    use crate::ast::statement::{Assignment, Conditional, Statement};
+    use crate::ast::statement::{Assignment, If, Statement};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
 
@@ -172,7 +173,7 @@ mod tests {
 
         let program = parser.parse().unwrap();
         let expected = ProgramBuilder::new()
-            .add(Statement::conditional(Conditional::new(
+            .add(Statement::conditional(If::new(
                 Expression::Binary(
                     Box::new(Expression::Identifier("discount_rate".to_string())),
                     BinaryOperator::GreaterThan,

@@ -4,8 +4,9 @@ use crate::ast::expr::Expression;
 pub(crate) enum Statement {
     VariableDeclaration(VariableDeclaration),
     Assignment(Assignment),
-    Conditional(Conditional),
-    Iteration(Iteration),
+    If(If),
+    Loop(Loop),
+    Break(Break),
 }
 
 impl Statement {
@@ -17,12 +18,16 @@ impl Statement {
         Statement::Assignment(statement)
     }
 
-    pub(crate) fn conditional(statement: Conditional) -> Self {
-        Statement::Conditional(statement)
+    pub(crate) fn conditional(statement: If) -> Self {
+        Statement::If(statement)
     }
 
-    pub(crate) fn iteration(statement: Iteration) -> Self {
-        Statement::Iteration(statement)
+    pub(crate) fn iteration(statement: Loop) -> Self {
+        Statement::Loop(statement)
+    }
+
+    pub(crate) fn control_flow(statement: Break) -> Self {
+        Statement::Break(statement)
     }
 }
 
@@ -63,13 +68,13 @@ impl Assignment {
 }
 
 #[derive(Debug, PartialEq)]
-pub(crate) struct Conditional {
+pub(crate) struct If {
     pub(crate) condition: Expression,
     pub(crate) body: Vec<Statement>,
     pub(crate) else_body: Option<Vec<Statement>>,
 }
 
-impl Conditional {
+impl If {
     pub(crate) fn new(
         condition: Expression,
         body: Vec<Statement>,
@@ -84,13 +89,22 @@ impl Conditional {
 }
 
 #[derive(Debug, PartialEq)]
-pub(crate) struct Iteration {
+pub(crate) struct Loop {
     pub(crate) body: Vec<Statement>,
 }
 
-impl Iteration {
+impl Loop {
     pub(crate) fn new(body: Vec<Statement>) -> Self {
         Self { body }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) struct Break;
+
+impl Break {
+    pub(crate) fn new() -> Self {
+        Break {}
     }
 }
 
