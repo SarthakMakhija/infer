@@ -330,4 +330,45 @@ mod tests {
         let result = parser.parse();
         assert_eq!(result.err().unwrap(), ParseError::UnexpectedEof);
     }
+
+    #[test]
+    fn parse_statement_lex_error_in_lookahead() {
+        let lexer = Lexer::new("attempts ?", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = StatementParser::new(&mut stream);
+
+        let error = parser.parse().unwrap_err();
+        assert!(matches!(
+            error,
+            ParseError::LexError(crate::lexer::error::LexError::UnrecognizedChar('?', 1))
+        ));
+    }
+
+    #[test]
+    fn parse_statements_till_lex_error() {
+        let lexer = Lexer::new("var id = 10; ?", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = StatementParser::new(&mut stream);
+
+        let error = parser
+            .parse_statements_till(TokenType::RightBrace)
+            .unwrap_err();
+        assert!(matches!(
+            error,
+            ParseError::LexError(crate::lexer::error::LexError::UnrecognizedChar('?', 1))
+        ));
+    }
+
+    #[test]
+    fn parse_statement_single_identifier_eof() {
+        let lexer = Lexer::new("attempts", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = StatementParser::new(&mut stream);
+
+        let error = parser.parse().unwrap_err();
+        assert_eq!(
+            error,
+            ParseError::UnsupportedStatement(TokenType::Identifier, 1)
+        );
+    }
 }
