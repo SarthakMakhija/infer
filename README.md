@@ -25,10 +25,9 @@ _infer_ is built as a step-by-step linear pipeline. Each phase of the process is
 Source Code
     │
     ▼
-┌───────────┐   Tokens   ┌────────────┐ Untyped AST ┌──────────────┐ AST ┌──────────────────┐ Typed AST
-│ 1. Lexer  │ ---------> │ 2. Parser  │ ----------> │ 3. Semantic  │ --> │ 4. Type Inference│ -------> Output
-└───────────┘            └────────────┘             │    Analysis  │     └──────────────────┘
-                                                    └──────────────┘
+┌──────────────────────┐   Tokens   ┌──────────────────────┐ Untyped AST ┌──────────────────────┐ Untyped AST ┌──────────────────────┐ Typed AST
+│       1. Lexer       │ ---------> │      2. Parser       │ ----------> │ 3. Semantic Analysis │ ----------> │  4. Type Inference   │ -------> Output
+└──────────────────────┘            └──────────────────────┘             └──────────────────────┘             └──────────────────────┘
 ```
 
 ### 1. Lexer (Scanner): *Complete*
