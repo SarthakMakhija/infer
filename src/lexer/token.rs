@@ -10,6 +10,8 @@ pub(crate) enum TokenType {
     Semicolon,
     /// The `:` type annotation separator.
     Colon,
+    /// The `,` comma parameter/argument separator.
+    Comma,
     /// A user-defined identifier (e.g. variable names or type names).
     Identifier,
     /// The `var` structural keyword.
@@ -136,6 +138,16 @@ impl<'src> Token<'src> {
     pub(crate) fn colon(source: &'src str, index: usize, line: usize) -> Self {
         Self {
             token_type: TokenType::Colon,
+            range: index..index + 1,
+            line,
+            source,
+        }
+    }
+
+    /// Creates a new `Token` representing the `,` comma separator.
+    pub(crate) fn comma(source: &'src str, index: usize, line: usize) -> Self {
+        Self {
+            token_type: TokenType::Comma,
             range: index..index + 1,
             line,
             source,
@@ -409,6 +421,15 @@ mod token_tests {
         assert_eq!(token.range, 0..1);
         assert_eq!(token.line, 1);
         assert_eq!(token.source, ":");
+    }
+
+    #[test]
+    fn token_comma() {
+        let token = Token::comma(",", 0, 1);
+        assert_eq!(token.token_type, TokenType::Comma);
+        assert_eq!(token.range, 0..1);
+        assert_eq!(token.line, 1);
+        assert_eq!(token.source, ",");
     }
 
     #[test]

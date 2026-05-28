@@ -188,6 +188,10 @@ impl<'src> Iterator for Lexer<'src> {
                     self.move_ahead();
                     Some(Ok(Token::colon(self.source, index, self.line)))
                 }
+                ',' => {
+                    self.move_ahead();
+                    Some(Ok(Token::comma(self.source, index, self.line)))
+                }
                 '+' => {
                     self.move_ahead();
                     Some(Ok(Token::plus(self.source, index, self.line)))
@@ -299,6 +303,13 @@ mod tests {
     fn lex_colon() {
         let mut lexer = Lexer::new(":", Keywords::new());
         assert_token!(lexer.next(), TokenType::Colon, 0..1);
+        assert!(lexer.next().is_none());
+    }
+
+    #[test]
+    fn lex_comma() {
+        let mut lexer = Lexer::new(",", Keywords::new());
+        assert_token!(lexer.next(), TokenType::Comma, 0..1);
         assert!(lexer.next().is_none());
     }
 

@@ -7,6 +7,7 @@ pub(crate) enum Statement {
     If(If),
     Loop(Loop),
     Break(Break),
+    FunctionDefinition(FunctionDefinition),
 }
 
 impl Statement {
@@ -28,6 +29,10 @@ impl Statement {
 
     pub(crate) fn control_flow(statement: Break) -> Self {
         Statement::Break(statement)
+    }
+
+    pub(crate) fn function_definition(statement: FunctionDefinition) -> Self {
+        Statement::FunctionDefinition(statement)
     }
 }
 
@@ -105,6 +110,42 @@ pub(crate) struct Break;
 impl Break {
     pub(crate) fn new() -> Self {
         Break {}
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) struct FunctionDefinition {
+    pub(crate) name: String,
+    pub(crate) parameters: Vec<FunctionParameter>,
+    pub(crate) return_type: Option<String>,
+    pub(crate) body: Vec<Statement>,
+}
+
+impl FunctionDefinition {
+    pub(crate) fn new(
+        name: String,
+        parameters: Vec<FunctionParameter>,
+        return_type: Option<String>,
+        body: Vec<Statement>,
+    ) -> Self {
+        Self {
+            name,
+            parameters,
+            return_type,
+            body,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) struct FunctionParameter {
+    pub(crate) name: String,
+    pub(crate) data_type: Option<String>,
+}
+
+impl FunctionParameter {
+    pub(crate) fn new(name: String, data_type: Option<String>) -> Self {
+        Self { name, data_type }
     }
 }
 

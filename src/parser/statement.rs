@@ -6,6 +6,7 @@ use crate::parser::conditional::ConditionalParser;
 use crate::parser::control_flow::BreakParser;
 use crate::parser::declaration::VariableDeclarationParser;
 use crate::parser::error::ParseError;
+use crate::parser::function::FnParser;
 use crate::parser::iteration::LoopParser;
 use crate::parser::stream::ParserStream;
 
@@ -48,6 +49,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, '
             TokenType::If => ConditionalParser::new(self.stream).parse()?,
             TokenType::Loop => LoopParser::new(self.stream).parse()?,
             TokenType::Break => BreakParser::new(self.stream).parse()?,
+            TokenType::Fn => FnParser::new(self.stream).parse()?,
             TokenType::Identifier => {
                 if let Some(assignment) = self.maybe_assignment()? {
                     assignment
@@ -75,7 +77,9 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, '
 mod tests {
     use super::*;
     use crate::ast::expr::Expression;
-    use crate::ast::statement::{Assignment, Break, Loop, VariableDeclaration};
+    use crate::ast::statement::{
+        Assignment, Break, FunctionDefinition, FunctionParameter, Loop, VariableDeclaration,
+    };
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
 
@@ -189,6 +193,34 @@ mod tests {
         assert_eq!(
             statement,
             Statement::iteration(Loop::new(vec![Statement::control_flow(Break::new())]))
+        );
+    }
+
+    #[test]
+    fn parse_function_definition_statement() {
+        let lexer = Lexer::new(
+            "fn adjust_risk(score: i32): i32 { var risk_level = score; }",
+            Keywords::new(),
+        );
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = StatementParser::new(&mut stream);
+
+        let statement = parser.parse().unwrap();
+        assert_eq!(
+            statement,
+            Statement::function_definition(FunctionDefinition::new(
+                "adjust_risk".to_string(),
+                vec![FunctionParameter::new(
+                    "score".to_string(),
+                    Some("i32".to_string())
+                )],
+                Some("i32".to_string()),
+                vec![Statement::variable_declaration(VariableDeclaration::new(
+                    "risk_level".to_string(),
+                    None,
+                    Some(Expression::Identifier("score".to_string()))
+                ))]
+            ))
         );
     }
 }

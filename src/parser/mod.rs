@@ -10,6 +10,7 @@ pub(crate) mod control_flow;
 pub(crate) mod declaration;
 pub(crate) mod error;
 pub(crate) mod expr;
+pub(crate) mod function;
 pub(crate) mod iteration;
 pub(crate) mod statement;
 pub(crate) mod stream;
