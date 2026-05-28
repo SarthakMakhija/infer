@@ -5,6 +5,7 @@ use crate::parser::assignment::AssignmentParser;
 use crate::parser::conditional::ConditionalParser;
 use crate::parser::declaration::VariableDeclarationParser;
 use crate::parser::error::ParseError;
+use crate::parser::iteration::LoopParser;
 use crate::parser::stream::ParserStream;
 
 pub(crate) struct StatementParser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
@@ -44,6 +45,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, '
         let statement = match token.token_type {
             TokenType::Var => VariableDeclarationParser::new(self.stream).parse()?,
             TokenType::If => ConditionalParser::new(self.stream).parse()?,
+            TokenType::Loop => LoopParser::new(self.stream).parse()?,
             TokenType::Identifier => {
                 if let Some(assignment) = self.maybe_assignment()? {
                     assignment
@@ -153,5 +155,18 @@ mod tests {
 
         let statements = parser.parse_statements_till(TokenType::RightBrace).unwrap();
         assert_eq!(statements, vec![]);
+    }
+
+    #[test]
+    fn parse_loop_statement() {
+        let lexer = Lexer::new("loop {}", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = StatementParser::new(&mut stream);
+
+        let statement = parser.parse().unwrap();
+        assert_eq!(
+            statement,
+            Statement::iteration(crate::ast::statement::Iteration::new(vec![]))
+        );
     }
 }

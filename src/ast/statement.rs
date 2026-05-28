@@ -5,6 +5,7 @@ pub(crate) enum Statement {
     VariableDeclaration(VariableDeclaration),
     Assignment(Assignment),
     Conditional(Conditional),
+    Iteration(Iteration),
 }
 
 impl Statement {
@@ -18,6 +19,10 @@ impl Statement {
 
     pub(crate) fn conditional(statement: Conditional) -> Self {
         Statement::Conditional(statement)
+    }
+
+    pub(crate) fn iteration(statement: Iteration) -> Self {
+        Statement::Iteration(statement)
     }
 }
 
@@ -75,6 +80,17 @@ impl Conditional {
             body,
             else_body,
         }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) struct Iteration {
+    pub(crate) body: Vec<Statement>,
+}
+
+impl Iteration {
+    pub(crate) fn new(body: Vec<Statement>) -> Self {
+        Self { body }
     }
 }
 

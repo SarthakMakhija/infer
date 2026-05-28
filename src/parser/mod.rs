@@ -9,6 +9,7 @@ pub(crate) mod conditional;
 pub(crate) mod declaration;
 pub(crate) mod error;
 pub(crate) mod expr;
+pub(crate) mod iteration;
 pub(crate) mod statement;
 pub(crate) mod stream;
 
@@ -127,12 +128,14 @@ mod tests {
 
         let program = parser.parse().unwrap();
         let expected = ProgramBuilder::new()
-            .add(Statement::assignment(
-                crate::ast::statement::Assignment::new("height".to_string(), Expression::I32(200)),
-            ))
-            .add(Statement::assignment(
-                crate::ast::statement::Assignment::new("weight".to_string(), Expression::I32(300)),
-            ))
+            .add(Statement::assignment(Assignment::new(
+                "height".to_string(),
+                Expression::I32(200),
+            )))
+            .add(Statement::assignment(Assignment::new(
+                "weight".to_string(),
+                Expression::I32(300),
+            )))
             .build();
         assert_eq!(program, expected);
     }
@@ -150,9 +153,10 @@ mod tests {
                 None,
                 Some(Expression::I32(100)),
             )))
-            .add(Statement::assignment(
-                crate::ast::statement::Assignment::new("id".to_string(), Expression::I32(200)),
-            ))
+            .add(Statement::assignment(Assignment::new(
+                "id".to_string(),
+                Expression::I32(200),
+            )))
             .build();
         assert_eq!(program, expected);
     }
