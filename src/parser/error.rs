@@ -170,4 +170,22 @@ mod tests {
             "chained comparison operations are not supported on line 12"
         );
     }
+
+    #[test]
+    fn display_unsupported_prefix_expression() {
+        let err = ParseError::UnsupportedPrefixExpression(TokenType::Plus, 10);
+        assert_eq!(
+            err.to_string(),
+            "no supported prefix parser for 'Plus' on line 10"
+        );
+    }
+
+    #[test]
+    fn display_unsupported_top_level_statement() {
+        let err = ParseError::UnsupportedTopLevelStatement(TokenType::Plus, 8);
+        assert_eq!(
+            err.to_string(),
+            "unsupported token 'Plus' at top-level on line 8"
+        );
+    }
 }
