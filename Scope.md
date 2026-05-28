@@ -7,11 +7,13 @@
 - [x] Support If/Else/ElseIf
 - [x] Support loop
   - [x] Support break
-- [ ] Support functions
-  - [ ] Without parameters
-  - [ ] Without return type
-  - [ ] With parameters
-  - [ ] With return type
+- [x] Support function definition
+  - [x] Without parameters
+  - [x] Without return type
+  - [x] With parameters
+  - [x] With return type
+  - [x] With type annotations
+  - [x] Without type annotations
 - [ ] Support expressions
     - [x] Support arithmetic + - * /
     - [x] Support !

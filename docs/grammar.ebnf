@@ -1,5 +1,8 @@
 program
-    = { statement } EOF ;
+    = { top_level_statement } EOF ;
+
+top_level_statement
+    = declaration | assignment | function;
 
 statement
     = declaration | assignment | conditional | iteration | control_flow ;
@@ -21,6 +24,18 @@ iteration
 
 control_flow
     = "break" ";" ;
+
+function
+    = "fn" identifier "(" [ parameters ] ")" [ return_type ] "{" { statement } "}" ;
+
+parameters
+    = parameter { "," parameter } ;
+
+parameter
+    = identifier [ ":" type ] ;
+
+return_type
+    = ":" type ;
 
 identifier
     = IDENTIFIER ;
