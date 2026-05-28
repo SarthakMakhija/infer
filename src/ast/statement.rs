@@ -20,30 +20,39 @@ pub enum Statement {
 }
 
 impl Statement {
+    /// Wraps a [`VariableDeclaration`] into a [`Statement::VariableDeclaration`].
     pub(crate) fn variable_declaration(statement: VariableDeclaration) -> Self {
         Statement::VariableDeclaration(statement)
     }
 
+    /// Wraps an [`Assignment`] into a [`Statement::Assignment`].
     pub(crate) fn assignment(statement: Assignment) -> Self {
         Statement::Assignment(statement)
     }
 
+    /// Wraps an [`If`] into a [`Statement::If`].
     pub(crate) fn conditional(statement: If) -> Self {
         Statement::If(statement)
     }
 
+    /// Wraps a [`Loop`] into a [`Statement::Loop`].
     pub(crate) fn iteration(statement: Loop) -> Self {
         Statement::Loop(statement)
     }
 
+    /// Wraps a [`Break`] into a [`Statement::Break`].
     pub(crate) fn control_flow(statement: Break) -> Self {
         Statement::Break(statement)
     }
 
+    /// Wraps a [`FunctionDefinition`] into a [`Statement::FunctionDefinition`].
     pub(crate) fn function_definition(statement: FunctionDefinition) -> Self {
         Statement::FunctionDefinition(statement)
     }
 
+    /// Wraps a function call [`Expression`] into a [`Statement::FunctionCall`].
+    ///
+    /// The caller is expected to pass a [`Expression::FunctionCall`] variant.
     pub(crate) fn function_call(expression: Expression) -> Self {
         Statement::FunctionCall(expression)
     }
