@@ -1,6 +1,6 @@
 - [ ] Grammar (_Continuously updated_)
 - [x] Support variable declaration
-- [x] Support variable assignment
+- [x] Support variable assignment along with declaration
 - [x] Support assignment
 - [x] Support If
 - [x] Support If/Else

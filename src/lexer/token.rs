@@ -50,11 +50,14 @@ pub(crate) enum TokenType {
     EqualsEquals,
     /// The `!=` comparison operator.
     BangEquals,
-
     /// The `if` conditional keyword.
     If,
     /// The `else` conditional keyword.
     Else,
+    /// The `loop` iteration keyword.
+    Loop,
+    /// The `break` control flow keyword.
+    Break,
 }
 
 impl TokenType {
@@ -67,6 +70,8 @@ impl TokenType {
             "false" => Ok(TokenType::BooleanLiteral(false)),
             "if" => Ok(TokenType::If),
             "else" => Ok(TokenType::Else),
+            "loop" => Ok(TokenType::Loop),
+            "break" => Ok(TokenType::Break),
             _ => Err(LexError::UnsupportedKeyword(token.to_string(), line)),
         }
     }
@@ -343,6 +348,19 @@ mod token_type_tests {
     #[test]
     fn keyword_type_else() {
         assert_eq!(TokenType::keyword_type("else", 1).unwrap(), TokenType::Else);
+    }
+
+    #[test]
+    fn keyword_type_loop() {
+        assert_eq!(TokenType::keyword_type("loop", 1).unwrap(), TokenType::Loop);
+    }
+
+    #[test]
+    fn keyword_type_break() {
+        assert_eq!(
+            TokenType::keyword_type("break", 1).unwrap(),
+            TokenType::Break
+        );
     }
 
     #[test]

@@ -371,6 +371,18 @@ mod tests {
     }
 
     #[test]
+    fn lex_loop_keyword() {
+        let mut lexer = Lexer::new("loop", Keywords::new());
+        assert_token!(lexer.next(), TokenType::Loop, 0..4);
+    }
+
+    #[test]
+    fn lex_break_keyword() {
+        let mut lexer = Lexer::new("break", Keywords::new());
+        assert_token!(lexer.next(), TokenType::Break, 0..5);
+    }
+
+    #[test]
     fn lex_var_case_sensitive() {
         let mut lexer = Lexer::new("VAR", Keywords::new());
         assert_token!(lexer.next(), TokenType::Identifier, 0..3);
