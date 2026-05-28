@@ -138,16 +138,12 @@ impl Assignment {
 #[derive(Debug, PartialEq)]
 pub struct If {
     pub(crate) condition: Expression,
-    pub(crate) body: Vec<Statement>,
-    pub(crate) else_body: Option<Vec<Statement>>,
+    pub(crate) body: Block,
+    pub(crate) else_body: Option<Block>,
 }
 
 impl If {
-    pub(crate) fn new(
-        condition: Expression,
-        body: Vec<Statement>,
-        else_body: Option<Vec<Statement>>,
-    ) -> Self {
+    pub(crate) fn new(condition: Expression, body: Block, else_body: Option<Block>) -> Self {
         Self {
             condition,
             body,
@@ -162,12 +158,12 @@ impl If {
 
     /// Returns a slice of statements in the `then` branch body.
     pub fn body(&self) -> &[Statement] {
-        &self.body
+        &self.body.statements
     }
 
     /// Returns a slice of statements in the `else` branch body, if provided.
     pub fn else_body(&self) -> Option<&[Statement]> {
-        self.else_body.as_deref()
+        self.else_body.as_ref().map(|block| block.statements())
     }
 }
 

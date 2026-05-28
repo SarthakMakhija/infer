@@ -1,10 +1,10 @@
 use crate::ast::expr::Expression;
-use crate::ast::statement::{If, Statement};
+use crate::ast::statement::{Block, If, Statement};
 use crate::lexer::token::TokenType;
 use crate::lexer::LexResult;
+use crate::parser::block::BlockParser;
 use crate::parser::error::ParseError;
 use crate::parser::expr::ExpressionParser;
-use crate::parser::statement::StatementParser;
 use crate::parser::stream::ParserStream;
 
 /// A sub-parser responsible for parsing `if` / `else if` / `else` conditional statements.
@@ -29,21 +29,19 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ConditionalParser<'src,
         Ok(Statement::conditional(If::new(condition, body, else_body)))
     }
 
-    fn parse_if(&mut self) -> Result<(Expression, Vec<Statement>), ParseError> {
+    fn parse_if(&mut self) -> Result<(Expression, Block), ParseError> {
         self.stream.expect(TokenType::If)?;
         let condition = ExpressionParser::new(self.stream).parse()?;
-        self.stream.expect(TokenType::LeftBrace)?;
         let body = self.parse_body()?;
-        self.stream.expect(TokenType::RightBrace)?;
         Ok((condition, body))
     }
 
-    fn maybe_parse_else(&mut self) -> Result<Option<Vec<Statement>>, ParseError> {
+    fn maybe_parse_else(&mut self) -> Result<Option<Block>, ParseError> {
         if self.stream.maybe_matches(TokenType::Else) {
             if let Some(next) = self.stream.peek()? {
                 if next.token_type == TokenType::If {
                     let nested_if = self.parse()?;
-                    return Ok(Some(vec![nested_if]));
+                    return Ok(Some(Block::new(vec![nested_if])));
                 }
             }
             return Ok(Some(self.parse_else()?));
@@ -51,15 +49,12 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ConditionalParser<'src,
         Ok(None)
     }
 
-    fn parse_else(&mut self) -> Result<Vec<Statement>, ParseError> {
-        self.stream.expect(TokenType::LeftBrace)?;
-        let body = self.parse_body()?;
-        self.stream.expect(TokenType::RightBrace)?;
-        Ok(body)
+    fn parse_else(&mut self) -> Result<Block, ParseError> {
+        self.parse_body()
     }
 
-    fn parse_body(&mut self) -> Result<Vec<Statement>, ParseError> {
-        StatementParser::new(self.stream).parse_statements_till(TokenType::RightBrace)
+    fn parse_body(&mut self) -> Result<Block, ParseError> {
+        BlockParser::new(self.stream).parse()
     }
 }
 
@@ -67,7 +62,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ConditionalParser<'src,
 mod tests {
     use super::*;
     use crate::ast::expr::{BinaryOperator, Expression};
-    use crate::ast::statement::{Assignment, Statement};
+    use crate::ast::statement::{Assignment, Block, Statement};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
     use crate::parser::stream::ParserStream;
@@ -90,10 +85,10 @@ mod tests {
                     BinaryOperator::GreaterThanEquals,
                     Box::new(Expression::Identifier("minimum_score".to_string())),
                 ),
-                vec![Statement::assignment(Assignment::new(
+                Block::new(vec![Statement::assignment(Assignment::new(
                     "is_eligible".to_string(),
                     Expression::Boolean(true),
-                ))],
+                ))]),
                 None
             ))
         );
@@ -117,7 +112,7 @@ mod tests {
                     BinaryOperator::GreaterThan,
                     Box::new(Expression::Identifier("budget".to_string())),
                 ),
-                vec![
+                Block::new(vec![
                     Statement::assignment(Assignment::new(
                         "status".to_string(),
                         Expression::String("over_budget".to_string()),
@@ -130,7 +125,7 @@ mod tests {
                             Box::new(Expression::Identifier("excess_fee".to_string())),
                         ),
                     )),
-                ],
+                ]),
                 None
             ))
         );
@@ -151,7 +146,7 @@ mod tests {
                     BinaryOperator::EqualsEquals,
                     Box::new(Expression::Boolean(true)),
                 ),
-                vec![],
+                Block::new(vec![]),
                 None
             ))
         );
@@ -175,14 +170,14 @@ mod tests {
                     BinaryOperator::GreaterThan,
                     Box::new(Expression::Identifier("budget".to_string())),
                 ),
-                vec![Statement::assignment(Assignment::new(
+                Block::new(vec![Statement::assignment(Assignment::new(
                     "status".to_string(),
                     Expression::String("over_budget".to_string()),
-                ))],
-                Some(vec![Statement::assignment(Assignment::new(
+                ))]),
+                Some(Block::new(vec![Statement::assignment(Assignment::new(
                     "status".to_string(),
                     Expression::String("within_budget".to_string()),
-                ))])
+                ))]))
             ))
         );
     }
@@ -208,7 +203,7 @@ mod tests {
 mod else_if_tests {
     use super::*;
     use crate::ast::expr::{BinaryOperator, Expression};
-    use crate::ast::statement::{Assignment, Statement};
+    use crate::ast::statement::{Assignment, Block, Statement};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
     use crate::parser::stream::ParserStream;
@@ -231,25 +226,25 @@ mod else_if_tests {
                     BinaryOperator::GreaterThanEquals,
                     Box::new(Expression::I32(90)),
                 ),
-                vec![Statement::assignment(Assignment::new(
+                Block::new(vec![Statement::assignment(Assignment::new(
                     "grade".to_string(),
                     Expression::String("A".to_string()),
-                ))],
-                Some(vec![Statement::conditional(If::new(
+                ))]),
+                Some(Block::new(vec![Statement::conditional(If::new(
                     Expression::Binary(
                         Box::new(Expression::Identifier("score".to_string())),
                         BinaryOperator::GreaterThanEquals,
                         Box::new(Expression::I32(80)),
                     ),
-                    vec![Statement::assignment(Assignment::new(
+                    Block::new(vec![Statement::assignment(Assignment::new(
                         "grade".to_string(),
                         Expression::String("B".to_string()),
-                    ))],
-                    Some(vec![Statement::assignment(Assignment::new(
+                    ))]),
+                    Some(Block::new(vec![Statement::assignment(Assignment::new(
                         "grade".to_string(),
                         Expression::String("C".to_string()),
-                    ))])
-                ))])
+                    ))]))
+                ))]))
             ))
         );
     }
@@ -272,22 +267,22 @@ mod else_if_tests {
                     BinaryOperator::GreaterThan,
                     Box::new(Expression::I32(8)),
                 ),
-                vec![Statement::assignment(Assignment::new(
+                Block::new(vec![Statement::assignment(Assignment::new(
                     "status".to_string(),
                     Expression::String("high".to_string()),
-                ))],
-                Some(vec![Statement::conditional(If::new(
+                ))]),
+                Some(Block::new(vec![Statement::conditional(If::new(
                     Expression::Binary(
                         Box::new(Expression::Identifier("risk_level".to_string())),
                         BinaryOperator::GreaterThan,
                         Box::new(Expression::I32(4)),
                     ),
-                    vec![Statement::assignment(Assignment::new(
+                    Block::new(vec![Statement::assignment(Assignment::new(
                         "status".to_string(),
                         Expression::String("medium".to_string()),
-                    ))],
+                    ))]),
                     None
-                ))])
+                ))]))
             ))
         );
     }
@@ -310,36 +305,36 @@ mod else_if_tests {
                     BinaryOperator::GreaterThan,
                     Box::new(Expression::I32(100000)),
                 ),
-                vec![Statement::assignment(Assignment::new(
+                Block::new(vec![Statement::assignment(Assignment::new(
                     "rate".to_string(),
                     Expression::I32(30),
-                ))],
-                Some(vec![Statement::conditional(If::new(
+                ))]),
+                Some(Block::new(vec![Statement::conditional(If::new(
                     Expression::Binary(
                         Box::new(Expression::Identifier("income".to_string())),
                         BinaryOperator::GreaterThan,
                         Box::new(Expression::I32(50000)),
                     ),
-                    vec![Statement::assignment(Assignment::new(
+                    Block::new(vec![Statement::assignment(Assignment::new(
                         "rate".to_string(),
                         Expression::I32(20),
-                    ))],
-                    Some(vec![Statement::conditional(If::new(
+                    ))]),
+                    Some(Block::new(vec![Statement::conditional(If::new(
                         Expression::Binary(
                             Box::new(Expression::Identifier("income".to_string())),
                             BinaryOperator::GreaterThan,
                             Box::new(Expression::I32(20000)),
                         ),
-                        vec![Statement::assignment(Assignment::new(
+                        Block::new(vec![Statement::assignment(Assignment::new(
                             "rate".to_string(),
                             Expression::I32(10),
-                        ))],
-                        Some(vec![Statement::assignment(Assignment::new(
+                        ))]),
+                        Some(Block::new(vec![Statement::assignment(Assignment::new(
                             "rate".to_string(),
                             Expression::I32(5),
-                        ))])
-                    ))])
-                ))])
+                        ))]))
+                    ))]))
+                ))]))
             ))
         );
     }

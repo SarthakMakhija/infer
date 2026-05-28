@@ -243,14 +243,14 @@ mod tests {
                     BinaryOperator::GreaterThan,
                     Box::new(Expression::I32(0)),
                 ),
-                vec![Statement::assignment(Assignment::new(
+                Block::new(vec![Statement::assignment(Assignment::new(
                     "final_price".to_string(),
                     Expression::Binary(
                         Box::new(Expression::Identifier("regular_price".to_string())),
                         BinaryOperator::Minus,
                         Box::new(Expression::Identifier("savings".to_string())),
                     ),
-                ))],
+                ))]),
                 None,
             ))]),
         ));
