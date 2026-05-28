@@ -18,6 +18,9 @@ pub(crate) enum Precedence {
 
     // ! -
     Unary = 50,
+
+    // function call
+    Call = 60,
 }
 
 impl Precedence {

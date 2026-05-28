@@ -47,6 +47,7 @@ pub(crate) enum Expression {
     Unary(Box<Expression>, UnaryOperator),
     Binary(Box<Expression>, BinaryOperator, Box<Expression>),
     Grouped(Box<Expression>),
+    FunctionCall(Box<Expression>, Vec<Expression>),
 }
 
 #[derive(Debug, PartialEq)]
