@@ -4,23 +4,29 @@ use crate::lexer::token::TokenType;
 pub(crate) enum Precedence {
     None = 0,
 
+    // or
+    Or = 10,
+
+    // and
+    And = 20,
+
     // ==, !=
-    Equality = 10,
+    Equality = 30,
 
     // >, <, >=, <=
-    Comparison = 20,
+    Comparison = 40,
 
     // + -
-    Plus = 30,
+    Plus = 50,
 
     // * /
-    Star = 40,
+    Star = 60,
 
     // ! -
-    Unary = 50,
+    Unary = 70,
 
     // f()
-    Call = 60,
+    Call = 80,
 }
 
 impl Precedence {
@@ -34,6 +40,8 @@ impl Precedence {
             | TokenType::GreaterThanEquals
             | TokenType::LessThan
             | TokenType::LessThanEquals => Precedence::Comparison,
+            TokenType::And => Precedence::And,
+            TokenType::Or => Precedence::Or,
             _ => Precedence::None,
         }
     }
@@ -148,6 +156,16 @@ mod tests {
     #[test]
     fn precedence_of_left_parentheses() {
         assert_eq!(Precedence::of(TokenType::LeftParentheses), Precedence::Call);
+    }
+
+    #[test]
+    fn precedence_of_and() {
+        assert_eq!(Precedence::of(TokenType::And), Precedence::And);
+    }
+
+    #[test]
+    fn precedence_of_or() {
+        assert_eq!(Precedence::of(TokenType::Or), Precedence::Or);
     }
 
     #[test]
