@@ -87,4 +87,30 @@ mod tests {
         let result = parser.parse();
         assert_eq!(result.err().unwrap(), ParseError::UnexpectedEof);
     }
+
+    #[test]
+    fn parse_assignment_missing_equals() {
+        let lexer = Lexer::new("attempts 10;", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = AssignmentParser::new(&mut stream);
+
+        let error = parser.parse().unwrap_err();
+        assert_eq!(
+            error,
+            ParseError::UnexpectedTokenType(TokenType::Equals, TokenType::WholeNumber, 1)
+        );
+    }
+
+    #[test]
+    fn parse_assignment_invalid_start() {
+        let lexer = Lexer::new("10 = attempts;", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = AssignmentParser::new(&mut stream);
+
+        let error = parser.parse().unwrap_err();
+        assert_eq!(
+            error,
+            ParseError::UnexpectedTokenType(TokenType::Identifier, TokenType::WholeNumber, 1)
+        );
+    }
 }
