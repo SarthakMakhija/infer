@@ -175,4 +175,39 @@ mod tests {
             ParseError::ChainedComparison(1)
         ));
     }
+
+    #[test]
+    fn parse_binary_operator_comparison() {
+        let lexer = Lexer::new("2", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+        let mut binary_operator = BinaryExpressionParser::new(&mut parser, Precedence::Comparison);
+
+        let left = Expression::I32(1);
+        let token = Token::new(TokenType::LessThan, 0..1, 1, "<");
+        let expression = binary_operator.parse(left, &token).unwrap();
+
+        assert_eq!(
+            expression,
+            Expression::Binary(
+                Box::new(Expression::I32(1)),
+                BinaryOperator::LessThan,
+                Box::new(Expression::I32(2))
+            )
+        );
+    }
+
+    #[test]
+    fn parse_binary_operator_right_side_error() {
+        let lexer = Lexer::new("", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+        let mut binary_operator = BinaryExpressionParser::new(&mut parser, Precedence::Plus);
+
+        let left = Expression::I32(1);
+        let token = Token::new(TokenType::Plus, 0..1, 1, "+");
+        let result = binary_operator.parse(left, &token);
+
+        assert_eq!(result.err().unwrap(), ParseError::UnexpectedEof);
+    }
 }
