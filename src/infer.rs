@@ -29,6 +29,12 @@ impl std::error::Error for InferenceError {}
 
 pub struct Infer;
 
+impl Default for Infer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Infer {
     pub fn new() -> Self {
         Infer
@@ -47,30 +53,11 @@ impl Infer {
 mod tests {
     use super::*;
     use crate::ast::expr::Expression;
-    use crate::ast::statement::Statement;
 
-    macro_rules! assert_variable_declaration {
-        ($statement:expr, $expected_name:expr, $expected_type:expr, $expected_expression:expr) => {{
-            let Statement::VariableDeclaration(decl) = $statement else {
-                panic!("Expected VariableDeclaration, found {:?}", $statement);
-            };
-            assert_eq!(decl.variable(), $expected_name);
-            assert_eq!(decl.data_type(), $expected_type);
-            assert_eq!(decl.expression(), $expected_expression);
-        }};
-    }
-
-    macro_rules! assert_function_definition {
-        ($statement:expr, $expected_name:expr, $expected_parameters:expr, $expected_return_type:expr, $expected_body_len:expr) => {{
-            let Statement::FunctionDefinition(func) = $statement else {
-                panic!("Expected FunctionDefinition, found {:?}", $statement);
-            };
-            assert_eq!(func.name(), $expected_name);
-            assert_eq!(func.parameters(), $expected_parameters);
-            assert_eq!(func.return_type(), $expected_return_type);
-            assert_eq!(func.body().len(), $expected_body_len);
-        }};
-    }
+    use crate::{
+        assert_function_body_len, assert_function_definition, assert_function_name,
+        assert_function_parameters, assert_function_return_type, assert_variable_declaration,
+    };
 
     #[test]
     fn infer_empty_source() {
@@ -84,8 +71,8 @@ mod tests {
         let infer = Infer::new();
         let program = infer.infer("var greeting = \"hello\";").unwrap();
         let statements = program.statements();
-        assert_eq!(statements.len(), 1);
 
+        assert_eq!(statements.len(), 1);
         assert_variable_declaration!(
             &statements[0],
             "greeting",
@@ -99,18 +86,22 @@ mod tests {
         let infer = Infer::new();
         let program = infer.infer("fn calculate() {}").unwrap();
         let statements = program.statements();
-        assert_eq!(statements.len(), 1);
 
-        assert_function_definition!(&statements[0], "calculate", &[][..], None, 0);
+        assert_eq!(statements.len(), 1);
+        let func = assert_function_definition!(&statements[0]);
+        assert_function_name!(func, "calculate");
+        assert_function_parameters!(func, []);
+        assert_function_return_type!(func, None::<&str>);
+        assert_function_body_len!(func, 0);
     }
 
     #[test]
     fn infer_invalid_top_level_statement() {
         let infer = Infer::new();
-        let res = infer.infer("x = 10;");
-        assert!(res.is_err());
+        let result = infer.infer("x = 10;");
+        assert!(result.is_err());
         assert_eq!(
-            res.err().unwrap(),
+            result.err().unwrap(),
             InferenceError::ParseError(
                 "unsupported token 'Identifier' at top-level on line 1".to_string()
             )
@@ -120,10 +111,10 @@ mod tests {
     #[test]
     fn infer_lex_error() {
         let infer = Infer::new();
-        let res = infer.infer("var x = 100; ?");
-        assert!(res.is_err());
+        let result = infer.infer("var x = 100; ?");
+        assert!(result.is_err());
         assert_eq!(
-            res.err().unwrap(),
+            result.err().unwrap(),
             InferenceError::ParseError("unrecognized character '?' on line 1".to_string())
         );
     }
