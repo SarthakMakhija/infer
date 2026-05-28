@@ -58,6 +58,8 @@ pub(crate) enum TokenType {
     Loop,
     /// The `break` control flow keyword.
     Break,
+    /// The `fn` function keyword.
+    Fn,
 }
 
 impl TokenType {
@@ -72,6 +74,7 @@ impl TokenType {
             "else" => Ok(TokenType::Else),
             "loop" => Ok(TokenType::Loop),
             "break" => Ok(TokenType::Break),
+            "fn" => Ok(TokenType::Fn),
             _ => Err(LexError::UnsupportedKeyword(token.to_string(), line)),
         }
     }
@@ -361,6 +364,11 @@ mod token_type_tests {
             TokenType::keyword_type("break", 1).unwrap(),
             TokenType::Break
         );
+    }
+
+    #[test]
+    fn keyword_type_fn() {
+        assert_eq!(TokenType::keyword_type("fn", 1).unwrap(), TokenType::Fn);
     }
 
     #[test]

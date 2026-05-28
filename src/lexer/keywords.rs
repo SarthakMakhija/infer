@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-const KEYWORDS: &[&str] = &["var", "true", "false", "if", "else", "break", "loop"];
+const KEYWORDS: &[&str] = &["var", "true", "false", "if", "else", "break", "loop", "fn"];
 
 /// A collection of reserved keywords in the language.
 ///
@@ -30,6 +30,11 @@ mod tests {
     #[test]
     fn is_a_valid_keyword() {
         assert!(Keywords::new().has("var"));
+    }
+
+    #[test]
+    fn fn_is_a_valid_keyword() {
+        assert!(Keywords::new().has("fn"));
     }
 
     #[test]
