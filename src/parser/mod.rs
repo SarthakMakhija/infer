@@ -67,7 +67,7 @@ mod tests {
     use super::*;
     use crate::ast::expr::Expression;
     use crate::ast::statement::{
-        FunctionDefinition, FunctionParameter, Statement, VariableDeclaration,
+        Block, FunctionDefinition, FunctionParameter, Statement, VariableDeclaration,
     };
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
@@ -189,11 +189,13 @@ mod tests {
                     Some("i32".to_string()),
                 )],
                 Some("i32".to_string()),
-                vec![Statement::variable_declaration(VariableDeclaration::new(
-                    "risk_level".to_string(),
-                    None,
-                    Some(Expression::Identifier("score".to_string())),
-                ))],
+                Block::new(vec![Statement::variable_declaration(
+                    VariableDeclaration::new(
+                        "risk_level".to_string(),
+                        None,
+                        Some(Expression::Identifier("score".to_string())),
+                    ),
+                )]),
             )))
             .build();
         assert_eq!(program, expected);

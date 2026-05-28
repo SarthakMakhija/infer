@@ -1,8 +1,8 @@
-use crate::ast::statement::{FunctionDefinition, FunctionParameter, Statement};
+use crate::ast::statement::{Block, FunctionDefinition, FunctionParameter, Statement};
 use crate::lexer::token::TokenType;
 use crate::lexer::LexResult;
+use crate::parser::block::BlockParser;
 use crate::parser::error::ParseError;
-use crate::parser::statement::StatementParser;
 use crate::parser::stream::ParserStream;
 
 /// A sub-parser responsible for parsing function definition statements.
@@ -31,10 +31,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> FnParser<'src, 'stream,
         let parameters = self.parse_parameters()?;
         self.stream.expect(TokenType::RightParentheses)?;
         let return_type = self.maybe_parse_return_type()?;
-
-        self.stream.expect(TokenType::LeftBrace)?;
         let body = self.parse_body()?;
-        self.stream.expect(TokenType::RightBrace)?;
 
         Ok(Statement::function_definition(FunctionDefinition::new(
             name,
@@ -99,8 +96,8 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> FnParser<'src, 'stream,
         Ok(return_type)
     }
 
-    fn parse_body(&mut self) -> Result<Vec<Statement>, ParseError> {
-        StatementParser::new(self.stream).parse_statements_till(TokenType::RightBrace)
+    fn parse_body(&mut self) -> Result<Block, ParseError> {
+        BlockParser::new(self.stream).parse()
     }
 }
 
@@ -108,7 +105,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> FnParser<'src, 'stream,
 mod tests {
     use super::*;
     use crate::ast::expr::{BinaryOperator, Expression};
-    use crate::ast::statement::{Assignment, If, VariableDeclaration};
+    use crate::ast::statement::{Assignment, Block, If, VariableDeclaration};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
     use crate::parser::stream::ParserStream;
@@ -126,7 +123,7 @@ mod tests {
                 "calculate".to_string(),
                 vec![],
                 None,
-                vec![]
+                Block::new(vec![])
             ))
         );
     }
@@ -147,7 +144,7 @@ mod tests {
                     Some("i32".to_string())
                 )],
                 Some("i32".to_string()),
-                vec![]
+                Block::new(vec![])
             ))
         );
     }
@@ -165,7 +162,7 @@ mod tests {
                 "determine_grade".to_string(),
                 vec![FunctionParameter::new("score".to_string(), None)],
                 None,
-                vec![]
+                Block::new(vec![])
             ))
         );
     }
@@ -186,7 +183,7 @@ mod tests {
                 "assign".to_string(),
                 vec![],
                 None,
-                vec![
+                Block::new(vec![
                     Statement::Assignment(Assignment::new(
                         "height".to_string(),
                         Expression::I32(200)
@@ -195,7 +192,7 @@ mod tests {
                         "weight".to_string(),
                         Expression::I32(300)
                     )),
-                ]
+                ])
             ))
         );
     }
@@ -214,14 +211,14 @@ mod tests {
             "test_func".to_string(),
             vec![],
             None,
-            vec![
+            Block::new(vec![
                 Statement::variable_declaration(VariableDeclaration::new(
                     "id".to_string(),
                     None,
                     Some(Expression::I32(100)),
                 )),
                 Statement::assignment(Assignment::new("id".to_string(), Expression::I32(200))),
-            ],
+            ]),
         ));
         assert_eq!(statement, expected);
     }
@@ -240,7 +237,7 @@ mod tests {
             "test_func".to_string(),
             vec![],
             None,
-            vec![Statement::conditional(If::new(
+            Block::new(vec![Statement::conditional(If::new(
                 Expression::Binary(
                     Box::new(Expression::Identifier("discount_rate".to_string())),
                     BinaryOperator::GreaterThan,
@@ -255,7 +252,7 @@ mod tests {
                     ),
                 ))],
                 None,
-            ))],
+            ))]),
         ));
         assert_eq!(statement, expected);
     }
@@ -274,7 +271,7 @@ mod tests {
             "test_func".to_string(),
             vec![],
             None,
-            vec![Statement::assignment(Assignment::new(
+            Block::new(vec![Statement::assignment(Assignment::new(
                 "total_price".to_string(),
                 Expression::Binary(
                     Box::new(Expression::Identifier("base_price".to_string())),
@@ -285,7 +282,7 @@ mod tests {
                         Box::new(Expression::Identifier("quantity".to_string())),
                     )),
                 ),
-            ))],
+            ))]),
         ));
         assert_eq!(statement, expected);
     }
@@ -304,7 +301,7 @@ mod tests {
             "test_func".to_string(),
             vec![],
             None,
-            vec![Statement::assignment(Assignment::new(
+            Block::new(vec![Statement::assignment(Assignment::new(
                 "adjusted_score".to_string(),
                 Expression::Binary(
                     Box::new(Expression::Grouped(Box::new(Expression::Binary(
@@ -315,7 +312,7 @@ mod tests {
                     BinaryOperator::Multiply,
                     Box::new(Expression::Identifier("multiplier".to_string())),
                 ),
-            ))],
+            ))]),
         ));
         assert_eq!(statement, expected);
     }
@@ -334,19 +331,21 @@ mod tests {
             "test_func".to_string(),
             vec![],
             None,
-            vec![Statement::variable_declaration(VariableDeclaration::new(
-                "total_cost".to_string(),
-                None,
-                Some(Expression::Binary(
-                    Box::new(Expression::Identifier("fixed_cost".to_string())),
-                    BinaryOperator::Plus,
-                    Box::new(Expression::Binary(
-                        Box::new(Expression::Identifier("variable_unit_cost".to_string())),
-                        BinaryOperator::Multiply,
-                        Box::new(Expression::Identifier("quantity".to_string())),
+            Block::new(vec![Statement::variable_declaration(
+                VariableDeclaration::new(
+                    "total_cost".to_string(),
+                    None,
+                    Some(Expression::Binary(
+                        Box::new(Expression::Identifier("fixed_cost".to_string())),
+                        BinaryOperator::Plus,
+                        Box::new(Expression::Binary(
+                            Box::new(Expression::Identifier("variable_unit_cost".to_string())),
+                            BinaryOperator::Multiply,
+                            Box::new(Expression::Identifier("quantity".to_string())),
+                        )),
                     )),
-                )),
-            ))],
+                ),
+            )]),
         ));
         assert_eq!(statement, expected);
     }
@@ -365,7 +364,7 @@ mod tests {
             "test_func".to_string(),
             vec![],
             None,
-            vec![
+            Block::new(vec![
                 Statement::variable_declaration(VariableDeclaration::new(
                     "net_salary".to_string(),
                     None,
@@ -383,7 +382,7 @@ mod tests {
                         Box::new(Expression::Identifier("yearly_bonus".to_string())),
                     ),
                 )),
-            ],
+            ]),
         ));
         assert_eq!(statement, expected);
     }

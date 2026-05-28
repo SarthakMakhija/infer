@@ -7,7 +7,7 @@ pub use infer::{Infer, InferenceError};
 pub(crate) mod lexer;
 pub(crate) mod parser;
 
-/// Asserts that a [`Statement`] is a `VariableDeclaration` and checks its fields.
+/// Asserts that a [`ast::statement::Statement`] is a `VariableDeclaration` and checks its fields.
 ///
 /// Panics with a descriptive message if the statement variant does not match.
 /// Returns the inner `VariableDeclaration` reference so callers can chain further assertions.
@@ -32,7 +32,7 @@ macro_rules! assert_variable_declaration {
     }};
 }
 
-/// Asserts that a [`Statement`] is a `FunctionDefinition` and extracts it.
+/// Asserts that a [`ast::statement::Statement`] is a `FunctionDefinition` and extracts it.
 ///
 /// Panics with a descriptive message if the statement variant does not match.
 /// Returns the inner `FunctionDefinition` reference so callers can chain further assertions.
@@ -93,7 +93,7 @@ macro_rules! assert_function_body_len {
     }};
 }
 
-/// Asserts that a [`Statement`] is an `Assignment` and checks its variable and expression.
+/// Asserts that a [`ast::statement::Statement`] is an `Assignment` and checks its variable and expression.
 ///
 /// Returns the inner `Assignment` reference so callers can chain further assertions.
 #[macro_export]
@@ -109,7 +109,7 @@ macro_rules! assert_assignment {
     }};
 }
 
-/// Asserts that a [`Statement`] is an `If` conditional and checks its condition, body length,
+/// Asserts that a [`ast::statement::Statement`] is an `If` conditional and checks its condition, body length,
 /// and optional else-body length.
 ///
 /// Returns the inner `If` reference so callers can chain further assertions.
@@ -127,7 +127,7 @@ macro_rules! assert_conditional {
     }};
 }
 
-/// Asserts that a [`Statement`] is a `Loop` and checks its body length.
+/// Asserts that a [`ast::statement::Statement`] is a `Loop` and checks its body length.
 ///
 /// Returns the inner `Loop` reference so callers can chain further assertions.
 #[macro_export]

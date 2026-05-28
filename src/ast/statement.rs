@@ -210,7 +210,7 @@ pub struct FunctionDefinition {
     pub(crate) name: String,
     pub(crate) parameters: Vec<FunctionParameter>,
     pub(crate) return_type: Option<String>,
-    pub(crate) body: Vec<Statement>,
+    pub(crate) body: Block,
 }
 
 impl FunctionDefinition {
@@ -218,7 +218,7 @@ impl FunctionDefinition {
         name: String,
         parameters: Vec<FunctionParameter>,
         return_type: Option<String>,
-        body: Vec<Statement>,
+        body: Block,
     ) -> Self {
         Self {
             name,
@@ -245,7 +245,7 @@ impl FunctionDefinition {
 
     /// Returns a slice of statements in the function's body.
     pub fn body(&self) -> &[Statement] {
-        &self.body
+        &self.body.statements
     }
 }
 
@@ -279,18 +279,18 @@ impl FunctionParameter {
 /// A block contains a sequence of statements executed in a new lexical scope.
 #[derive(Debug, PartialEq)]
 pub struct Block {
-    pub(crate) body: Vec<Statement>,
+    pub(crate) statements: Vec<Statement>,
 }
 
 impl Block {
-    /// Creates a new `Block` enclosing the given body of statements.
-    pub(crate) fn new(body: Vec<Statement>) -> Self {
-        Self { body }
+    /// Creates a new `Block` enclosing the given statements.
+    pub(crate) fn new(statements: Vec<Statement>) -> Self {
+        Self { statements }
     }
 
-    /// Returns a slice of statements in the block's body.
-    pub fn body(&self) -> &[Statement] {
-        &self.body
+    /// Returns a slice of statements in the block.
+    pub fn statements(&self) -> &[Statement] {
+        &self.statements
     }
 }
 

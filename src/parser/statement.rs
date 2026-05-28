@@ -113,7 +113,7 @@ mod tests {
     use super::*;
     use crate::ast::expr::{BinaryOperator, Expression};
     use crate::ast::statement::{
-        Assignment, Break, FunctionDefinition, FunctionParameter, Loop, VariableDeclaration,
+        Assignment, Block, Break, FunctionDefinition, FunctionParameter, Loop, VariableDeclaration,
     };
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
@@ -276,11 +276,13 @@ mod tests {
                     Some("i32".to_string())
                 )],
                 Some("i32".to_string()),
-                vec![Statement::variable_declaration(VariableDeclaration::new(
-                    "risk_level".to_string(),
-                    None,
-                    Some(Expression::Identifier("score".to_string()))
-                ))]
+                Block::new(vec![Statement::variable_declaration(
+                    VariableDeclaration::new(
+                        "risk_level".to_string(),
+                        None,
+                        Some(Expression::Identifier("score".to_string()))
+                    )
+                )])
             ))
         );
     }
