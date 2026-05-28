@@ -7,6 +7,7 @@ use crate::lexer::token::{Token, TokenType};
 use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
 use crate::parser::expr::infix::binary::BinaryExpressionParser;
+use crate::parser::expr::infix::call::FunctionCallParser;
 use crate::parser::expr::precedence::Precedence;
 use crate::parser::expr::prefix::boolean::BooleanParser;
 use crate::parser::expr::prefix::group::GroupParser;
@@ -72,7 +73,6 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 
         left: Expression,
         token: &Token<'src>,
     ) -> Result<Expression, ParseError> {
-        //TODO: missing '(' for function call.
         match token.token_type {
             TokenType::Plus | TokenType::Minus => {
                 BinaryExpressionParser::new(self, Precedence::Plus).parse(left, token)
@@ -89,6 +89,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 
             | TokenType::LessThanEquals => {
                 BinaryExpressionParser::new(self, Precedence::Comparison).parse(left, token)
             }
+            TokenType::LeftParentheses => FunctionCallParser::new(self).parse(left, token),
             _ => Err(ParseError::UnsupportedInfixExpression(
                 token.token_type,
                 token.line,
@@ -507,6 +508,148 @@ mod comparison_expression_tests {
                     Box::new(Expression::Identifier("threshold_score".to_string())),
                     BinaryOperator::GreaterThan,
                     Box::new(Expression::Identifier("base_score".to_string()))
+                ))
+            )
+        );
+    }
+}
+
+#[cfg(test)]
+mod function_call_tests {
+    use super::*;
+    use crate::ast::expr::BinaryOperator;
+    use crate::lexer::keywords::Keywords;
+    use crate::lexer::Lexer;
+    use crate::parser::stream::ParserStream;
+
+    #[test]
+    fn parse_simple_function_call() {
+        let lexer = Lexer::new("calculate_tax()", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expression = parser.parse().unwrap();
+        assert_eq!(
+            expression,
+            Expression::FunctionCall(
+                Box::new(Expression::Identifier("calculate_tax".to_string())),
+                vec![]
+            )
+        );
+    }
+
+    #[test]
+    fn parse_function_call_with_single_argument() {
+        let lexer = Lexer::new("compute_grade(score)", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expression = parser.parse().unwrap();
+        assert_eq!(
+            expression,
+            Expression::FunctionCall(
+                Box::new(Expression::Identifier("compute_grade".to_string())),
+                vec![Expression::Identifier("score".to_string())]
+            )
+        );
+    }
+
+    #[test]
+    fn parse_function_call_with_multiple_arguments() {
+        let lexer = Lexer::new("adjust_salary(salary, rating)", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expression = parser.parse().unwrap();
+        assert_eq!(
+            expression,
+            Expression::FunctionCall(
+                Box::new(Expression::Identifier("adjust_salary".to_string())),
+                vec![
+                    Expression::Identifier("salary".to_string()),
+                    Expression::Identifier("rating".to_string())
+                ]
+            )
+        );
+    }
+
+    #[test]
+    fn parse_function_call_with_expression_arguments() {
+        let lexer = Lexer::new("greater_of(45, base_price + tax_rate)", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expression = parser.parse().unwrap();
+        assert_eq!(
+            expression,
+            Expression::FunctionCall(
+                Box::new(Expression::Identifier("greater_of".to_string())),
+                vec![
+                    Expression::I32(45),
+                    Expression::Binary(
+                        Box::new(Expression::Identifier("base_price".to_string())),
+                        BinaryOperator::Plus,
+                        Box::new(Expression::Identifier("tax_rate".to_string()))
+                    )
+                ]
+            )
+        );
+    }
+
+    #[test]
+    fn parse_nested_function_calls() {
+        let lexer = Lexer::new("get_discount(get_age(user_id))", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expression = parser.parse().unwrap();
+        assert_eq!(
+            expression,
+            Expression::FunctionCall(
+                Box::new(Expression::Identifier("get_discount".to_string())),
+                vec![Expression::FunctionCall(
+                    Box::new(Expression::Identifier("get_age".to_string())),
+                    vec![Expression::Identifier("user_id".to_string())]
+                )]
+            )
+        );
+    }
+
+    #[test]
+    fn parse_function_call_in_arithmetic_expression() {
+        let lexer = Lexer::new("rating + increment()", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expression = parser.parse().unwrap();
+        assert_eq!(
+            expression,
+            Expression::Binary(
+                Box::new(Expression::Identifier("rating".to_string())),
+                BinaryOperator::Plus,
+                Box::new(Expression::FunctionCall(
+                    Box::new(Expression::Identifier("increment".to_string())),
+                    vec![]
+                ))
+            )
+        );
+    }
+
+    #[test]
+    fn parse_function_call_in_comparison_expression() {
+        let lexer = Lexer::new("rating < expected()", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ExpressionParser::new(&mut stream);
+
+        let expression = parser.parse().unwrap();
+        assert_eq!(
+            expression,
+            Expression::Binary(
+                Box::new(Expression::Identifier("rating".to_string())),
+                BinaryOperator::LessThan,
+                Box::new(Expression::FunctionCall(
+                    Box::new(Expression::Identifier("expected".to_string())),
+                    vec![]
                 ))
             )
         );

@@ -19,13 +19,14 @@ pub(crate) enum Precedence {
     // ! -
     Unary = 50,
 
-    // function call
+    // f()
     Call = 60,
 }
 
 impl Precedence {
     pub(crate) fn of(token_type: TokenType) -> Precedence {
         match token_type {
+            TokenType::LeftParentheses => Precedence::Call,
             TokenType::Plus | TokenType::Minus => Precedence::Plus,
             TokenType::Star | TokenType::Slash => Precedence::Star,
             TokenType::EqualsEquals | TokenType::BangEquals => Precedence::Equality,
@@ -142,6 +143,11 @@ mod tests {
             Precedence::of(TokenType::LessThanEquals),
             Precedence::Comparison
         );
+    }
+
+    #[test]
+    fn precedence_of_left_parentheses() {
+        assert_eq!(Precedence::of(TokenType::LeftParentheses), Precedence::Call);
     }
 
     #[test]
