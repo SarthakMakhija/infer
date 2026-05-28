@@ -5,7 +5,8 @@
 - [x] Support If
 - [x] Support If/Else
 - [x] Support If/Else/ElseIf
-- [ ] Support loop
+- [x] Support loop
+  - [ ] Support break
 - [ ] Support functions
   - [ ] Without parameters
   - [ ] Without return type

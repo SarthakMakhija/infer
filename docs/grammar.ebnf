@@ -2,7 +2,7 @@ program
     = { statement } EOF ;
 
 statement
-    = declaration | assignment | conditional ;
+    = declaration | assignment | conditional | iteration
 
 declaration
     = "var" identifier [ ":" type ] [ "=" expression ] ";" ;
@@ -18,6 +18,9 @@ elseif
 
 else
     = "else" "{" { statement } "}" ;
+
+iteration
+    = "loop" "{" { statement } "}" ;
 
 identifier
     = IDENTIFIER ;
