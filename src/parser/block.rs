@@ -28,13 +28,12 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> BlockParser<'src, 'stre
                 // If we see another LeftBrace, recurse and parse as a nested block statement
                 let nested_block = self.parse()?;
                 body.push(Statement::block(nested_block));
-                continue;
-            }
-            if next_token.token_type == TokenType::RightBrace {
+            } else if next_token.token_type == TokenType::RightBrace {
                 break;
+            } else {
+                let statement = StatementParser::new(self.stream).parse()?;
+                body.push(statement);
             }
-            let statement = StatementParser::new(self.stream).parse()?;
-            body.push(statement);
         }
 
         self.stream.expect(TokenType::RightBrace)?;
