@@ -62,6 +62,10 @@ pub(crate) enum TokenType {
     Break,
     /// The `fn` function keyword.
     Fn,
+    /// The `and` keyword.
+    And,
+    /// The `or` keyword.
+    Or,
 }
 
 impl TokenType {
@@ -77,6 +81,8 @@ impl TokenType {
             "loop" => Ok(TokenType::Loop),
             "break" => Ok(TokenType::Break),
             "fn" => Ok(TokenType::Fn),
+            "and" => Ok(TokenType::And),
+            "or" => Ok(TokenType::Or),
             _ => Err(LexError::UnsupportedKeyword(token.to_string(), line)),
         }
     }
@@ -376,6 +382,16 @@ mod token_type_tests {
     #[test]
     fn keyword_type_fn() {
         assert_eq!(TokenType::keyword_type("fn", 1).unwrap(), TokenType::Fn);
+    }
+
+    #[test]
+    fn keyword_type_and() {
+        assert_eq!(TokenType::keyword_type("and", 1).unwrap(), TokenType::And);
+    }
+
+    #[test]
+    fn keyword_type_or() {
+        assert_eq!(TokenType::keyword_type("or", 1).unwrap(), TokenType::Or);
     }
 
     #[test]

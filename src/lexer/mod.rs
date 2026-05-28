@@ -550,4 +550,16 @@ mod tests {
         let mut lexer = Lexer::new("}", Keywords::new());
         assert_token!(lexer.next(), TokenType::RightBrace, 0..1);
     }
+
+    #[test]
+    fn lex_logical_and() {
+        let mut lexer = Lexer::new("and", Keywords::new());
+        assert_token!(lexer.next(), TokenType::And, 0..3);
+    }
+
+    #[test]
+    fn lex_logical_or() {
+        let mut lexer = Lexer::new("or", Keywords::new());
+        assert_token!(lexer.next(), TokenType::Or, 0..2);
+    }
 }
