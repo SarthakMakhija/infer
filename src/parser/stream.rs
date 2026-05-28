@@ -322,4 +322,24 @@ mod tests {
             ParseError::LexError(crate::lexer::error::LexError::UnrecognizedChar('?', 1))
         ));
     }
+
+    #[test]
+    fn maybe_matches_with_lex_error() {
+        let lexer = Lexer::new("?", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+
+        assert!(!stream.maybe_matches(TokenType::Var));
+    }
+
+    #[test]
+    fn expect_token_with_lex_error() {
+        let lexer = Lexer::new("?", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+
+        let result = stream.expect_token();
+        assert!(matches!(
+            result.err().unwrap(),
+            ParseError::LexError(crate::lexer::error::LexError::UnrecognizedChar('?', 1))
+        ));
+    }
 }
