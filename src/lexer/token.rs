@@ -323,11 +323,6 @@ impl<'src> Token<'src> {
             val
         }
     }
-
-    /// Returns `true` if this token's type is `TokenType::Var`.
-    pub(crate) fn is_var(&self) -> bool {
-        matches!(self.token_type, TokenType::Var)
-    }
 }
 
 #[cfg(test)]
@@ -460,18 +455,6 @@ mod token_tests {
 
         let token2 = Token::new(TokenType::StringLiteral, 1..6, 1, "\"infer\"");
         assert_eq!(token2.string_value(), "infer");
-    }
-
-    #[test]
-    fn token_is_var() {
-        let token = Token::new(TokenType::Var, 0..3, 1, "var");
-        assert!(token.is_var());
-    }
-
-    #[test]
-    fn token_is_not_var() {
-        let token = Token::new(TokenType::Identifier, 0..4, 1, "name");
-        assert!(!token.is_var());
     }
 
     #[test]

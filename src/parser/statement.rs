@@ -88,7 +88,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, '
             if next_token.token_type == TokenType::LeftParentheses {
                 let expression = ExpressionParser::new(self.stream).parse()?;
                 self.stream.expect(TokenType::Semicolon)?;
-                return Ok(Some(Statement::FunctionCall(expression)));
+                return Ok(Some(Statement::function_call(expression)));
             }
         }
         Ok(None)

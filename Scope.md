@@ -1,3 +1,5 @@
+### Language
+
 - [x] Grammar
 - [x] Support variable declaration
 - [x] Support variable assignment along with declaration
@@ -22,3 +24,5 @@
     - [x] Support > < >= <= == !=
     - [x] Prohibit chained comparisons a < b < c
     - [x] Support function calls with other expressions
+
+### Type-inference (Pending)
