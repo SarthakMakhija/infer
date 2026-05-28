@@ -1,0 +1,7 @@
+fn calculate(a, b) {
+    var total = a + b;
+}
+
+fn execute() {
+    var result = calculate(10, 20);
+}

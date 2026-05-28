@@ -140,3 +140,58 @@ fn test_parse_variables_example() {
         Some(&Expression::String("hello world".to_string()))
     );
 }
+
+#[test]
+fn parse_functions_example() {
+    let compiler = Infer::new();
+    let result = compiler.infer_file(Path::new("examples/functions.toy"));
+
+    assert!(
+        result.is_ok(),
+        "Failed to parse examples/functions.toy: {:?}",
+        result.err()
+    );
+
+    let program = result.unwrap();
+    let statements = program.statements();
+    assert_eq!(statements.len(), 2);
+
+    // 1. Validate "calculate" function: no parameter types, no return type
+    let calculate_function = assert_function_definition!(&statements[0]);
+    assert_function_name!(calculate_function, "calculate");
+    assert_function_parameters!(calculate_function, [("a", None), ("b", None)]);
+    assert_function_return_type!(calculate_function, None::<&str>);
+    assert_function_body_len!(calculate_function, 1);
+
+    let calculate_body = calculate_function.body();
+    let expected_total_expr = Expression::Binary(
+        Box::new(Expression::Identifier("a".to_string())),
+        BinaryOperator::Plus,
+        Box::new(Expression::Identifier("b".to_string())),
+    );
+    assert_variable_declaration!(
+        &calculate_body[0],
+        "total",
+        None,
+        Some(&expected_total_expr)
+    );
+
+    // 2. Validate "execute" function: calls "calculate" as initializer
+    let execute_function = assert_function_definition!(&statements[1]);
+    assert_function_name!(execute_function, "execute");
+    assert_function_parameters!(execute_function, []);
+    assert_function_return_type!(execute_function, None::<&str>);
+    assert_function_body_len!(execute_function, 1);
+
+    let execute_body = execute_function.body();
+    let expected_result_expr = Expression::FunctionCall(
+        Box::new(Expression::Identifier("calculate".to_string())),
+        vec![Expression::I32(10), Expression::I32(20)],
+    );
+    assert_variable_declaration!(
+        &execute_body[0],
+        "result",
+        None,
+        Some(&expected_result_expr)
+    );
+}
