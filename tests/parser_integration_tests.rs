@@ -8,8 +8,8 @@ use infer::{
 
 #[test]
 fn test_parse_function_with_parameters_and_return_type() {
-    let infer = Infer::new();
-    let program = infer
+    let compiler = Infer::new();
+    let program = compiler
         .infer("fn calculate_sum(first: int, second: int): int {}")
         .unwrap();
     let statements = program.statements();
@@ -24,8 +24,8 @@ fn test_parse_function_with_parameters_and_return_type() {
 
 #[test]
 fn test_parse_function_with_assignments() {
-    let infer = Infer::new();
-    let program = infer
+    let compiler = Infer::new();
+    let program = compiler
         .infer("fn track_attempts() { var attempts = 1; attempts = 2; }")
         .unwrap();
     let statements = program.statements();
@@ -44,8 +44,8 @@ fn test_parse_function_with_assignments() {
 
 #[test]
 fn test_parse_function_with_conditional() {
-    let infer = Infer::new();
-    let program = infer.infer("fn check_status(code: int) { if code == 200 { var success = 1; } else { var success = 0; } }").unwrap();
+    let compiler = Infer::new();
+    let program = compiler.infer("fn check_status(code: int) { if code == 200 { var success = 1; } else { var success = 0; } }").unwrap();
     let statements = program.statements();
     assert_eq!(statements.len(), 1);
 
@@ -79,8 +79,8 @@ fn test_parse_function_with_conditional() {
 
 #[test]
 fn test_parse_function_with_loop() {
-    let infer = Infer::new();
-    let program = infer
+    let compiler = Infer::new();
+    let program = compiler
         .infer("fn retry_connection() { loop { break; } }")
         .unwrap();
     let statements = program.statements();
@@ -101,8 +101,8 @@ fn test_parse_function_with_loop() {
 
 #[test]
 fn test_parse_invalid_top_level_statement() {
-    let infer = Infer::new();
-    let result = infer.infer("attempts = 10;");
+    let compiler = Infer::new();
+    let result = compiler.infer("attempts = 10;");
 
     assert!(result.is_err());
     assert_eq!(
