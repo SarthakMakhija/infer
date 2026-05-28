@@ -337,4 +337,47 @@ mod else_if_tests {
             ))
         );
     }
+
+    #[test]
+    fn parse_conditional_missing_right_brace() {
+        let lexer = Lexer::new("if score >= 90 { grade = \"A\";", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ConditionalParser::new(&mut stream);
+
+        let error = parser.parse().unwrap_err();
+        assert_eq!(error, ParseError::UnexpectedEof);
+    }
+
+    #[test]
+    fn parse_conditional_else_missing_left_brace() {
+        let lexer = Lexer::new("if score >= 90 {} else grade = \"A\"; }", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ConditionalParser::new(&mut stream);
+
+        let error = parser.parse().unwrap_err();
+        assert_eq!(
+            error,
+            ParseError::UnexpectedTokenType(TokenType::LeftBrace, TokenType::Identifier, 1)
+        );
+    }
+
+    #[test]
+    fn parse_conditional_else_missing_right_brace() {
+        let lexer = Lexer::new("if score >= 90 {} else { grade = \"A\";", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ConditionalParser::new(&mut stream);
+
+        let error = parser.parse().unwrap_err();
+        assert_eq!(error, ParseError::UnexpectedEof);
+    }
+
+    #[test]
+    fn parse_conditional_else_eof() {
+        let lexer = Lexer::new("if score >= 90 {} else", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = ConditionalParser::new(&mut stream);
+
+        let error = parser.parse().unwrap_err();
+        assert_eq!(error, ParseError::UnexpectedEof);
+    }
 }
