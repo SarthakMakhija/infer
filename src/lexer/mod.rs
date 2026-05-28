@@ -125,6 +125,11 @@ impl<'src> Lexer<'src> {
                     self.source,
                 ));
             }
+            if char == '\\' {
+                self.move_ahead();
+                self.move_ahead();
+                continue;
+            }
             if char == '\n' {
                 self.increment_line();
             }
@@ -561,5 +566,30 @@ mod tests {
     fn lex_logical_or() {
         let mut lexer = Lexer::new("or", Keywords::new());
         assert_token!(lexer.next(), TokenType::Or, 0..2);
+    }
+
+    #[test]
+    fn lex_string_with_escaped_quote() {
+        let mut lexer = Lexer::new("\"say \\\"hi\\\"\"", Keywords::new());
+        assert_token!(lexer.next(), TokenType::StringLiteral, 0..12);
+        assert!(lexer.next().is_none());
+    }
+
+    #[test]
+    fn lex_string_with_escaped_quote_is_single_token() {
+        let mut lexer = Lexer::new("\"say \\\"hi\\\"\"", Keywords::new());
+        let token = lexer.next().unwrap().unwrap();
+        assert_eq!(token.string_value(), "say \\\"hi\\\"");
+    }
+
+    #[test]
+    fn lex_unterminated_string_with_escaped_quote() {
+        let mut lexer = Lexer::new("\"say \\\"hi", Keywords::new());
+        let result = lexer.next();
+        assert!(result.is_some());
+        assert!(matches!(
+            result.unwrap().err().unwrap(),
+            LexError::UnterminatedStringLiteral(_, 1)
+        ));
     }
 }
