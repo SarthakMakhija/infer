@@ -31,6 +31,9 @@ pub(crate) enum ParseError {
 
     /// An error encountered while parsing chained comparison operations like a < b < c.
     ChainedComparison(usize),
+
+    /// An error encountered while parsing anything other than declaration | function as top level statement;
+    UnsupportedTopLevelStatement(TokenType, usize),
 }
 
 impl From<LexError> for ParseError {
@@ -90,6 +93,13 @@ impl fmt::Display for ParseError {
                     formatter,
                     "chained comparison operations are not supported on line {}",
                     line
+                )
+            }
+            ParseError::UnsupportedTopLevelStatement(actual, line) => {
+                write!(
+                    formatter,
+                    "unsupported token '{:?}' at top-level on line {}",
+                    actual, line
                 )
             }
         }

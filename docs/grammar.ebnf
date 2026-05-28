@@ -2,7 +2,7 @@ program
     = { top_level_statement } EOF ;
 
 top_level_statement
-    = declaration | assignment | function ;
+    = declaration | function ;
 
 statement
     = declaration | assignment | conditional | iteration | control_flow | function_call ";" ;

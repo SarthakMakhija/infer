@@ -94,6 +94,8 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> FnParser<'src, 'stream,
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ast::expr::{BinaryOperator, Expression};
+    use crate::ast::statement::{Assignment, If, VariableDeclaration};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
     use crate::parser::stream::ParserStream;
@@ -153,6 +155,224 @@ mod tests {
                 vec![]
             ))
         );
+    }
+
+    #[test]
+    fn parse_function_with_multiple_assignments() {
+        let lexer = Lexer::new(
+            "fn assign() { height = 200; weight = 300; }",
+            Keywords::new(),
+        );
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = FnParser::new(&mut stream);
+
+        let statement = parser.parse().unwrap();
+        assert_eq!(
+            statement,
+            Statement::function_definition(FunctionDefinition::new(
+                "assign".to_string(),
+                vec![],
+                None,
+                vec![
+                    Statement::Assignment(Assignment::new(
+                        "height".to_string(),
+                        Expression::I32(200)
+                    )),
+                    Statement::Assignment(Assignment::new(
+                        "weight".to_string(),
+                        Expression::I32(300)
+                    )),
+                ]
+            ))
+        );
+    }
+
+    #[test]
+    fn parse_function_with_variable_declaration_and_assignment() {
+        let lexer = Lexer::new(
+            "fn test_func() { var id = 100; id = 200; }",
+            Keywords::new(),
+        );
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = FnParser::new(&mut stream);
+
+        let statement = parser.parse().unwrap();
+        let expected = Statement::function_definition(FunctionDefinition::new(
+            "test_func".to_string(),
+            vec![],
+            None,
+            vec![
+                Statement::variable_declaration(VariableDeclaration::new(
+                    "id".to_string(),
+                    None,
+                    Some(Expression::I32(100)),
+                )),
+                Statement::assignment(Assignment::new("id".to_string(), Expression::I32(200))),
+            ],
+        ));
+        assert_eq!(statement, expected);
+    }
+
+    #[test]
+    fn parse_function_with_conditional() {
+        let lexer = Lexer::new(
+            "fn test_func() { if discount_rate > 0 { final_price = regular_price - savings; } }",
+            Keywords::new(),
+        );
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = FnParser::new(&mut stream);
+
+        let statement = parser.parse().unwrap();
+        let expected = Statement::function_definition(FunctionDefinition::new(
+            "test_func".to_string(),
+            vec![],
+            None,
+            vec![Statement::conditional(If::new(
+                Expression::Binary(
+                    Box::new(Expression::Identifier("discount_rate".to_string())),
+                    BinaryOperator::GreaterThan,
+                    Box::new(Expression::I32(0)),
+                ),
+                vec![Statement::assignment(Assignment::new(
+                    "final_price".to_string(),
+                    Expression::Binary(
+                        Box::new(Expression::Identifier("regular_price".to_string())),
+                        BinaryOperator::Minus,
+                        Box::new(Expression::Identifier("savings".to_string())),
+                    ),
+                ))],
+                None,
+            ))],
+        ));
+        assert_eq!(statement, expected);
+    }
+
+    #[test]
+    fn parse_function_with_assignment_binary_expression() {
+        let lexer = Lexer::new(
+            "fn test_func() { total_price = base_price + tax_rate * quantity; }",
+            Keywords::new(),
+        );
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = FnParser::new(&mut stream);
+
+        let statement = parser.parse().unwrap();
+        let expected = Statement::function_definition(FunctionDefinition::new(
+            "test_func".to_string(),
+            vec![],
+            None,
+            vec![Statement::assignment(Assignment::new(
+                "total_price".to_string(),
+                Expression::Binary(
+                    Box::new(Expression::Identifier("base_price".to_string())),
+                    BinaryOperator::Plus,
+                    Box::new(Expression::Binary(
+                        Box::new(Expression::Identifier("tax_rate".to_string())),
+                        BinaryOperator::Multiply,
+                        Box::new(Expression::Identifier("quantity".to_string())),
+                    )),
+                ),
+            ))],
+        ));
+        assert_eq!(statement, expected);
+    }
+
+    #[test]
+    fn parse_function_with_assignment_grouped_expression() {
+        let lexer = Lexer::new(
+            "fn test_func() { adjusted_score = (base_points + bonus_points) * multiplier; }",
+            Keywords::new(),
+        );
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = FnParser::new(&mut stream);
+
+        let statement = parser.parse().unwrap();
+        let expected = Statement::function_definition(FunctionDefinition::new(
+            "test_func".to_string(),
+            vec![],
+            None,
+            vec![Statement::assignment(Assignment::new(
+                "adjusted_score".to_string(),
+                Expression::Binary(
+                    Box::new(Expression::Grouped(Box::new(Expression::Binary(
+                        Box::new(Expression::Identifier("base_points".to_string())),
+                        BinaryOperator::Plus,
+                        Box::new(Expression::Identifier("bonus_points".to_string())),
+                    )))),
+                    BinaryOperator::Multiply,
+                    Box::new(Expression::Identifier("multiplier".to_string())),
+                ),
+            ))],
+        ));
+        assert_eq!(statement, expected);
+    }
+
+    #[test]
+    fn parse_function_with_declaration_complex_expression() {
+        let lexer = Lexer::new(
+            "fn test_func() { var total_cost = fixed_cost + variable_unit_cost * quantity; }",
+            Keywords::new(),
+        );
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = FnParser::new(&mut stream);
+
+        let statement = parser.parse().unwrap();
+        let expected = Statement::function_definition(FunctionDefinition::new(
+            "test_func".to_string(),
+            vec![],
+            None,
+            vec![Statement::variable_declaration(VariableDeclaration::new(
+                "total_cost".to_string(),
+                None,
+                Some(Expression::Binary(
+                    Box::new(Expression::Identifier("fixed_cost".to_string())),
+                    BinaryOperator::Plus,
+                    Box::new(Expression::Binary(
+                        Box::new(Expression::Identifier("variable_unit_cost".to_string())),
+                        BinaryOperator::Multiply,
+                        Box::new(Expression::Identifier("quantity".to_string())),
+                    )),
+                )),
+            ))],
+        ));
+        assert_eq!(statement, expected);
+    }
+
+    #[test]
+    fn parse_function_with_declaration_and_assignment_complex_expressions() {
+        let lexer = Lexer::new(
+            "fn test_func() { var net_salary = gross_salary - deductions; net_salary = net_salary + yearly_bonus; }",
+            Keywords::new(),
+        );
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = FnParser::new(&mut stream);
+
+        let statement = parser.parse().unwrap();
+        let expected = Statement::function_definition(FunctionDefinition::new(
+            "test_func".to_string(),
+            vec![],
+            None,
+            vec![
+                Statement::variable_declaration(VariableDeclaration::new(
+                    "net_salary".to_string(),
+                    None,
+                    Some(Expression::Binary(
+                        Box::new(Expression::Identifier("gross_salary".to_string())),
+                        BinaryOperator::Minus,
+                        Box::new(Expression::Identifier("deductions".to_string())),
+                    )),
+                )),
+                Statement::assignment(Assignment::new(
+                    "net_salary".to_string(),
+                    Expression::Binary(
+                        Box::new(Expression::Identifier("net_salary".to_string())),
+                        BinaryOperator::Plus,
+                        Box::new(Expression::Identifier("yearly_bonus".to_string())),
+                    ),
+                )),
+            ],
+        ));
+        assert_eq!(statement, expected);
     }
 
     #[test]

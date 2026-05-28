@@ -1,7 +1,9 @@
 use crate::ast::program::{Program, ProgramBuilder};
+use crate::lexer::token::TokenType;
 use crate::lexer::LexResult;
+use crate::parser::declaration::VariableDeclarationParser;
 use crate::parser::error::ParseError;
-use crate::parser::statement::StatementParser;
+use crate::parser::function::FnParser;
 use crate::parser::stream::ParserStream;
 
 pub(crate) mod assignment;
@@ -27,8 +29,17 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> Parser<'src, 'stream, I
     pub(crate) fn parse(&mut self) -> Result<Program, ParseError> {
         let mut builder = ProgramBuilder::new();
 
-        while self.stream.peek()?.is_some() {
-            let statement = StatementParser::new(self.stream).parse()?;
+        while let Some(token_ref) = self.stream.peek()? {
+            let statement = match token_ref.token_type {
+                TokenType::Var => VariableDeclarationParser::new(self.stream).parse()?,
+                TokenType::Fn => FnParser::new(self.stream).parse()?,
+                _ => {
+                    return Err(ParseError::UnsupportedTopLevelStatement(
+                        token_ref.token_type,
+                        token_ref.line,
+                    ));
+                }
+            };
             builder = builder.add(statement);
         }
         Ok(builder.build())
@@ -38,9 +49,10 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> Parser<'src, 'stream, I
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::{BinaryOperator, Expression};
-    use crate::ast::statement::VariableDeclaration;
-    use crate::ast::statement::{Assignment, If, Statement};
+    use crate::ast::expr::Expression;
+    use crate::ast::statement::{
+        FunctionDefinition, FunctionParameter, Statement, VariableDeclaration,
+    };
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
 
@@ -108,65 +120,45 @@ mod tests {
     }
 
     #[test]
-    fn parse_single_assignment() {
-        let lexer = Lexer::new("id = 200;", Keywords::new());
+    fn parse_unsupported_top_level_assignment_statement() {
+        let lexer = Lexer::new("x = 10;", Keywords::new());
         let mut stream = ParserStream::new(lexer);
         let mut parser = Parser::new(&mut stream);
-
-        let program = parser.parse().unwrap();
-        let expected = ProgramBuilder::new()
-            .add(Statement::assignment(
-                crate::ast::statement::Assignment::new("id".to_string(), Expression::I32(200)),
-            ))
-            .build();
-        assert_eq!(program, expected);
+        let res = parser.parse();
+        assert_eq!(
+            res.err().unwrap(),
+            ParseError::UnsupportedTopLevelStatement(TokenType::Identifier, 1)
+        );
     }
 
     #[test]
-    fn parse_multiple_assignments() {
-        let lexer = Lexer::new("height = 200; weight = 300;", Keywords::new());
+    fn parse_unsupported_top_level_conditional_statement() {
+        let lexer = Lexer::new("if x > 0 { var y = 1; }", Keywords::new());
         let mut stream = ParserStream::new(lexer);
         let mut parser = Parser::new(&mut stream);
-
-        let program = parser.parse().unwrap();
-        let expected = ProgramBuilder::new()
-            .add(Statement::assignment(Assignment::new(
-                "height".to_string(),
-                Expression::I32(200),
-            )))
-            .add(Statement::assignment(Assignment::new(
-                "weight".to_string(),
-                Expression::I32(300),
-            )))
-            .build();
-        assert_eq!(program, expected);
+        let res = parser.parse();
+        assert_eq!(
+            res.err().unwrap(),
+            ParseError::UnsupportedTopLevelStatement(TokenType::If, 1)
+        );
     }
 
     #[test]
-    fn parse_variable_declaration_and_assignment() {
-        let lexer = Lexer::new("var id = 100; id = 200;", Keywords::new());
+    fn parse_unsupported_top_level_iteration_statement() {
+        let lexer = Lexer::new("loop {}", Keywords::new());
         let mut stream = ParserStream::new(lexer);
         let mut parser = Parser::new(&mut stream);
-
-        let program = parser.parse().unwrap();
-        let expected = ProgramBuilder::new()
-            .add(Statement::variable_declaration(VariableDeclaration::new(
-                "id".to_string(),
-                None,
-                Some(Expression::I32(100)),
-            )))
-            .add(Statement::assignment(Assignment::new(
-                "id".to_string(),
-                Expression::I32(200),
-            )))
-            .build();
-        assert_eq!(program, expected);
+        let res = parser.parse();
+        assert_eq!(
+            res.err().unwrap(),
+            ParseError::UnsupportedTopLevelStatement(TokenType::Loop, 1)
+        );
     }
 
     #[test]
-    fn parse_program_with_conditional() {
+    fn parse_top_level_function_definition() {
         let lexer = Lexer::new(
-            "if discount_rate > 0 { final_price = regular_price - savings; }",
+            "fn adjust_risk(score: i32): i32 { var risk_level = score; }",
             Keywords::new(),
         );
         let mut stream = ParserStream::new(lexer);
@@ -174,145 +166,18 @@ mod tests {
 
         let program = parser.parse().unwrap();
         let expected = ProgramBuilder::new()
-            .add(Statement::conditional(If::new(
-                Expression::Binary(
-                    Box::new(Expression::Identifier("discount_rate".to_string())),
-                    BinaryOperator::GreaterThan,
-                    Box::new(Expression::I32(0)),
-                ),
-                vec![Statement::assignment(Assignment::new(
-                    "final_price".to_string(),
-                    Expression::Binary(
-                        Box::new(Expression::Identifier("regular_price".to_string())),
-                        BinaryOperator::Minus,
-                        Box::new(Expression::Identifier("savings".to_string())),
-                    ),
+            .add(Statement::function_definition(FunctionDefinition::new(
+                "adjust_risk".to_string(),
+                vec![FunctionParameter::new(
+                    "score".to_string(),
+                    Some("i32".to_string()),
+                )],
+                Some("i32".to_string()),
+                vec![Statement::variable_declaration(VariableDeclaration::new(
+                    "risk_level".to_string(),
+                    None,
+                    Some(Expression::Identifier("score".to_string())),
                 ))],
-                None,
-            )))
-            .build();
-        assert_eq!(program, expected);
-    }
-}
-
-#[cfg(test)]
-mod assignment_expression_tests {
-    use super::*;
-    use crate::ast::expr::{BinaryOperator, Expression};
-    use crate::ast::statement::Statement;
-    use crate::ast::statement::{Assignment, VariableDeclaration};
-    use crate::lexer::keywords::Keywords;
-    use crate::lexer::Lexer;
-
-    #[test]
-    fn parse_assignment_with_binary_expression() {
-        let lexer = Lexer::new(
-            "total_price = base_price + tax_rate * quantity;",
-            Keywords::new(),
-        );
-        let mut stream = ParserStream::new(lexer);
-        let mut parser = Parser::new(&mut stream);
-
-        let program = parser.parse().unwrap();
-        let expected = ProgramBuilder::new()
-            .add(Statement::assignment(Assignment::new(
-                "total_price".to_string(),
-                Expression::Binary(
-                    Box::new(Expression::Identifier("base_price".to_string())),
-                    BinaryOperator::Plus,
-                    Box::new(Expression::Binary(
-                        Box::new(Expression::Identifier("tax_rate".to_string())),
-                        BinaryOperator::Multiply,
-                        Box::new(Expression::Identifier("quantity".to_string())),
-                    )),
-                ),
-            )))
-            .build();
-        assert_eq!(program, expected);
-    }
-
-    #[test]
-    fn parse_assignment_with_grouped_expression() {
-        let lexer = Lexer::new(
-            "adjusted_score = (base_points + bonus_points) * multiplier;",
-            Keywords::new(),
-        );
-        let mut stream = ParserStream::new(lexer);
-        let mut parser = Parser::new(&mut stream);
-
-        let program = parser.parse().unwrap();
-        let expected = ProgramBuilder::new()
-            .add(Statement::assignment(Assignment::new(
-                "adjusted_score".to_string(),
-                Expression::Binary(
-                    Box::new(Expression::Grouped(Box::new(Expression::Binary(
-                        Box::new(Expression::Identifier("base_points".to_string())),
-                        BinaryOperator::Plus,
-                        Box::new(Expression::Identifier("bonus_points".to_string())),
-                    )))),
-                    BinaryOperator::Multiply,
-                    Box::new(Expression::Identifier("multiplier".to_string())),
-                ),
-            )))
-            .build();
-        assert_eq!(program, expected);
-    }
-
-    #[test]
-    fn parse_declaration_with_complex_expression() {
-        let lexer = Lexer::new(
-            "var total_cost = fixed_cost + variable_unit_cost * quantity;",
-            Keywords::new(),
-        );
-        let mut stream = ParserStream::new(lexer);
-        let mut parser = Parser::new(&mut stream);
-
-        let program = parser.parse().unwrap();
-        let expected = ProgramBuilder::new()
-            .add(Statement::variable_declaration(VariableDeclaration::new(
-                "total_cost".to_string(),
-                None,
-                Some(Expression::Binary(
-                    Box::new(Expression::Identifier("fixed_cost".to_string())),
-                    BinaryOperator::Plus,
-                    Box::new(Expression::Binary(
-                        Box::new(Expression::Identifier("variable_unit_cost".to_string())),
-                        BinaryOperator::Multiply,
-                        Box::new(Expression::Identifier("quantity".to_string())),
-                    )),
-                )),
-            )))
-            .build();
-        assert_eq!(program, expected);
-    }
-
-    #[test]
-    fn parse_declaration_and_assignment_with_complex_expressions() {
-        let lexer = Lexer::new(
-            "var net_salary = gross_salary - deductions; net_salary = net_salary + yearly_bonus;",
-            Keywords::new(),
-        );
-        let mut stream = ParserStream::new(lexer);
-        let mut parser = Parser::new(&mut stream);
-
-        let program = parser.parse().unwrap();
-        let expected = ProgramBuilder::new()
-            .add(Statement::variable_declaration(VariableDeclaration::new(
-                "net_salary".to_string(),
-                None,
-                Some(Expression::Binary(
-                    Box::new(Expression::Identifier("gross_salary".to_string())),
-                    BinaryOperator::Minus,
-                    Box::new(Expression::Identifier("deductions".to_string())),
-                )),
-            )))
-            .add(Statement::assignment(Assignment::new(
-                "net_salary".to_string(),
-                Expression::Binary(
-                    Box::new(Expression::Identifier("net_salary".to_string())),
-                    BinaryOperator::Plus,
-                    Box::new(Expression::Identifier("yearly_bonus".to_string())),
-                ),
             )))
             .build();
         assert_eq!(program, expected);
