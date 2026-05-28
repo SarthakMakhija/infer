@@ -55,15 +55,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ConditionalParser<'src,
     }
 
     fn parse_body(&mut self) -> Result<Vec<Statement>, ParseError> {
-        let mut body = Vec::new();
-        while let Some(next_token) = self.stream.peek()? {
-            if next_token.token_type == TokenType::RightBrace {
-                break;
-            }
-            let statement = StatementParser::new(self.stream).parse()?;
-            body.push(statement);
-        }
-        Ok(body)
+        StatementParser::new(self.stream).parse_statements_till(TokenType::RightBrace)
     }
 }
 

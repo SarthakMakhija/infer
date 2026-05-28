@@ -25,6 +25,21 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, '
         Err(ParseError::UnexpectedEof)
     }
 
+    pub(crate) fn parse_statements_till(
+        &mut self,
+        token_type: TokenType,
+    ) -> Result<Vec<Statement>, ParseError> {
+        let mut body = Vec::new();
+        while let Some(next_token) = self.stream.peek()? {
+            if next_token.token_type == token_type {
+                break;
+            }
+            let statement = self.parse()?;
+            body.push(statement);
+        }
+        Ok(body)
+    }
+
     fn statement_beginning_at(&mut self, token: &Token) -> Result<Statement, ParseError> {
         let statement = match token.token_type {
             TokenType::Var => VariableDeclarationParser::new(self.stream).parse()?,
@@ -108,5 +123,35 @@ mod tests {
         let mut parser = StatementParser::new(&mut stream);
 
         let _ = parser.parse();
+    }
+
+    #[test]
+    fn parse_multiple_statements_till_right_brace() {
+        let lexer = Lexer::new("var score = 100; score = 200; }", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = StatementParser::new(&mut stream);
+
+        let statements = parser.parse_statements_till(TokenType::RightBrace).unwrap();
+        assert_eq!(
+            statements,
+            vec![
+                Statement::variable_declaration(VariableDeclaration::new(
+                    "score".to_string(),
+                    None,
+                    Some(Expression::I32(100))
+                )),
+                Statement::assignment(Assignment::new("score".to_string(), Expression::I32(200)))
+            ]
+        );
+    }
+
+    #[test]
+    fn parse_statements_till_right_brace_for_empty_block() {
+        let lexer = Lexer::new("}", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = StatementParser::new(&mut stream);
+
+        let statements = parser.parse_statements_till(TokenType::RightBrace).unwrap();
+        assert_eq!(statements, vec![]);
     }
 }
