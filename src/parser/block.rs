@@ -18,8 +18,8 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> BlockParser<'src, 'stre
 
     /// Parses a block statement, recursively parsing nested blocks if encountered.
     ///
-    /// Consumes the opening `{` and closing `}` and returns a parsed `Statement::Block`.
-    pub(crate) fn parse(&mut self) -> Result<Statement, ParseError> {
+    /// Consumes the opening `{` and closing `}` and returns a parsed `Block`.
+    pub(crate) fn parse(&mut self) -> Result<Block, ParseError> {
         self.stream.expect(TokenType::LeftBrace)?;
 
         let mut body = Vec::new();
@@ -27,7 +27,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> BlockParser<'src, 'stre
             if next_token.token_type == TokenType::LeftBrace {
                 // If we see another LeftBrace, recurse and parse as a nested block statement
                 let nested_block = self.parse()?;
-                body.push(nested_block);
+                body.push(Statement::block(nested_block));
                 continue;
             }
             if next_token.token_type == TokenType::RightBrace {
@@ -38,7 +38,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> BlockParser<'src, 'stre
         }
 
         self.stream.expect(TokenType::RightBrace)?;
-        Ok(Statement::block(Block::new(body)))
+        Ok(Block::new(body))
     }
 }
 
@@ -55,8 +55,8 @@ mod tests {
         let mut stream = ParserStream::new(lexer);
         let mut parser = BlockParser::new(&mut stream);
 
-        let statement = parser.parse().unwrap();
-        assert_eq!(statement, Statement::block(Block::new(vec![])));
+        let block = parser.parse().unwrap();
+        assert_eq!(block, Block::new(vec![]));
     }
 
     #[test]
@@ -65,10 +65,10 @@ mod tests {
         let mut stream = ParserStream::new(lexer);
         let mut parser = BlockParser::new(&mut stream);
 
-        let statement = parser.parse().unwrap();
+        let block = parser.parse().unwrap();
         assert_eq!(
-            statement,
-            Statement::block(Block::new(vec![
+            block,
+            Block::new(vec![
                 Statement::variable_declaration(VariableDeclaration::new(
                     "score".to_string(),
                     None,
@@ -78,7 +78,7 @@ mod tests {
                     "score".to_string(),
                     crate::ast::expr::Expression::I32(20)
                 ))
-            ]))
+            ])
         );
     }
 
@@ -91,10 +91,10 @@ mod tests {
         let mut stream = ParserStream::new(lexer);
         let mut parser = BlockParser::new(&mut stream);
 
-        let statement = parser.parse().unwrap();
+        let block = parser.parse().unwrap();
         assert_eq!(
-            statement,
-            Statement::block(Block::new(vec![
+            block,
+            Block::new(vec![
                 Statement::variable_declaration(VariableDeclaration::new(
                     "score".to_string(),
                     None,
@@ -112,7 +112,7 @@ mod tests {
                     None,
                     Some(crate::ast::expr::Expression::I32(30))
                 ))
-            ]))
+            ])
         );
     }
 
@@ -125,10 +125,10 @@ mod tests {
         let mut stream = ParserStream::new(lexer);
         let mut parser = BlockParser::new(&mut stream);
 
-        let statement = parser.parse().unwrap();
+        let block = parser.parse().unwrap();
         assert_eq!(
-            statement,
-            Statement::block(Block::new(vec![
+            block,
+            Block::new(vec![
                 Statement::block(Block::new(vec![Statement::variable_declaration(
                     VariableDeclaration::new(
                         "score".to_string(),
@@ -143,7 +143,7 @@ mod tests {
                         Some(crate::ast::expr::Expression::I32(20))
                     )
                 )]))
-            ]))
+            ])
         );
     }
 
