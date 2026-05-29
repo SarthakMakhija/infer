@@ -8,7 +8,7 @@ These rules are divided into two main passes performed after parsing the Untyped
 ## Semantic Analysis Passes
 
 ```mermaid
-graph TD
+graph LR
     AST[Untyped AST] --> Pass1[Pass 1: Scoping & Structural Analysis]
     Pass1 --> Pass2[Pass 2: Type Analysis & Inference]
     Pass2 --> TypedAST[Typed & Validated AST]
