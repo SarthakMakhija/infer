@@ -3,7 +3,7 @@ use crate::lexer::token::{Token, TokenType};
 use crate::lexer::LexResult;
 use crate::parser::assignment::AssignmentParser;
 use crate::parser::conditional::ConditionalParser;
-use crate::parser::control_flow::BreakParser;
+use crate::parser::control_flow::{BreakParser, ReturnParser};
 use crate::parser::declaration::VariableDeclarationParser;
 use crate::parser::error::ParseError;
 use crate::parser::expr::ExpressionParser;
@@ -44,6 +44,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, '
             TokenType::If => ConditionalParser::new(self.stream).parse()?,
             TokenType::Loop => LoopParser::new(self.stream).parse()?,
             TokenType::Break => BreakParser::new(self.stream).parse()?,
+            TokenType::Return => ReturnParser::new(self.stream).parse()?,
             TokenType::Fn => FnParser::new(self.stream).parse()?,
             TokenType::Identifier => {
                 if let Some(assignment) = self.maybe_assignment()? {
@@ -94,7 +95,8 @@ mod tests {
     use super::*;
     use crate::ast::expr::{BinaryOperator, Expression};
     use crate::ast::statement::{
-        Assignment, Block, Break, FunctionDefinition, FunctionParameter, Loop, VariableDeclaration,
+        Assignment, Block, Break, FunctionDefinition, FunctionParameter, Loop, Return,
+        VariableDeclaration,
     };
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
@@ -196,6 +198,29 @@ mod tests {
 
         let statement = parser.parse().unwrap();
         assert_eq!(statement, Statement::control_flow(Break::new()));
+    }
+
+    #[test]
+    fn parse_return_statement_with_expression() {
+        let lexer = Lexer::new("return 100;", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = StatementParser::new(&mut stream);
+
+        let statement = parser.parse().unwrap();
+        assert_eq!(
+            statement,
+            Statement::return_(Return::new(Some(Expression::I32(100))))
+        );
+    }
+
+    #[test]
+    fn parse_empty_return_statement() {
+        let lexer = Lexer::new("return;", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = StatementParser::new(&mut stream);
+
+        let statement = parser.parse().unwrap();
+        assert_eq!(statement, Statement::return_(Return::new(None)));
     }
 
     #[test]

@@ -19,6 +19,8 @@ pub enum Statement {
     FunctionCall(Expression),
     /// A standalone block statement containing a sequence of statements (e.g. `{ var score = 10; }`).
     Block(Block),
+    /// A return statement.
+    Return(Return),
 }
 
 impl Statement {
@@ -45,6 +47,11 @@ impl Statement {
     /// Wraps a [`Break`] into a [`Statement::Break`].
     pub(crate) fn control_flow(statement: Break) -> Self {
         Statement::Break(statement)
+    }
+
+    /// Wraps a [`Return`] into a [`Statement::Return`].
+    pub(crate) fn return_(statement: Return) -> Self {
+        Statement::Return(statement)
     }
 
     /// Wraps a [`FunctionDefinition`] into a [`Statement::FunctionDefinition`].
@@ -195,6 +202,25 @@ pub struct Break;
 impl Break {
     pub(crate) fn new() -> Self {
         Break {}
+    }
+}
+
+/// Represents a return control flow statement.
+///
+/// Example: `return expression;` or `return;`
+#[derive(Debug, PartialEq)]
+pub struct Return {
+    pub(crate) expression: Option<Expression>,
+}
+
+impl Return {
+    pub(crate) fn new(expression: Option<Expression>) -> Self {
+        Self { expression }
+    }
+
+    /// Returns the expression being returned, if any.
+    pub fn expression(&self) -> Option<&Expression> {
+        self.expression.as_ref()
     }
 }
 

@@ -3,7 +3,7 @@ use infer::ast::statement::Statement;
 use infer::{
     assert_assignment, assert_conditional, assert_function_body_len, assert_function_definition,
     assert_function_name, assert_function_parameters, assert_function_return_type, assert_loop,
-    assert_variable_declaration, Infer,
+    assert_return, assert_variable_declaration, Infer,
 };
 use std::path::Path;
 
@@ -36,12 +36,7 @@ fn parse_factorial_example() {
     );
     let conditional = assert_conditional!(&body[0], &expected_condition, 1, Some(1));
 
-    assert_variable_declaration!(
-        &conditional.body()[0],
-        "result",
-        None,
-        Some(&Expression::I32(1))
-    );
+    assert_return!(&conditional.body()[0], Some(&Expression::I32(1)));
 
     let else_body = conditional.else_body().unwrap();
     let expected_else_expression = Expression::Binary(
@@ -56,12 +51,7 @@ fn parse_factorial_example() {
             )],
         )),
     );
-    assert_variable_declaration!(
-        &else_body[0],
-        "result",
-        None,
-        Some(&expected_else_expression)
-    );
+    assert_return!(&else_body[0], Some(&expected_else_expression));
 }
 
 #[test]
@@ -166,7 +156,7 @@ fn parse_functions_example() {
     assert_function_name!(calculate_function, "calculate");
     assert_function_parameters!(calculate_function, [("a", None), ("b", None)]);
     assert_function_return_type!(calculate_function, None::<&str>);
-    assert_function_body_len!(calculate_function, 1);
+    assert_function_body_len!(calculate_function, 2);
 
     let calculate_body = calculate_function.body();
     let expected_total_expression = Expression::Binary(
@@ -179,6 +169,10 @@ fn parse_functions_example() {
         "total",
         None,
         Some(&expected_total_expression)
+    );
+    assert_return!(
+        &calculate_body[1],
+        Some(&Expression::Identifier("total".to_string()))
     );
 
     // 2. Validate "execute" function: calls "calculate" as initializer

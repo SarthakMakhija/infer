@@ -66,6 +66,8 @@ pub(crate) enum TokenType {
     And,
     /// The `or` keyword.
     Or,
+    /// The `return` control flow keyword.
+    Return,
 }
 
 impl TokenType {
@@ -83,6 +85,7 @@ impl TokenType {
             "fn" => Ok(TokenType::Fn),
             "and" => Ok(TokenType::And),
             "or" => Ok(TokenType::Or),
+            "return" => Ok(TokenType::Return),
             _ => Err(LexError::UnsupportedKeyword(token.to_string(), line)),
         }
     }
@@ -392,6 +395,14 @@ mod token_type_tests {
     #[test]
     fn keyword_type_or() {
         assert_eq!(TokenType::keyword_type("or", 1).unwrap(), TokenType::Or);
+    }
+
+    #[test]
+    fn keyword_type_return() {
+        assert_eq!(
+            TokenType::keyword_type("return", 1).unwrap(),
+            TokenType::Return
+        );
     }
 
     #[test]

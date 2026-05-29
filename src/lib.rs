@@ -141,3 +141,18 @@ macro_rules! assert_loop {
         loop_
     }};
 }
+
+/// Asserts that a [`ast::statement::Statement`] is a `Return` and checks its expression.
+///
+/// Returns the inner `Return` reference so callers can chain further assertions.
+#[macro_export]
+macro_rules! assert_return {
+    ($statement:expr, $expected_expression:expr) => {{
+        use $crate::ast::statement::Statement;
+        let Statement::Return(return_) = $statement else {
+            panic!("Expected Return statement, found {:?}", $statement);
+        };
+        assert_eq!(return_.expression(), $expected_expression);
+        return_
+    }};
+}

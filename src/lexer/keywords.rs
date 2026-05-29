@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 const KEYWORDS: &[&str] = &[
-    "var", "true", "false", "if", "else", "break", "loop", "fn", "and", "or",
+    "var", "true", "false", "if", "else", "break", "loop", "fn", "and", "or", "return",
 ];
 
 /// A collection of reserved keywords in the language.

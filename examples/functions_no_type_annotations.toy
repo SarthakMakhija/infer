@@ -1,5 +1,6 @@
 fn calculate(a, b) {
     var total = a + b;
+    return total;
 }
 
 fn execute() {
