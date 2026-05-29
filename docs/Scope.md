@@ -7,6 +7,7 @@
 - [x] Support If
 - [x] Support If/Else
 - [x] Support If/Else/ElseIf
+- [x] Support nested blocks
 - [x] Support loop
   - [x] Support break
 - [x] Support function definition
@@ -16,6 +17,7 @@
   - [x] With return type
   - [x] With type annotations
   - [x] Without type annotations
+  - [x] Return
 - [x] Support expressions
     - [x] Support arithmetic + - * /
     - [x] Support !
@@ -25,5 +27,7 @@
     - [x] Support compositions (AND, OR)
     - [x] Prohibit chained comparisons a < b < c
     - [x] Support function calls with other expressions
+
+### Semantic analysis (Pending)
 
 ### Type-inference (Pending)
