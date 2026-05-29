@@ -30,4 +30,6 @@
 
 ### Semantic analysis (Pending)
 
+For the detailed specifications and phases of semantic checks, see [Semantic Analysis & Type Inference Rules](Semantic_Analysis_Rules.md).
+
 ### Type-inference (Pending)
