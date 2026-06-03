@@ -6,6 +6,7 @@ pub use infer::{Infer, InferenceError};
 // Keep compiler internal phases private to the crate
 pub(crate) mod lexer;
 pub(crate) mod parser;
+pub(crate) mod semantic;
 
 /// Asserts that a [`ast::statement::Statement`] is a `VariableDeclaration` and checks its fields.
 ///
