@@ -9,6 +9,7 @@ use crate::parser::error::ParseError;
 use crate::parser::expr::ExpressionParser;
 use crate::parser::function::FnParser;
 use crate::parser::iteration::LoopParser;
+use crate::parser::print::PrintParser;
 use crate::parser::stream::ParserStream;
 
 /// A dispatcher that routes statement parsing to the appropriate specialised sub-parser.
@@ -45,6 +46,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, '
             TokenType::Loop => LoopParser::new(self.stream).parse()?,
             TokenType::Break => BreakParser::new(self.stream).parse()?,
             TokenType::Return => ReturnParser::new(self.stream).parse()?,
+            TokenType::Print => PrintParser::new(self.stream).parse()?,
             TokenType::Fn => FnParser::new(self.stream).parse()?,
             TokenType::Identifier => {
                 if let Some(assignment) = self.maybe_assignment()? {
@@ -95,7 +97,7 @@ mod tests {
     use super::*;
     use crate::ast::expr::{BinaryOperator, Expression};
     use crate::ast::statement::{
-        Assignment, Block, Break, FunctionDefinition, FunctionParameter, Loop, Return,
+        Assignment, Block, Break, FunctionDefinition, FunctionParameter, Loop, Print, Return,
         VariableDeclaration,
     };
     use crate::lexer::keywords::Keywords;
@@ -351,5 +353,49 @@ mod tests {
             error,
             ParseError::UnsupportedStatement(TokenType::Identifier, 1)
         );
+    }
+
+    #[test]
+    fn parse_print_statement() {
+        let lexer = Lexer::new("print name, 42, true;", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = StatementParser::new(&mut stream);
+
+        let statement = parser.parse().unwrap();
+        assert_eq!(
+            statement,
+            Statement::print(Print::new(vec![
+                Expression::identifier("name".to_string()),
+                Expression::I32(42),
+                Expression::Boolean(true),
+            ]))
+        );
+    }
+
+    #[test]
+    fn parse_print_statement_with_expressions() {
+        let lexer = Lexer::new("print age + 10;", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = StatementParser::new(&mut stream);
+
+        let statement = parser.parse().unwrap();
+        assert_eq!(
+            statement,
+            Statement::print(Print::new(vec![Expression::Binary(
+                Box::new(Expression::identifier("age".to_string())),
+                BinaryOperator::Plus,
+                Box::new(Expression::I32(10))
+            )]))
+        );
+    }
+
+    #[test]
+    fn parse_print_statement_missing_semicolon() {
+        let lexer = Lexer::new("print name", Keywords::new());
+        let mut stream = ParserStream::new(lexer);
+        let mut parser = StatementParser::new(&mut stream);
+
+        let error = parser.parse().unwrap_err();
+        assert_eq!(error, ParseError::UnexpectedEof);
     }
 }

@@ -37,6 +37,8 @@ pub enum Statement {
     Block(Block, usize),
     /// A return statement.
     Return(Return, usize),
+    /// A print statement.
+    Print(Print, usize),
 }
 
 impl PartialEq for Statement {
@@ -55,6 +57,7 @@ impl PartialEq for Statement {
             (Statement::FunctionCall(this, _), Statement::FunctionCall(other, _)) => this == other,
             (Statement::Block(this, _), Statement::Block(other, _)) => this == other,
             (Statement::Return(this, _), Statement::Return(other, _)) => this == other,
+            (Statement::Print(this, _), Statement::Print(other, _)) => this == other,
             _ => false,
         }
     }
@@ -91,6 +94,11 @@ impl Statement {
         Statement::Return(statement, Self::statement_id())
     }
 
+    /// Wraps a [`Print`] into a [`Statement::Print`].
+    pub(crate) fn print(statement: Print) -> Self {
+        Statement::Print(statement, Self::statement_id())
+    }
+
     /// Wraps a [`FunctionDefinition`] into a [`Statement::FunctionDefinition`].
     pub(crate) fn function_definition(statement: FunctionDefinition) -> Self {
         Statement::FunctionDefinition(statement, Self::statement_id())
@@ -120,6 +128,7 @@ impl Statement {
             Statement::FunctionCall(_, id) => *id,
             Statement::Block(_, id) => *id,
             Statement::Return(_, id) => *id,
+            Statement::Print(_, id) => *id,
         }
     }
 
@@ -280,6 +289,25 @@ impl Return {
     }
 }
 
+/// Represents a print statement.
+///
+/// Example: `print name, age;`
+#[derive(Debug, PartialEq)]
+pub struct Print {
+    pub(crate) arguments: Vec<Expression>,
+}
+
+impl Print {
+    pub(crate) fn new(arguments: Vec<Expression>) -> Self {
+        Self { arguments }
+    }
+
+    /// Returns the arguments of the print statement.
+    pub fn arguments(&self) -> &[Expression] {
+        &self.arguments
+    }
+}
+
 /// Represents a function definition statement in the AST.
 ///
 /// Example: `fn add(a: int, b: int): int { var sum = a + b; }`
@@ -417,6 +445,12 @@ mod tests {
     #[test]
     fn return_id() {
         let statement = Statement::return_(Return::new(Some(Expression::I32(1))));
+        assert!(statement.id() > 0);
+    }
+
+    #[test]
+    fn print_id() {
+        let statement = Statement::print(Print::new(vec![Expression::I32(1)]));
         assert!(statement.id() > 0);
     }
 

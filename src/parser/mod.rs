@@ -15,6 +15,7 @@ pub(crate) mod error;
 pub(crate) mod expr;
 pub(crate) mod function;
 pub(crate) mod iteration;
+pub(crate) mod print;
 pub(crate) mod statement;
 pub(crate) mod stream;
 
