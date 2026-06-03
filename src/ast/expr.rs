@@ -1,3 +1,4 @@
+use crate::ast::statement::next_id;
 use crate::lexer::token::{Token, TokenType};
 use std::fmt;
 
@@ -42,14 +43,14 @@ impl std::error::Error for ExpressionError {}
 ///
 /// Expressions evaluate to values and can appear on the right-hand side
 /// of declarations, in conditions, as function arguments, and more.
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub enum Expression {
     /// A 32-bit signed integer literal (e.g., `42`).
     I32(i32),
     /// A string literal (e.g., `"hello"`).
     String(String),
-    /// A reference to a named variable or function (e.g., `score`).
-    Identifier(String),
+    /// A reference to a named variable or function (e.g., `score`), along with unique identifier.
+    Identifier(String, usize),
     /// A boolean literal: `true` or `false`.
     Boolean(bool),
     /// A unary expression applying an operator to a single operand (e.g., `-x`, `!flag`).
@@ -58,8 +59,32 @@ pub enum Expression {
     Binary(Box<Expression>, BinaryOperator, Box<Expression>),
     /// A parenthesised expression that controls evaluation order (e.g., `(a + b)`).
     Grouped(Box<Expression>),
-    /// A function call expression with a callee expression and a list of argument expressions.
-    FunctionCall(Box<Expression>, Vec<Expression>),
+    /// A function call expression with a callee expression and a list of argument expressions, along with unique identifier.
+    FunctionCall(Box<Expression>, Vec<Expression>, usize),
+}
+
+impl PartialEq for Expression {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Expression::I32(this), Expression::I32(other)) => this == other,
+            (Expression::String(this), Expression::String(other)) => this == other,
+            (Expression::Identifier(this, _), Expression::Identifier(other, _)) => this == other,
+            (Expression::Boolean(this), Expression::Boolean(other)) => this == other,
+            (Expression::Unary(this, this_op), Expression::Unary(other, other_op)) => {
+                this == other && this_op == other_op
+            }
+            (
+                Expression::Binary(this_left, this_op, this_right),
+                Expression::Binary(other_left, other_op, other_right),
+            ) => this_left == other_left && this_op == other_op && this_right == other_right,
+            (Expression::Grouped(this), Expression::Grouped(other)) => this == other,
+            (
+                Expression::FunctionCall(this_callee, this_args, _),
+                Expression::FunctionCall(other_callee, other_args, _),
+            ) => this_callee == other_callee && this_args == other_args,
+            _ => false,
+        }
+    }
 }
 
 impl Expression {
@@ -73,12 +98,12 @@ impl Expression {
 
     /// Factory method to construct an `Expression::Identifier`.
     pub fn identifier(name: String) -> Self {
-        Expression::Identifier(name)
+        Expression::Identifier(name, next_id())
     }
 
     /// Factory method to construct an `Expression::FunctionCall`.
     pub fn function_call(callee: Expression, arguments: Vec<Expression>) -> Self {
-        Expression::FunctionCall(Box::new(callee), arguments)
+        Expression::FunctionCall(Box::new(callee), arguments, next_id())
     }
 }
 
@@ -346,6 +371,43 @@ mod expression_tests {
         let inner = Expression::I32(42);
         let nested = Expression::Grouped(Box::new(Expression::Grouped(Box::new(inner))));
         assert_eq!(nested.unwrap_grouped(), &Expression::I32(42));
+    }
+
+    #[test]
+    fn identifier_with_unique_id() {
+        let expression = Expression::identifier("first_name".to_string());
+
+        let Expression::Identifier(_name, id) = &expression else {
+            panic!("Expected Expression::Identifier");
+        };
+        assert!(*id > 0);
+    }
+
+    #[test]
+    fn function_call_with_unique_id() {
+        let callee = Expression::identifier("greeting".to_string());
+        let expression = Expression::function_call(callee, vec![]);
+
+        let Expression::FunctionCall(_callee, _arguments, id) = &expression else {
+            panic!("Expected Expression::FunctionCall");
+        };
+        assert!(*id > 0);
+    }
+
+    #[test]
+    fn multiple_identifiers_each_with_unique_id() {
+        let first_name = Expression::identifier("first_name".to_string());
+        let second_name = Expression::identifier("first_name".to_string());
+
+        let Expression::Identifier(_name, first_name_id) = &first_name else {
+            panic!("Expected Expression::Identifier");
+        };
+        assert!(*first_name_id > 0);
+
+        let Expression::Identifier(_name, second_name_id) = &second_name else {
+            panic!("Expected Expression::Identifier");
+        };
+        assert!(*second_name_id > 0);
     }
 }
 

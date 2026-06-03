@@ -3,13 +3,13 @@ use std::cell::Cell;
 
 thread_local! {
     /// A thread-local cell holding an auto-incrementing counter to generate unique ID numbers
-    /// for each parsed AST statement.
-    static STATEMENT_ID: Cell<usize> = const { Cell::new(0) };
+    /// for each parsed AST statements and expressions.
+    static ID: Cell<usize> = const { Cell::new(0) };
 }
 
-/// Generates a new, thread-safe, unique statement identifier in a single-threaded execution.
-fn next_statement_id() -> usize {
-    STATEMENT_ID.with(|counter| {
+/// Generates a new, thread-safe, unique statement and expression identifier in a single-threaded execution.
+pub(crate) fn next_id() -> usize {
+    ID.with(|counter| {
         let next = counter.get() + 1;
         counter.set(next);
         next
@@ -124,7 +124,7 @@ impl Statement {
     }
 
     fn statement_id() -> usize {
-        next_statement_id()
+        next_id()
     }
 }
 
