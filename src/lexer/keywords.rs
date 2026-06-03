@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 const KEYWORDS: &[&str] = &[
-    "var", "true", "false", "if", "else", "break", "loop", "fn", "and", "or", "return",
+    "var", "true", "false", "if", "else", "break", "loop", "fn", "and", "or", "return", "print",
 ];
 
 /// A collection of reserved keywords in the language.
@@ -34,6 +34,7 @@ mod tests {
         assert!(Keywords::new().has("var"));
         assert!(Keywords::new().has("and"));
         assert!(Keywords::new().has("or"));
+        assert!(Keywords::new().has("print"));
     }
 
     #[test]

@@ -68,6 +68,8 @@ pub(crate) enum TokenType {
     Or,
     /// The `return` control flow keyword.
     Return,
+    /// The `print` keyword.
+    Print,
 }
 
 impl TokenType {
@@ -86,6 +88,7 @@ impl TokenType {
             "and" => Ok(TokenType::And),
             "or" => Ok(TokenType::Or),
             "return" => Ok(TokenType::Return),
+            "print" => Ok(TokenType::Print),
             _ => Err(LexError::UnsupportedKeyword(token.to_string(), line)),
         }
     }
@@ -402,6 +405,14 @@ mod token_type_tests {
         assert_eq!(
             TokenType::keyword_type("return", 1).unwrap(),
             TokenType::Return
+        );
+    }
+
+    #[test]
+    fn keyword_type_print() {
+        assert_eq!(
+            TokenType::keyword_type("print", 1).unwrap(),
+            TokenType::Print
         );
     }
 
