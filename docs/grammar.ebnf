@@ -5,7 +5,7 @@ top_level_statement
     = declaration | function ;
 
 statement
-    = declaration | assignment | conditional | iteration | control_flow | function_call ";" ;
+    = declaration | assignment | conditional | iteration | control_flow | function_call ";" | print ";" ;
 
 declaration
     = "var" identifier [ ":" type ] [ "=" expression ] ";" ;
@@ -30,6 +30,9 @@ function
 
 function_call
     = identifier "(" [ arguments ] ")" ;
+
+print
+    = "print" arguments
 
 arguments
     = argument { "," argument } ;
