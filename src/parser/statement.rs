@@ -277,7 +277,7 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::FunctionCall(Expression::FunctionCall(
+            Statement::function_call(Expression::FunctionCall(
                 Box::new(Expression::Identifier("adjust_risk".to_string())),
                 vec![Expression::I32(45)]
             ))
@@ -293,7 +293,7 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::FunctionCall(Expression::FunctionCall(
+            Statement::function_call(Expression::FunctionCall(
                 Box::new(Expression::Identifier("adjust_risk".to_string())),
                 vec![Expression::Binary(
                     Box::new(Expression::Identifier("base_score".to_string())),

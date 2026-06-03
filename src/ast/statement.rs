@@ -1,74 +1,127 @@
 use crate::ast::expr::Expression;
+use std::cell::Cell;
+
+thread_local! {
+    static STATEMENT_ID: Cell<usize> = Cell::new(0);
+}
+
+fn next_statement_id() -> usize {
+    STATEMENT_ID.with(|counter| {
+        let next = counter.get() + 1;
+        counter.set(next);
+        next
+    })
+}
 
 /// Represents a structural statement in the toy language's Abstract Syntax Tree (AST).
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub enum Statement {
     /// A variable declaration statement (e.g. `var age: int = 30;`).
-    VariableDeclaration(VariableDeclaration),
+    VariableDeclaration(VariableDeclaration, usize),
     /// A variable assignment statement (e.g. `age = 31;`).
-    Assignment(Assignment),
+    Assignment(Assignment, usize),
     /// An if-else conditional block.
-    If(If),
+    If(If, usize),
     /// A loop iteration block.
-    Loop(Loop),
+    Loop(Loop, usize),
     /// A break control flow statement.
-    Break(Break),
+    Break(Break, usize),
     /// A function definition statement.
-    FunctionDefinition(FunctionDefinition),
+    FunctionDefinition(FunctionDefinition, usize),
     /// A standalone expression evaluated as a statement (typically a function call).
-    FunctionCall(Expression),
+    FunctionCall(Expression, usize),
     /// A standalone block statement containing a sequence of statements (e.g. `{ var score = 10; }`).
-    Block(Block),
+    Block(Block, usize),
     /// A return statement.
-    Return(Return),
+    Return(Return, usize),
+}
+
+impl PartialEq for Statement {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Statement::VariableDeclaration(this, _), Statement::VariableDeclaration(other, _)) => {
+                this == other
+            }
+            (Statement::Assignment(this, _), Statement::Assignment(other, _)) => this == other,
+            (Statement::If(this, _), Statement::If(other, _)) => this == other,
+            (Statement::Loop(this, _), Statement::Loop(other, _)) => this == other,
+            (Statement::Break(this, _), Statement::Break(other, _)) => this == other,
+            (Statement::FunctionDefinition(this, _), Statement::FunctionDefinition(other, _)) => {
+                this == other
+            }
+            (Statement::FunctionCall(this, _), Statement::FunctionCall(other, _)) => this == other,
+            (Statement::Block(this, _), Statement::Block(other, _)) => this == other,
+            (Statement::Return(this, _), Statement::Return(other, _)) => this == other,
+            _ => false,
+        }
+    }
 }
 
 impl Statement {
     /// Wraps a [`VariableDeclaration`] into a [`Statement::VariableDeclaration`].
     pub(crate) fn variable_declaration(statement: VariableDeclaration) -> Self {
-        Statement::VariableDeclaration(statement)
+        Statement::VariableDeclaration(statement, Self::statement_id())
     }
 
     /// Wraps an [`Assignment`] into a [`Statement::Assignment`].
     pub(crate) fn assignment(statement: Assignment) -> Self {
-        Statement::Assignment(statement)
+        Statement::Assignment(statement, Self::statement_id())
     }
 
     /// Wraps an [`If`] into a [`Statement::If`].
     pub(crate) fn conditional(statement: If) -> Self {
-        Statement::If(statement)
+        Statement::If(statement, Self::statement_id())
     }
 
     /// Wraps a [`Loop`] into a [`Statement::Loop`].
     pub(crate) fn iteration(statement: Loop) -> Self {
-        Statement::Loop(statement)
+        Statement::Loop(statement, Self::statement_id())
     }
 
     /// Wraps a [`Break`] into a [`Statement::Break`].
     pub(crate) fn control_flow(statement: Break) -> Self {
-        Statement::Break(statement)
+        Statement::Break(statement, Self::statement_id())
     }
 
     /// Wraps a [`Return`] into a [`Statement::Return`].
     pub(crate) fn return_(statement: Return) -> Self {
-        Statement::Return(statement)
+        Statement::Return(statement, Self::statement_id())
     }
 
     /// Wraps a [`FunctionDefinition`] into a [`Statement::FunctionDefinition`].
     pub(crate) fn function_definition(statement: FunctionDefinition) -> Self {
-        Statement::FunctionDefinition(statement)
+        Statement::FunctionDefinition(statement, Self::statement_id())
     }
 
     /// Wraps a function call [`Expression`] into a [`Statement::FunctionCall`].
     ///
     /// The caller is expected to pass a [`Expression::FunctionCall`] variant.
     pub(crate) fn function_call(expression: Expression) -> Self {
-        Statement::FunctionCall(expression)
+        Statement::FunctionCall(expression, Self::statement_id())
     }
 
     /// Wraps a [`Block`] into a [`Statement::Block`].
     pub(crate) fn block(block: Block) -> Self {
-        Statement::Block(block)
+        Statement::Block(block, Self::statement_id())
+    }
+
+    /// Returns the unique id of the statement.
+    pub fn id(&self) -> usize {
+        match self {
+            Statement::VariableDeclaration(_, id) => *id,
+            Statement::Assignment(_, id) => *id,
+            Statement::If(_, id) => *id,
+            Statement::Loop(_, id) => *id,
+            Statement::Break(_, id) => *id,
+            Statement::FunctionDefinition(_, id) => *id,
+            Statement::FunctionCall(_, id) => *id,
+            Statement::Block(_, id) => *id,
+            Statement::Return(_, id) => *id,
+        }
+    }
+
+    fn statement_id() -> usize {
+        next_statement_id()
     }
 }
 

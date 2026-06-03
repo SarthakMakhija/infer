@@ -22,7 +22,7 @@ pub(crate) mod parser;
 macro_rules! assert_variable_declaration {
     ($statement:expr, $expected_name:expr, $expected_type:expr, $expected_expression:expr) => {{
         use $crate::ast::statement::Statement;
-        let Statement::VariableDeclaration(declaration) = $statement else {
+        let Statement::VariableDeclaration(declaration, _) = $statement else {
             panic!("Expected VariableDeclaration, found {:?}", $statement);
         };
         assert_eq!(declaration.variable(), $expected_name);
@@ -40,7 +40,7 @@ macro_rules! assert_variable_declaration {
 macro_rules! assert_function_definition {
     ($statement:expr) => {{
         use $crate::ast::statement::Statement;
-        let Statement::FunctionDefinition(function) = $statement else {
+        let Statement::FunctionDefinition(function, _) = $statement else {
             panic!("Expected FunctionDefinition, found {:?}", $statement);
         };
         function
@@ -100,7 +100,7 @@ macro_rules! assert_function_body_len {
 macro_rules! assert_assignment {
     ($statement:expr, $expected_variable:expr, $expected_expression:expr) => {{
         use $crate::ast::statement::Statement;
-        let Statement::Assignment(assignment) = $statement else {
+        let Statement::Assignment(assignment, _) = $statement else {
             panic!("Expected Assignment, found {:?}", $statement);
         };
         assert_eq!(assignment.variable(), $expected_variable);
@@ -117,7 +117,7 @@ macro_rules! assert_assignment {
 macro_rules! assert_conditional {
     ($statement:expr, $expected_condition:expr, $expected_body_len:expr, $expected_else_len:expr) => {{
         use $crate::ast::statement::Statement;
-        let Statement::If(condition) = $statement else {
+        let Statement::If(condition, _) = $statement else {
             panic!("Expected If conditional, found {:?}", $statement);
         };
         assert_eq!(condition.condition(), $expected_condition);
@@ -134,7 +134,7 @@ macro_rules! assert_conditional {
 macro_rules! assert_loop {
     ($statement:expr, $expected_body_len:expr) => {{
         use $crate::ast::statement::Statement;
-        let Statement::Loop(loop_) = $statement else {
+        let Statement::Loop(loop_, _) = $statement else {
             panic!("Expected Loop iteration, found {:?}", $statement);
         };
         assert_eq!(loop_.body().len(), $expected_body_len);
@@ -149,7 +149,7 @@ macro_rules! assert_loop {
 macro_rules! assert_return {
     ($statement:expr, $expected_expression:expr) => {{
         use $crate::ast::statement::Statement;
-        let Statement::Return(return_) = $statement else {
+        let Statement::Return(return_, _) = $statement else {
             panic!("Expected Return statement, found {:?}", $statement);
         };
         assert_eq!(return_.expression(), $expected_expression);

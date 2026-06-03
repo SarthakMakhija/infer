@@ -94,7 +94,7 @@ fn parse_function_with_loop() {
     let body = function.body();
     let loop_statement = assert_loop!(&body[0], 1);
 
-    let Statement::Break(_) = &loop_statement.body()[0] else {
+    let Statement::Break(_, _) = &loop_statement.body()[0] else {
         panic!("Expected Break");
     };
 }

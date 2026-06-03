@@ -86,7 +86,7 @@ fn parse_loops_example() {
         Box::new(Expression::I32(10)),
     );
     let loop_conditional = assert_conditional!(&loop_body[0], &expected_loop_cond, 1, None);
-    let Statement::Break(_) = &loop_conditional.body()[0] else {
+    let Statement::Break(_, _) = &loop_conditional.body()[0] else {
         panic!("Expected Break statement");
     };
 
@@ -219,7 +219,7 @@ fn parse_nested_blocks_example() {
     let body = function.body();
     assert_variable_declaration!(&body[0], "outer_val", None, Some(&Expression::I32(10)));
 
-    let Statement::Block(ref block) = body[1] else {
+    let Statement::Block(ref block, _) = body[1] else {
         panic!("Expected Block statement, found {:?}", body[1]);
     };
 
@@ -243,7 +243,7 @@ fn parse_nested_blocks_example() {
         )
     );
 
-    let Statement::Block(ref inner_block) = outer_block_statements[2] else {
+    let Statement::Block(ref inner_block, _) = outer_block_statements[2] else {
         panic!(
             "Expected nested Block statement, found {:?}",
             outer_block_statements[2]

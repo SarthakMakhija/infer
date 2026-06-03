@@ -184,11 +184,11 @@ mod tests {
                 vec![],
                 None,
                 Block::new(vec![
-                    Statement::Assignment(Assignment::new(
+                    Statement::assignment(Assignment::new(
                         "height".to_string(),
                         Expression::I32(200)
                     )),
-                    Statement::Assignment(Assignment::new(
+                    Statement::assignment(Assignment::new(
                         "weight".to_string(),
                         Expression::I32(300)
                     )),
