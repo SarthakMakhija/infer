@@ -2,9 +2,12 @@ use crate::ast::expr::Expression;
 use std::cell::Cell;
 
 thread_local! {
-    static STATEMENT_ID: Cell<usize> = Cell::new(0);
+    /// A thread-local cell holding an auto-incrementing counter to generate unique ID numbers
+    /// for each parsed AST statement.
+    static STATEMENT_ID: Cell<usize> = const { Cell::new(0) };
 }
 
+/// Generates a new, thread-safe, unique statement identifier in a single-threaded execution.
 fn next_statement_id() -> usize {
     STATEMENT_ID.with(|counter| {
         let next = counter.get() + 1;
@@ -377,5 +380,97 @@ impl VariableDeclaration {
 
     pub(crate) fn new_with_variable_and_type(variable: String, data_type: String) -> Self {
         Self::new(variable, Some(data_type), None)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn variable_declaration_id() {
+        let statement = Statement::variable_declaration(VariableDeclaration::new(
+            "user_score".to_string(),
+            None,
+            None,
+        ));
+
+        assert!(statement.id() > 0);
+    }
+
+    #[test]
+    fn assignment_id() {
+        let statement = Statement::assignment(Assignment::new(
+            "user_score".to_string(),
+            Expression::I32(100),
+        ));
+
+        assert!(statement.id() > 0);
+    }
+
+    #[test]
+    fn break_id() {
+        let statement = Statement::control_flow(Break::new());
+        assert!(statement.id() > 0);
+    }
+
+    #[test]
+    fn return_id() {
+        let statement = Statement::return_(Return::new(Some(Expression::I32(1))));
+        assert!(statement.id() > 0);
+    }
+
+    #[test]
+    fn function_call_id() {
+        let statement = Statement::function_call(Expression::I32(42));
+        assert!(statement.id() > 0);
+    }
+
+    #[test]
+    fn block_id() {
+        let statement = Statement::block(Block::new(vec![]));
+        assert!(statement.id() > 0);
+    }
+
+    #[test]
+    fn loop_id() {
+        let statement = Statement::iteration(Loop::new(Block::new(vec![])));
+        assert!(statement.id() > 0);
+    }
+
+    #[test]
+    fn if_id() {
+        let statement =
+            Statement::conditional(If::new(Expression::Boolean(true), Block::new(vec![]), None));
+        assert!(statement.id() > 0);
+    }
+
+    #[test]
+    fn function_definition_id() {
+        let statement = Statement::function_definition(FunctionDefinition::new(
+            "calculate_total".to_string(),
+            vec![],
+            None,
+            Block::new(vec![]),
+        ));
+        assert!(statement.id() > 0);
+    }
+
+    #[test]
+    fn variable_declaration_id_for_two_statements() {
+        let first = Statement::variable_declaration(VariableDeclaration::new(
+            "user_score".to_string(),
+            None,
+            None,
+        ));
+        let second = Statement::variable_declaration(VariableDeclaration::new(
+            "user_score".to_string(),
+            None,
+            None,
+        ));
+
+        assert!(first.id() > 0);
+        assert!(second.id() > 0);
+        assert_eq!(second.id(), first.id() + 1);
     }
 }
