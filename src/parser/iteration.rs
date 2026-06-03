@@ -72,7 +72,7 @@ mod tests {
                 Statement::assignment(Assignment::new(
                     "counter".to_string(),
                     Expression::Binary(
-                        Box::new(Expression::Identifier("counter".to_string())),
+                        Box::new(Expression::identifier("counter".to_string())),
                         BinaryOperator::Plus,
                         Box::new(Expression::I32(1))
                     )
@@ -80,9 +80,9 @@ mod tests {
                 Statement::assignment(Assignment::new(
                     "total".to_string(),
                     Expression::Binary(
-                        Box::new(Expression::Identifier("total".to_string())),
+                        Box::new(Expression::identifier("total".to_string())),
                         BinaryOperator::Plus,
-                        Box::new(Expression::Identifier("counter".to_string()))
+                        Box::new(Expression::identifier("counter".to_string()))
                     )
                 ))
             ])))

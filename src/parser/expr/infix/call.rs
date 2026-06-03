@@ -57,7 +57,7 @@ impl<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>> InfixParser<'src
         self.expression_parser
             .stream
             .expect(TokenType::RightParentheses)?;
-        Ok(Expression::FunctionCall(Box::new(left), arguments))
+        Ok(Expression::function_call(left, arguments))
     }
 }
 
@@ -76,16 +76,13 @@ mod tests {
         let mut parser = ExpressionParser::new(&mut stream);
         let mut call_parser = FunctionCallParser::new(&mut parser);
 
-        let left = Expression::Identifier("retrieve_data".to_string());
+        let left = Expression::identifier("retrieve_data".to_string());
         let token = Token::new(TokenType::LeftParentheses, 0..1, 1, "(");
         let expression = call_parser.parse(left, &token).unwrap();
 
         assert_eq!(
             expression,
-            Expression::FunctionCall(
-                Box::new(Expression::Identifier("retrieve_data".to_string())),
-                vec![]
-            )
+            Expression::function_call(Expression::identifier("retrieve_data".to_string()), vec![])
         );
     }
 
@@ -96,15 +93,15 @@ mod tests {
         let mut parser = ExpressionParser::new(&mut stream);
         let mut call_parser = FunctionCallParser::new(&mut parser);
 
-        let left = Expression::Identifier("calculate_tax".to_string());
+        let left = Expression::identifier("calculate_tax".to_string());
         let token = Token::new(TokenType::LeftParentheses, 0..1, 1, "(");
         let expression = call_parser.parse(left, &token).unwrap();
 
         assert_eq!(
             expression,
-            Expression::FunctionCall(
-                Box::new(Expression::Identifier("calculate_tax".to_string())),
-                vec![Expression::Identifier("income".to_string())]
+            Expression::function_call(
+                Expression::identifier("calculate_tax".to_string()),
+                vec![Expression::identifier("income".to_string())]
             )
         );
     }
@@ -116,17 +113,17 @@ mod tests {
         let mut parser = ExpressionParser::new(&mut stream);
         let mut call_parser = FunctionCallParser::new(&mut parser);
 
-        let left = Expression::Identifier("update_profile".to_string());
+        let left = Expression::identifier("update_profile".to_string());
         let token = Token::new(TokenType::LeftParentheses, 0..1, 1, "(");
         let expression = call_parser.parse(left, &token).unwrap();
 
         assert_eq!(
             expression,
-            Expression::FunctionCall(
-                Box::new(Expression::Identifier("update_profile".to_string())),
+            Expression::function_call(
+                Expression::identifier("update_profile".to_string()),
                 vec![
-                    Expression::Identifier("score".to_string()),
-                    Expression::Identifier("is_active".to_string())
+                    Expression::identifier("score".to_string()),
+                    Expression::identifier("is_active".to_string())
                 ]
             )
         );
@@ -139,7 +136,7 @@ mod tests {
         let mut parser = ExpressionParser::new(&mut stream);
         let mut call_parser = FunctionCallParser::new(&mut parser);
 
-        let left = Expression::Identifier("process_application".to_string());
+        let left = Expression::identifier("process_application".to_string());
         let token = Token::new(TokenType::LeftParentheses, 0..1, 1, "(");
         let error = call_parser.parse(left, &token).unwrap_err();
 
@@ -156,20 +153,20 @@ mod tests {
         let mut parser = ExpressionParser::new(&mut stream);
         let mut call_parser = FunctionCallParser::new(&mut parser);
 
-        let left = Expression::Identifier("greater_of".to_string());
+        let left = Expression::identifier("greater_of".to_string());
         let token = Token::new(TokenType::LeftParentheses, 0..1, 1, "(");
         let expression = call_parser.parse(left, &token).unwrap();
 
         assert_eq!(
             expression,
-            Expression::FunctionCall(
-                Box::new(Expression::Identifier("greater_of".to_string())),
+            Expression::function_call(
+                Expression::identifier("greater_of".to_string()),
                 vec![
                     Expression::I32(45),
                     Expression::Binary(
-                        Box::new(Expression::Identifier("one".to_string())),
+                        Box::new(Expression::identifier("one".to_string())),
                         crate::ast::expr::BinaryOperator::Plus,
-                        Box::new(Expression::Identifier("other".to_string()))
+                        Box::new(Expression::identifier("other".to_string()))
                     )
                 ]
             )
@@ -183,7 +180,7 @@ mod tests {
         let mut parser = ExpressionParser::new(&mut stream);
         let mut call_parser = FunctionCallParser::new(&mut parser);
 
-        let left = Expression::Identifier("calculate".to_string());
+        let left = Expression::identifier("calculate".to_string());
         let token = Token::new(TokenType::LeftParentheses, 0..1, 1, "(");
         let error = call_parser.parse(left, &token).unwrap_err();
 
@@ -200,7 +197,7 @@ mod tests {
         let mut parser = ExpressionParser::new(&mut stream);
         let mut call_parser = FunctionCallParser::new(&mut parser);
 
-        let left = Expression::Identifier("calculate".to_string());
+        let left = Expression::identifier("calculate".to_string());
         let token = Token::new(TokenType::LeftParentheses, 0..1, 1, "(");
         let error = call_parser.parse(left, &token).unwrap_err();
 
@@ -217,7 +214,7 @@ mod tests {
         let mut parser = ExpressionParser::new(&mut stream);
         let mut call_parser = FunctionCallParser::new(&mut parser);
 
-        let left = Expression::Identifier("calculate".to_string());
+        let left = Expression::identifier("calculate".to_string());
         let token = Token::new(TokenType::LeftParentheses, 0..1, 1, "(");
         let error = call_parser.parse(left, &token).unwrap_err();
 
@@ -234,7 +231,7 @@ mod tests {
         let mut parser = ExpressionParser::new(&mut stream);
         let mut call_parser = FunctionCallParser::new(&mut parser);
 
-        let left = Expression::Identifier("calculate_tax".to_string());
+        let left = Expression::identifier("calculate_tax".to_string());
         let token = Token::new(TokenType::LeftParentheses, 0..1, 1, "(");
         let error = call_parser.parse(left, &token).unwrap_err();
 
@@ -248,7 +245,7 @@ mod tests {
         let mut parser = ExpressionParser::new(&mut stream);
         let mut call_parser = FunctionCallParser::new(&mut parser);
 
-        let left = Expression::Identifier("update_profile".to_string());
+        let left = Expression::identifier("update_profile".to_string());
         let token = Token::new(TokenType::LeftParentheses, 0..1, 1, "(");
         let error = call_parser.parse(left, &token).unwrap_err();
 

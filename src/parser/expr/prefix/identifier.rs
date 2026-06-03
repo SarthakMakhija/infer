@@ -8,7 +8,7 @@ pub(crate) struct IdentifierParser;
 
 impl<'src> PrefixParser<'src> for IdentifierParser {
     fn parse(&mut self, token: &Token<'src>) -> Result<Expression, ParseError> {
-        Ok(Expression::Identifier(token.value().to_owned()))
+        Ok(Expression::identifier(token.value().to_owned()))
     }
 }
 
@@ -23,6 +23,6 @@ mod tests {
         let mut identifier = IdentifierParser;
 
         let expression = identifier.parse(&token).unwrap();
-        assert_eq!(expression, Expression::Identifier("first_name".to_string()));
+        assert_eq!(expression, Expression::identifier("first_name".to_string()));
     }
 }

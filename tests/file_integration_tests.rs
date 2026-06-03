@@ -30,7 +30,7 @@ fn parse_factorial_example() {
 
     let body = function.body();
     let expected_condition = Expression::Binary(
-        Box::new(Expression::Identifier("n".to_string())),
+        Box::new(Expression::identifier("n".to_string())),
         BinaryOperator::LessThanEquals,
         Box::new(Expression::I32(1)),
     );
@@ -40,12 +40,12 @@ fn parse_factorial_example() {
 
     let else_body = conditional.else_body().unwrap();
     let expected_else_expression = Expression::Binary(
-        Box::new(Expression::Identifier("n".to_string())),
+        Box::new(Expression::identifier("n".to_string())),
         BinaryOperator::Multiply,
-        Box::new(Expression::FunctionCall(
-            Box::new(Expression::Identifier("factorial".to_string())),
+        Box::new(Expression::function_call(
+            Expression::identifier("factorial".to_string()),
             vec![Expression::Binary(
-                Box::new(Expression::Identifier("n".to_string())),
+                Box::new(Expression::identifier("n".to_string())),
                 BinaryOperator::Minus,
                 Box::new(Expression::I32(1)),
             )],
@@ -81,7 +81,7 @@ fn parse_loops_example() {
     let loop_body = loop_statement.body();
 
     let expected_loop_cond = Expression::Binary(
-        Box::new(Expression::Identifier("count".to_string())),
+        Box::new(Expression::identifier("count".to_string())),
         BinaryOperator::GreaterThanEquals,
         Box::new(Expression::I32(10)),
     );
@@ -91,7 +91,7 @@ fn parse_loops_example() {
     };
 
     let expected_assignment_expression = Expression::Binary(
-        Box::new(Expression::Identifier("count".to_string())),
+        Box::new(Expression::identifier("count".to_string())),
         BinaryOperator::Plus,
         Box::new(Expression::I32(1)),
     );
@@ -116,7 +116,7 @@ fn parse_variables_example() {
     assert_variable_declaration!(&statements[0], "x", None, Some(&Expression::I32(42)));
 
     let expected_expression = Expression::Binary(
-        Box::new(Expression::Identifier("x".to_string())),
+        Box::new(Expression::identifier("x".to_string())),
         BinaryOperator::Multiply,
         Box::new(Expression::I32(2)),
     );
@@ -160,9 +160,9 @@ fn parse_functions_example() {
 
     let calculate_body = calculate_function.body();
     let expected_total_expression = Expression::Binary(
-        Box::new(Expression::Identifier("a".to_string())),
+        Box::new(Expression::identifier("a".to_string())),
         BinaryOperator::Plus,
-        Box::new(Expression::Identifier("b".to_string())),
+        Box::new(Expression::identifier("b".to_string())),
     );
     assert_variable_declaration!(
         &calculate_body[0],
@@ -172,7 +172,7 @@ fn parse_functions_example() {
     );
     assert_return!(
         &calculate_body[1],
-        Some(&Expression::Identifier("total".to_string()))
+        Some(&Expression::identifier("total".to_string()))
     );
 
     // 2. Validate "execute" function: calls "calculate" as initializer
@@ -183,8 +183,8 @@ fn parse_functions_example() {
     assert_function_body_len!(execute_function, 1);
 
     let execute_body = execute_function.body();
-    let expected_result_expression = Expression::FunctionCall(
-        Box::new(Expression::Identifier("calculate".to_string())),
+    let expected_result_expression = Expression::function_call(
+        Expression::identifier("calculate".to_string()),
         vec![Expression::I32(10), Expression::I32(20)],
     );
     assert_variable_declaration!(
@@ -237,9 +237,9 @@ fn parse_nested_blocks_example() {
         &outer_block_statements[1],
         "outer_val",
         &Expression::Binary(
-            Box::new(Expression::Identifier("outer_val".to_string())),
+            Box::new(Expression::identifier("outer_val".to_string())),
             BinaryOperator::Plus,
-            Box::new(Expression::Identifier("inner_val".to_string()))
+            Box::new(Expression::identifier("inner_val".to_string()))
         )
     );
 
@@ -263,9 +263,9 @@ fn parse_nested_blocks_example() {
         &inner_block_statements[1],
         "outer_val",
         &Expression::Binary(
-            Box::new(Expression::Identifier("outer_val".to_string())),
+            Box::new(Expression::identifier("outer_val".to_string())),
             BinaryOperator::Plus,
-            Box::new(Expression::Identifier("deep_val".to_string()))
+            Box::new(Expression::identifier("deep_val".to_string()))
         )
     );
 }

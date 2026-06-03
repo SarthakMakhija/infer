@@ -57,7 +57,7 @@ fn parse_function_with_conditional() {
 
     let body = function.body();
     let expected_condition = Expression::Binary(
-        Box::new(Expression::Identifier("code".to_string())),
+        Box::new(Expression::identifier("code".to_string())),
         BinaryOperator::EqualsEquals,
         Box::new(Expression::I32(200)),
     );

@@ -73,12 +73,12 @@ mod tests {
             Statement::assignment(Assignment::new(
                 "total".to_string(),
                 Expression::Binary(
-                    Box::new(Expression::Identifier("amount".to_string())),
+                    Box::new(Expression::identifier("amount".to_string())),
                     crate::ast::expr::BinaryOperator::Plus,
                     Box::new(Expression::Binary(
-                        Box::new(Expression::Identifier("rate".to_string())),
+                        Box::new(Expression::identifier("rate".to_string())),
                         crate::ast::expr::BinaryOperator::Multiply,
-                        Box::new(Expression::Identifier("percentage".to_string()))
+                        Box::new(Expression::identifier("percentage".to_string()))
                     ))
                 )
             ))

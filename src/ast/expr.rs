@@ -70,6 +70,16 @@ impl Expression {
             _ => self,
         }
     }
+
+    /// Factory method to construct an `Expression::Identifier`.
+    pub fn identifier(name: String) -> Self {
+        Expression::Identifier(name)
+    }
+
+    /// Factory method to construct an `Expression::FunctionCall`.
+    pub fn function_call(callee: Expression, arguments: Vec<Expression>) -> Self {
+        Expression::FunctionCall(Box::new(callee), arguments)
+    }
 }
 
 /// Represents a binary operator used between two expressions.

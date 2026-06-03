@@ -193,7 +193,7 @@ mod tests {
                     VariableDeclaration::new(
                         "risk_level".to_string(),
                         None,
-                        Some(Expression::Identifier("score".to_string())),
+                        Some(Expression::identifier("score".to_string())),
                     ),
                 )]),
             )))

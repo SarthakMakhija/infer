@@ -261,7 +261,7 @@ mod tests {
                     VariableDeclaration::new(
                         "risk_level".to_string(),
                         None,
-                        Some(Expression::Identifier("score".to_string()))
+                        Some(Expression::identifier("score".to_string()))
                     )
                 )])
             ))
@@ -277,8 +277,8 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::function_call(Expression::FunctionCall(
-                Box::new(Expression::Identifier("adjust_risk".to_string())),
+            Statement::function_call(Expression::function_call(
+                Expression::identifier("adjust_risk".to_string()),
                 vec![Expression::I32(45)]
             ))
         );
@@ -293,10 +293,10 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::function_call(Expression::FunctionCall(
-                Box::new(Expression::Identifier("adjust_risk".to_string())),
+            Statement::function_call(Expression::function_call(
+                Expression::identifier("adjust_risk".to_string()),
                 vec![Expression::Binary(
-                    Box::new(Expression::Identifier("base_score".to_string())),
+                    Box::new(Expression::identifier("base_score".to_string())),
                     BinaryOperator::Plus,
                     Box::new(Expression::I32(10))
                 )]

@@ -169,9 +169,9 @@ mod tests {
                 "total".to_string(),
                 None,
                 Some(Expression::Binary(
-                    Box::new(Expression::Identifier("amount".to_string())),
+                    Box::new(Expression::identifier("amount".to_string())),
                     crate::ast::expr::BinaryOperator::Plus,
-                    Box::new(Expression::Identifier("interest".to_string()))
+                    Box::new(Expression::identifier("interest".to_string()))
                 ))
             ))
         );

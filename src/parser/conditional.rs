@@ -81,9 +81,9 @@ mod tests {
             statement,
             Statement::conditional(If::new(
                 Expression::Binary(
-                    Box::new(Expression::Identifier("score".to_string())),
+                    Box::new(Expression::identifier("score".to_string())),
                     BinaryOperator::GreaterThanEquals,
-                    Box::new(Expression::Identifier("minimum_score".to_string())),
+                    Box::new(Expression::identifier("minimum_score".to_string())),
                 ),
                 Block::new(vec![Statement::assignment(Assignment::new(
                     "is_eligible".to_string(),
@@ -108,9 +108,9 @@ mod tests {
             statement,
             Statement::conditional(If::new(
                 Expression::Binary(
-                    Box::new(Expression::Identifier("total_price".to_string())),
+                    Box::new(Expression::identifier("total_price".to_string())),
                     BinaryOperator::GreaterThan,
-                    Box::new(Expression::Identifier("budget".to_string())),
+                    Box::new(Expression::identifier("budget".to_string())),
                 ),
                 Block::new(vec![
                     Statement::assignment(Assignment::new(
@@ -120,9 +120,9 @@ mod tests {
                     Statement::assignment(Assignment::new(
                         "charge".to_string(),
                         Expression::Binary(
-                            Box::new(Expression::Identifier("base_price".to_string())),
+                            Box::new(Expression::identifier("base_price".to_string())),
                             BinaryOperator::Plus,
-                            Box::new(Expression::Identifier("excess_fee".to_string())),
+                            Box::new(Expression::identifier("excess_fee".to_string())),
                         ),
                     )),
                 ]),
@@ -142,7 +142,7 @@ mod tests {
             statement,
             Statement::conditional(If::new(
                 Expression::Binary(
-                    Box::new(Expression::Identifier("debug_mode_enabled".to_string())),
+                    Box::new(Expression::identifier("debug_mode_enabled".to_string())),
                     BinaryOperator::EqualsEquals,
                     Box::new(Expression::Boolean(true)),
                 ),
@@ -166,9 +166,9 @@ mod tests {
             statement,
             Statement::conditional(If::new(
                 Expression::Binary(
-                    Box::new(Expression::Identifier("total_price".to_string())),
+                    Box::new(Expression::identifier("total_price".to_string())),
                     BinaryOperator::GreaterThan,
-                    Box::new(Expression::Identifier("budget".to_string())),
+                    Box::new(Expression::identifier("budget".to_string())),
                 ),
                 Block::new(vec![Statement::assignment(Assignment::new(
                     "status".to_string(),
@@ -222,7 +222,7 @@ mod else_if_tests {
             statement,
             Statement::conditional(If::new(
                 Expression::Binary(
-                    Box::new(Expression::Identifier("score".to_string())),
+                    Box::new(Expression::identifier("score".to_string())),
                     BinaryOperator::GreaterThanEquals,
                     Box::new(Expression::I32(90)),
                 ),
@@ -232,7 +232,7 @@ mod else_if_tests {
                 ))]),
                 Some(Block::new(vec![Statement::conditional(If::new(
                     Expression::Binary(
-                        Box::new(Expression::Identifier("score".to_string())),
+                        Box::new(Expression::identifier("score".to_string())),
                         BinaryOperator::GreaterThanEquals,
                         Box::new(Expression::I32(80)),
                     ),
@@ -263,7 +263,7 @@ mod else_if_tests {
             statement,
             Statement::conditional(If::new(
                 Expression::Binary(
-                    Box::new(Expression::Identifier("risk_level".to_string())),
+                    Box::new(Expression::identifier("risk_level".to_string())),
                     BinaryOperator::GreaterThan,
                     Box::new(Expression::I32(8)),
                 ),
@@ -273,7 +273,7 @@ mod else_if_tests {
                 ))]),
                 Some(Block::new(vec![Statement::conditional(If::new(
                     Expression::Binary(
-                        Box::new(Expression::Identifier("risk_level".to_string())),
+                        Box::new(Expression::identifier("risk_level".to_string())),
                         BinaryOperator::GreaterThan,
                         Box::new(Expression::I32(4)),
                     ),
@@ -301,7 +301,7 @@ mod else_if_tests {
             statement,
             Statement::conditional(If::new(
                 Expression::Binary(
-                    Box::new(Expression::Identifier("income".to_string())),
+                    Box::new(Expression::identifier("income".to_string())),
                     BinaryOperator::GreaterThan,
                     Box::new(Expression::I32(100000)),
                 ),
@@ -311,7 +311,7 @@ mod else_if_tests {
                 ))]),
                 Some(Block::new(vec![Statement::conditional(If::new(
                     Expression::Binary(
-                        Box::new(Expression::Identifier("income".to_string())),
+                        Box::new(Expression::identifier("income".to_string())),
                         BinaryOperator::GreaterThan,
                         Box::new(Expression::I32(50000)),
                     ),
@@ -321,7 +321,7 @@ mod else_if_tests {
                     ))]),
                     Some(Block::new(vec![Statement::conditional(If::new(
                         Expression::Binary(
-                            Box::new(Expression::Identifier("income".to_string())),
+                            Box::new(Expression::identifier("income".to_string())),
                             BinaryOperator::GreaterThan,
                             Box::new(Expression::I32(20000)),
                         ),
