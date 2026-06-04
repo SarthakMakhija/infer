@@ -1,4 +1,6 @@
 use crate::ast::expr::Expression;
+use crate::semantic::analyzer::Visitor;
+use crate::semantic::error::SemanticError;
 use std::cell::Cell;
 
 thread_local! {
@@ -114,6 +116,15 @@ impl Statement {
     /// Wraps a [`Block`] into a [`Statement::Block`].
     pub(crate) fn block(block: Block) -> Self {
         Statement::Block(block, Self::statement_id())
+    }
+
+    pub(crate) fn accept(&self, visitor: &mut dyn Visitor) -> Result<(), SemanticError> {
+        match self {
+            Statement::VariableDeclaration(ref declaration, _) => {
+                visitor.visit_var_declaration(declaration)
+            }
+            _ => unimplemented!(),
+        }
     }
 
     /// Returns the unique id of the statement.
@@ -506,5 +517,40 @@ mod tests {
         assert!(first.id() > 0);
         assert!(second.id() > 0);
         assert_eq!(second.id(), first.id() + 1);
+    }
+}
+
+#[cfg(test)]
+mod accept_tests {
+    use crate::ast::statement::{Statement, VariableDeclaration};
+    use crate::semantic::analyzer::Visitor;
+    use crate::semantic::error::SemanticError;
+
+    struct TestVisitor {
+        visited: bool,
+    }
+
+    impl Visitor for TestVisitor {
+        fn visit_var_declaration(
+            &mut self,
+            _variable_declaration: &VariableDeclaration,
+        ) -> Result<(), SemanticError> {
+            self.visited = true;
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn statement_accept_dispatches_to_visitor() {
+        let statement = Statement::variable_declaration(VariableDeclaration::new(
+            "username".to_string(),
+            None,
+            None,
+        ));
+        let mut visitor = TestVisitor { visited: false };
+        let result = statement.accept(&mut visitor);
+
+        assert!(result.is_ok());
+        assert!(visitor.visited);
     }
 }

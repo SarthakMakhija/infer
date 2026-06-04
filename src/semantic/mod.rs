@@ -1,5 +1,7 @@
 use std::cell::Cell;
 
+pub(crate) mod analyzer;
+pub(crate) mod error;
 pub(crate) mod scope;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

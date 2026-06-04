@@ -73,13 +73,11 @@ impl Scopes {
     }
 
     fn current_scope(&self) -> &Scope {
-        let scope = self.entries.last().expect("No active scope is defined");
-        scope
+        self.entries.last().expect("No active scope is defined")
     }
 
     fn current_scope_mut(&mut self) -> &mut Scope {
-        let scope = self.entries.last_mut().expect("No active scope is defined");
-        scope
+        self.entries.last_mut().expect("No active scope is defined")
     }
 }
 
