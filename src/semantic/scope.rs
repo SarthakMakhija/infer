@@ -1,7 +1,5 @@
+use crate::semantic::SymbolId;
 use std::collections::HashMap;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub(crate) struct SymbolId(pub usize);
 
 pub(crate) struct Scopes {
     entries: Vec<Scope>,
