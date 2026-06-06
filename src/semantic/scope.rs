@@ -25,7 +25,7 @@ impl Scope {
     }
 
     fn get(&self, name: &str) -> Option<SymbolId> {
-        self.symbols.get(name).cloned()
+        self.symbols.get(name).copied()
     }
 }
 

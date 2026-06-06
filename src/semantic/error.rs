@@ -3,6 +3,7 @@ use std::fmt::{Display, Formatter};
 #[derive(Debug, PartialEq)]
 pub(crate) enum SemanticError {
     DuplicateVariable(String),
+    UndefinedVariable(String),
     ReturnOutsideFunction,
     MissingReturnExpression,
     UnexpectedReturnExpression,
@@ -14,6 +15,9 @@ impl Display for SemanticError {
         match self {
             SemanticError::DuplicateVariable(variable) => {
                 write!(formatter, "duplicate variable declaration: {}", variable)
+            }
+            SemanticError::UndefinedVariable(variable) => {
+                write!(formatter, "undefined variable: {}", variable)
             }
             SemanticError::ReturnOutsideFunction => {
                 write!(formatter, "return statement outside of any function")

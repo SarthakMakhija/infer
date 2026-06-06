@@ -1,6 +1,7 @@
-use crate::ast::statement::{Return, VariableDeclaration};
+use crate::ast::statement::{Assignment, Return, VariableDeclaration};
 use crate::semantic::error::SemanticError;
 use crate::semantic::next_symbol_id;
+use crate::semantic::resolution::ResolutionTable;
 use crate::semantic::scope::Scopes;
 use crate::semantic::state::State;
 
@@ -10,6 +11,12 @@ pub(crate) trait Visitor {
         variable_declaration: &VariableDeclaration,
     ) -> Result<(), SemanticError>;
 
+    fn visit_assignment(
+        &mut self,
+        assignment: &Assignment,
+        node_id: usize,
+    ) -> Result<(), SemanticError>;
+
     fn visit_return(&mut self, return_statement: &Return) -> Result<(), SemanticError>;
 
     fn visit_break(&mut self) -> Result<(), SemanticError>;
@@ -17,7 +24,8 @@ pub(crate) trait Visitor {
 
 pub(crate) struct Analyzer {
     scopes: Scopes,
-    pub(crate) state: State,
+    state: State,
+    resolution_table: ResolutionTable,
 }
 
 impl Analyzer {
@@ -25,6 +33,7 @@ impl Analyzer {
         Self {
             scopes: Scopes::new(),
             state: State::new(),
+            resolution_table: ResolutionTable::new(),
         }
     }
 }
@@ -40,6 +49,23 @@ impl Visitor for Analyzer {
             return Err(SemanticError::DuplicateVariable(name.to_string()));
         }
         self.scopes.define(name.to_string(), next_symbol_id());
+        Ok(())
+    }
+
+    fn visit_assignment(
+        &mut self,
+        assignment: &Assignment,
+        node_id: usize,
+    ) -> Result<(), SemanticError> {
+        //TODO: handle expression later
+        let symbol_id = self.scopes.get(assignment.variable());
+        if symbol_id.is_none() {
+            return Err(SemanticError::UndefinedVariable(
+                assignment.variable().to_string(),
+            ));
+        }
+        //SAFETY: symbol_id has been checked for non-none.
+        self.resolution_table.resolve(node_id, symbol_id.unwrap());
         Ok(())
     }
 
@@ -106,6 +132,53 @@ mod var_declaration_tests {
             result,
             Err(SemanticError::DuplicateVariable(ref name)) if name == "username"
         ));
+    }
+}
+
+#[cfg(test)]
+mod assignment_tests {
+    use super::*;
+    use crate::ast::expr::Expression;
+    use crate::ast::statement::{Assignment, Statement};
+
+    #[test]
+    fn assignment_to_a_defined_variable_succeeds_and_records_resolution() {
+        let mut analyzer = Analyzer::new();
+
+        let declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "score".to_string(),
+            None,
+            None,
+        ));
+        assert!(declaration.accept(&mut analyzer).is_ok());
+
+        let expected_symbol_id = analyzer.scopes.get("score").unwrap();
+
+        let assignment =
+            Statement::assignment(Assignment::new("score".to_string(), Expression::I32(100)));
+        let assignment_id = assignment.id();
+
+        let result = assignment.accept(&mut analyzer);
+
+        assert!(result.is_ok());
+        assert_eq!(
+            analyzer.resolution_table.get(assignment_id),
+            Some(expected_symbol_id)
+        );
+    }
+
+    #[test]
+    fn assignment_to_an_undefined_variable_fails_with_semantic_error() {
+        let mut analyzer = Analyzer::new();
+
+        let assignment =
+            Statement::assignment(Assignment::new("score".to_string(), Expression::I32(100)));
+
+        let result = assignment.accept(&mut analyzer);
+        assert_eq!(
+            result,
+            Err(SemanticError::UndefinedVariable("score".to_string()))
+        );
     }
 }
 

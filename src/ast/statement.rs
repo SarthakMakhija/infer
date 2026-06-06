@@ -123,6 +123,7 @@ impl Statement {
             Statement::VariableDeclaration(ref declaration, _) => {
                 visitor.visit_var_declaration(declaration)
             }
+            Statement::Assignment(ref assignment, id) => visitor.visit_assignment(assignment, *id),
             Statement::Return(ref return_statement, _) => visitor.visit_return(return_statement),
             Statement::Break(_, _) => visitor.visit_break(),
             _ => unimplemented!(),
@@ -524,12 +525,13 @@ mod tests {
 
 #[cfg(test)]
 mod accept_tests {
-    use crate::ast::statement::{Break, Return, Statement, VariableDeclaration};
+    use crate::ast::statement::{Assignment, Break, Return, Statement, VariableDeclaration};
     use crate::semantic::analyzer::Visitor;
     use crate::semantic::error::SemanticError;
 
     struct TestVisitor {
         visited_var_declaration: bool,
+        visited_assignment: bool,
         visited_return: bool,
         visited_break: bool,
     }
@@ -540,6 +542,15 @@ mod accept_tests {
             _variable_declaration: &VariableDeclaration,
         ) -> Result<(), SemanticError> {
             self.visited_var_declaration = true;
+            Ok(())
+        }
+
+        fn visit_assignment(
+            &mut self,
+            _assignment: &Assignment,
+            _node_id: usize,
+        ) -> Result<(), SemanticError> {
+            self.visited_assignment = true;
             Ok(())
         }
 
@@ -563,6 +574,7 @@ mod accept_tests {
         ));
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
+            visited_assignment: false,
             visited_return: false,
             visited_break: false,
         };
@@ -573,10 +585,28 @@ mod accept_tests {
     }
 
     #[test]
+    fn statement_accept_dispatches_assignment_to_visitor() {
+        use crate::ast::expr::Expression;
+        let statement =
+            Statement::assignment(Assignment::new("score".to_string(), Expression::I32(10)));
+        let mut visitor = TestVisitor {
+            visited_var_declaration: false,
+            visited_assignment: false,
+            visited_return: false,
+            visited_break: false,
+        };
+        let result = statement.accept(&mut visitor);
+
+        assert!(result.is_ok());
+        assert!(visitor.visited_assignment);
+    }
+
+    #[test]
     fn statement_accept_dispatches_return_to_visitor() {
         let statement = Statement::return_(Return::new(None));
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
+            visited_assignment: false,
             visited_return: false,
             visited_break: false,
         };
@@ -591,6 +621,7 @@ mod accept_tests {
         let statement = Statement::control_flow(Break::new());
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
+            visited_assignment: false,
             visited_return: false,
             visited_break: false,
         };
