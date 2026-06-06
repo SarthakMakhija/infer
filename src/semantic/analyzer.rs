@@ -11,6 +11,8 @@ pub(crate) trait Visitor {
     ) -> Result<(), SemanticError>;
 
     fn visit_return(&mut self, return_statement: &Return) -> Result<(), SemanticError>;
+
+    fn visit_break(&mut self) -> Result<(), SemanticError>;
 }
 
 pub(crate) struct Analyzer {
@@ -54,6 +56,13 @@ impl Visitor for Analyzer {
                 Ok(())
             }
         }
+    }
+
+    fn visit_break(&mut self) -> Result<(), SemanticError> {
+        if !self.state.is_in_loop() {
+            return Err(SemanticError::BreakOutsideLoop);
+        }
+        Ok(())
     }
 }
 
@@ -122,7 +131,7 @@ mod return_tests {
         let mut analyzer = Analyzer::new();
         analyzer
             .state
-            .in_function(FunctionMetadata::new("calculate".to_string(), true));
+            .entered_function(FunctionMetadata::new("calculate".to_string(), true));
 
         let return_statement = Statement::return_(Return::new(None));
         let result = return_statement.accept(&mut analyzer);
@@ -135,7 +144,7 @@ mod return_tests {
         let mut analyzer = Analyzer::new();
         analyzer
             .state
-            .in_function(FunctionMetadata::new("log_message".to_string(), false));
+            .entered_function(FunctionMetadata::new("log_message".to_string(), false));
 
         let return_statement = Statement::return_(Return::new(Some(Expression::I32(100))));
         let result = return_statement.accept(&mut analyzer);
@@ -148,7 +157,7 @@ mod return_tests {
         let mut analyzer = Analyzer::new();
         analyzer
             .state
-            .in_function(FunctionMetadata::new("log_message".to_string(), false));
+            .entered_function(FunctionMetadata::new("log_message".to_string(), false));
 
         let return_statement = Statement::return_(Return::new(None));
         let result = return_statement.accept(&mut analyzer);
@@ -161,10 +170,36 @@ mod return_tests {
         let mut analyzer = Analyzer::new();
         analyzer
             .state
-            .in_function(FunctionMetadata::new("calculate".to_string(), true));
+            .entered_function(FunctionMetadata::new("calculate".to_string(), true));
 
         let return_statement = Statement::return_(Return::new(Some(Expression::I32(100))));
         let result = return_statement.accept(&mut analyzer);
+
+        assert!(result.is_ok());
+    }
+}
+
+#[cfg(test)]
+mod break_tests {
+    use super::*;
+    use crate::ast::statement::{Break, Statement};
+
+    #[test]
+    fn break_statement_outside_any_loop_is_invalid() {
+        let mut analyzer = Analyzer::new();
+        let break_statement = Statement::control_flow(Break::new());
+
+        let result = break_statement.accept(&mut analyzer);
+        assert_eq!(result, Err(SemanticError::BreakOutsideLoop));
+    }
+
+    #[test]
+    fn break_statement_inside_a_loop_is_valid() {
+        let mut analyzer = Analyzer::new();
+        analyzer.state.entered_loop();
+
+        let break_statement = Statement::control_flow(Break::new());
+        let result = break_statement.accept(&mut analyzer);
 
         assert!(result.is_ok());
     }

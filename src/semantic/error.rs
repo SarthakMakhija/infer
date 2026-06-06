@@ -6,6 +6,7 @@ pub(crate) enum SemanticError {
     ReturnOutsideFunction,
     MissingReturnExpression,
     UnexpectedReturnExpression,
+    BreakOutsideLoop,
 }
 
 impl Display for SemanticError {
@@ -28,6 +29,9 @@ impl Display for SemanticError {
                     formatter,
                     "return statement with a value in a function with no return type"
                 )
+            }
+            SemanticError::BreakOutsideLoop => {
+                write!(formatter, "break statement outside of any loop")
             }
         }
     }

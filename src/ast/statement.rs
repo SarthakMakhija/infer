@@ -124,6 +124,7 @@ impl Statement {
                 visitor.visit_var_declaration(declaration)
             }
             Statement::Return(ref return_statement, _) => visitor.visit_return(return_statement),
+            Statement::Break(_, _) => visitor.visit_break(),
             _ => unimplemented!(),
         }
     }
@@ -523,13 +524,14 @@ mod tests {
 
 #[cfg(test)]
 mod accept_tests {
-    use crate::ast::statement::{Return, Statement, VariableDeclaration};
+    use crate::ast::statement::{Break, Return, Statement, VariableDeclaration};
     use crate::semantic::analyzer::Visitor;
     use crate::semantic::error::SemanticError;
 
     struct TestVisitor {
         visited_var_declaration: bool,
         visited_return: bool,
+        visited_break: bool,
     }
 
     impl Visitor for TestVisitor {
@@ -545,6 +547,11 @@ mod accept_tests {
             self.visited_return = true;
             Ok(())
         }
+
+        fn visit_break(&mut self) -> Result<(), SemanticError> {
+            self.visited_break = true;
+            Ok(())
+        }
     }
 
     #[test]
@@ -557,6 +564,7 @@ mod accept_tests {
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
             visited_return: false,
+            visited_break: false,
         };
         let result = statement.accept(&mut visitor);
 
@@ -570,10 +578,25 @@ mod accept_tests {
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
             visited_return: false,
+            visited_break: false,
         };
         let result = statement.accept(&mut visitor);
 
         assert!(result.is_ok());
         assert!(visitor.visited_return);
+    }
+
+    #[test]
+    fn statement_accept_dispatches_break_to_visitor() {
+        let statement = Statement::control_flow(Break::new());
+        let mut visitor = TestVisitor {
+            visited_var_declaration: false,
+            visited_return: false,
+            visited_break: false,
+        };
+        let result = statement.accept(&mut visitor);
+
+        assert!(result.is_ok());
+        assert!(visitor.visited_break);
     }
 }
