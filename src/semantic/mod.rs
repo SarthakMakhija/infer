@@ -3,6 +3,7 @@ use std::cell::Cell;
 pub(crate) mod analyzer;
 pub(crate) mod error;
 pub(crate) mod scope;
+pub(crate) mod state;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) struct SymbolId(pub usize);

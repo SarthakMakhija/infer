@@ -1,23 +1,28 @@
-use crate::ast::statement::VariableDeclaration;
+use crate::ast::statement::{Return, VariableDeclaration};
 use crate::semantic::error::SemanticError;
 use crate::semantic::next_symbol_id;
 use crate::semantic::scope::Scopes;
+use crate::semantic::state::State;
 
 pub(crate) trait Visitor {
     fn visit_var_declaration(
         &mut self,
         variable_declaration: &VariableDeclaration,
     ) -> Result<(), SemanticError>;
+
+    fn visit_return(&mut self, return_statement: &Return) -> Result<(), SemanticError>;
 }
 
 pub(crate) struct Analyzer {
     scopes: Scopes,
+    pub(crate) state: State,
 }
 
 impl Analyzer {
     pub(crate) fn new() -> Self {
         Self {
             scopes: Scopes::new(),
+            state: State::new(),
         }
     }
 }
@@ -35,10 +40,25 @@ impl Visitor for Analyzer {
         self.scopes.define(name.to_string(), next_symbol_id());
         Ok(())
     }
+
+    fn visit_return(&mut self, return_statement: &Return) -> Result<(), SemanticError> {
+        match self.state.current_function() {
+            None => Err(SemanticError::ReturnOutsideFunction),
+            Some(function_metadata) => {
+                if return_statement.expression().is_none() && function_metadata.has_return_type {
+                    return Err(SemanticError::MissingReturnExpression);
+                }
+                if return_statement.expression().is_some() && !function_metadata.has_return_type {
+                    return Err(SemanticError::UnexpectedReturnExpression);
+                }
+                Ok(())
+            }
+        }
+    }
 }
 
 #[cfg(test)]
-mod tests {
+mod var_declaration_tests {
     use super::*;
     use crate::ast::statement::Statement;
 
@@ -77,5 +97,75 @@ mod tests {
             result,
             Err(SemanticError::DuplicateVariable(ref name)) if name == "username"
         ));
+    }
+}
+
+#[cfg(test)]
+mod return_tests {
+    use super::*;
+    use crate::ast::expr::Expression;
+    use crate::ast::statement::Statement;
+    use crate::semantic::state::FunctionMetadata;
+
+    #[test]
+    fn return_statement_outside_any_function_is_invalid() {
+        let mut analyzer = Analyzer::new();
+
+        let return_statement = Statement::return_(Return::new(None));
+        let result = return_statement.accept(&mut analyzer);
+
+        assert_eq!(result, Err(SemanticError::ReturnOutsideFunction));
+    }
+
+    #[test]
+    fn empty_return_statement_in_a_function_with_return_type_is_invalid() {
+        let mut analyzer = Analyzer::new();
+        analyzer
+            .state
+            .in_function(FunctionMetadata::new("calculate".to_string(), true));
+
+        let return_statement = Statement::return_(Return::new(None));
+        let result = return_statement.accept(&mut analyzer);
+
+        assert_eq!(result, Err(SemanticError::MissingReturnExpression));
+    }
+
+    #[test]
+    fn return_statement_with_value_in_a_function_with_no_return_type_is_invalid() {
+        let mut analyzer = Analyzer::new();
+        analyzer
+            .state
+            .in_function(FunctionMetadata::new("log_message".to_string(), false));
+
+        let return_statement = Statement::return_(Return::new(Some(Expression::I32(100))));
+        let result = return_statement.accept(&mut analyzer);
+
+        assert_eq!(result, Err(SemanticError::UnexpectedReturnExpression));
+    }
+
+    #[test]
+    fn empty_return_statement_in_a_function_with_no_return_type_is_valid() {
+        let mut analyzer = Analyzer::new();
+        analyzer
+            .state
+            .in_function(FunctionMetadata::new("log_message".to_string(), false));
+
+        let return_statement = Statement::return_(Return::new(None));
+        let result = return_statement.accept(&mut analyzer);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn return_statement_with_value_in_a_function_with_return_type_is_valid() {
+        let mut analyzer = Analyzer::new();
+        analyzer
+            .state
+            .in_function(FunctionMetadata::new("calculate".to_string(), true));
+
+        let return_statement = Statement::return_(Return::new(Some(Expression::I32(100))));
+        let result = return_statement.accept(&mut analyzer);
+
+        assert!(result.is_ok());
     }
 }

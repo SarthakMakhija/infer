@@ -123,6 +123,7 @@ impl Statement {
             Statement::VariableDeclaration(ref declaration, _) => {
                 visitor.visit_var_declaration(declaration)
             }
+            Statement::Return(ref return_statement, _) => visitor.visit_return(return_statement),
             _ => unimplemented!(),
         }
     }
@@ -522,12 +523,13 @@ mod tests {
 
 #[cfg(test)]
 mod accept_tests {
-    use crate::ast::statement::{Statement, VariableDeclaration};
+    use crate::ast::statement::{Return, Statement, VariableDeclaration};
     use crate::semantic::analyzer::Visitor;
     use crate::semantic::error::SemanticError;
 
     struct TestVisitor {
-        visited: bool,
+        visited_var_declaration: bool,
+        visited_return: bool,
     }
 
     impl Visitor for TestVisitor {
@@ -535,22 +537,43 @@ mod accept_tests {
             &mut self,
             _variable_declaration: &VariableDeclaration,
         ) -> Result<(), SemanticError> {
-            self.visited = true;
+            self.visited_var_declaration = true;
+            Ok(())
+        }
+
+        fn visit_return(&mut self, _return_statement: &Return) -> Result<(), SemanticError> {
+            self.visited_return = true;
             Ok(())
         }
     }
 
     #[test]
-    fn statement_accept_dispatches_to_visitor() {
+    fn statement_accept_dispatches_variable_declaration_to_visitor() {
         let statement = Statement::variable_declaration(VariableDeclaration::new(
             "username".to_string(),
             None,
             None,
         ));
-        let mut visitor = TestVisitor { visited: false };
+        let mut visitor = TestVisitor {
+            visited_var_declaration: false,
+            visited_return: false,
+        };
         let result = statement.accept(&mut visitor);
 
         assert!(result.is_ok());
-        assert!(visitor.visited);
+        assert!(visitor.visited_var_declaration);
+    }
+
+    #[test]
+    fn statement_accept_dispatches_return_to_visitor() {
+        let statement = Statement::return_(Return::new(None));
+        let mut visitor = TestVisitor {
+            visited_var_declaration: false,
+            visited_return: false,
+        };
+        let result = statement.accept(&mut visitor);
+
+        assert!(result.is_ok());
+        assert!(visitor.visited_return);
     }
 }

@@ -1,8 +1,11 @@
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub(crate) enum SemanticError {
     DuplicateVariable(String),
+    ReturnOutsideFunction,
+    MissingReturnExpression,
+    UnexpectedReturnExpression,
 }
 
 impl Display for SemanticError {
@@ -10,6 +13,21 @@ impl Display for SemanticError {
         match self {
             SemanticError::DuplicateVariable(variable) => {
                 write!(formatter, "duplicate variable declaration: {}", variable)
+            }
+            SemanticError::ReturnOutsideFunction => {
+                write!(formatter, "return statement outside of any function")
+            }
+            SemanticError::MissingReturnExpression => {
+                write!(
+                    formatter,
+                    "empty return statement in a function with a return type"
+                )
+            }
+            SemanticError::UnexpectedReturnExpression => {
+                write!(
+                    formatter,
+                    "return statement with a value in a function with no return type"
+                )
             }
         }
     }
