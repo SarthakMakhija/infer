@@ -129,12 +129,19 @@ impl Visitor for Analyzer {
                 definition.name().to_string(),
             ));
         }
+
+        let function_symbol_id = next_symbol_id();
         self.scopes
-            .define(definition.name.to_string(), next_symbol_id());
-        self.state.entered_function(FunctionMetadata::new(
-            definition.name.to_string(),
-            definition.return_type.is_some(),
-        ));
+            .define(definition.name.to_string(), function_symbol_id);
+        self.state.add_global_function(
+            function_symbol_id,
+            FunctionMetadata::new(
+                definition.name.to_string(),
+                definition.parameters.len(),
+                definition.return_type.is_some(),
+            ),
+        );
+
         self.scopes.begin_scope();
         for parameter in definition.parameters() {
             let parameter_name = parameter.name();
@@ -634,6 +641,26 @@ mod function_definition_tests {
         let inner_symbol_id = analyzer.resolution_table.get(&assignment_id).unwrap();
         assert_ne!(inner_symbol_id, outer_symbol_id);
     }
+
+    #[test]
+    fn analyzer_registers_global_function_with_parameter_count_in_state() {
+        let mut analyzer = Analyzer::new();
+
+        let parameter = FunctionParameter::new("name".to_string(), Some("String".to_string()));
+        let function_definition = Statement::function_definition(FunctionDefinition::new(
+            "greeting".to_string(),
+            vec![parameter],
+            None,
+            Block::new(vec![]),
+        ));
+
+        assert!(function_definition.accept(&mut analyzer).is_ok());
+
+        let symbol_id = analyzer.scopes.get("greeting").unwrap();
+        let metadata = analyzer.state.global_functions.get(&symbol_id).unwrap();
+        assert_eq!(metadata.name, "greeting");
+        assert_eq!(metadata.parameter_count, 1);
+    }
 }
 
 #[cfg(test)]
@@ -682,9 +709,10 @@ mod return_tests {
     #[test]
     fn empty_return_statement_in_a_function_with_return_type_is_invalid() {
         let mut analyzer = Analyzer::new();
-        analyzer
-            .state
-            .entered_function(FunctionMetadata::new("calculate".to_string(), true));
+        analyzer.state.add_global_function(
+            crate::semantic::SymbolId(0),
+            FunctionMetadata::new("calculate".to_string(), 0, true),
+        );
 
         let return_statement = Statement::return_(Return::new(None));
         let result = return_statement.accept(&mut analyzer);
@@ -695,9 +723,10 @@ mod return_tests {
     #[test]
     fn return_statement_with_value_in_a_function_with_no_return_type_is_invalid() {
         let mut analyzer = Analyzer::new();
-        analyzer
-            .state
-            .entered_function(FunctionMetadata::new("log_message".to_string(), false));
+        analyzer.state.add_global_function(
+            crate::semantic::SymbolId(0),
+            FunctionMetadata::new("log_message".to_string(), 0, false),
+        );
 
         let return_statement = Statement::return_(Return::new(Some(Expression::I32(100))));
         let result = return_statement.accept(&mut analyzer);
@@ -708,9 +737,10 @@ mod return_tests {
     #[test]
     fn empty_return_statement_in_a_function_with_no_return_type_is_valid() {
         let mut analyzer = Analyzer::new();
-        analyzer
-            .state
-            .entered_function(FunctionMetadata::new("log_message".to_string(), false));
+        analyzer.state.add_global_function(
+            crate::semantic::SymbolId(0),
+            FunctionMetadata::new("log_message".to_string(), 0, false),
+        );
 
         let return_statement = Statement::return_(Return::new(None));
         let result = return_statement.accept(&mut analyzer);
@@ -721,9 +751,10 @@ mod return_tests {
     #[test]
     fn return_statement_with_value_in_a_function_with_return_type_is_valid() {
         let mut analyzer = Analyzer::new();
-        analyzer
-            .state
-            .entered_function(FunctionMetadata::new("calculate".to_string(), true));
+        analyzer.state.add_global_function(
+            crate::semantic::SymbolId(0),
+            FunctionMetadata::new("calculate".to_string(), 0, true),
+        );
 
         let return_statement = Statement::return_(Return::new(Some(Expression::I32(100))));
         let result = return_statement.accept(&mut analyzer);

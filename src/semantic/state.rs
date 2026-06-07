@@ -1,12 +1,18 @@
+use crate::semantic::SymbolId;
+use std::collections::HashMap;
+
+#[derive(Clone)]
 pub(crate) struct FunctionMetadata {
-    name: String,
+    pub(crate) name: String,
+    pub(crate) parameter_count: usize,
     pub(crate) has_return_type: bool,
 }
 
 impl FunctionMetadata {
-    pub(crate) fn new(name: String, has_return_type: bool) -> Self {
+    pub(crate) fn new(name: String, parameter_count: usize, has_return_type: bool) -> Self {
         Self {
             name,
+            parameter_count,
             has_return_type,
         }
     }
@@ -14,6 +20,7 @@ impl FunctionMetadata {
 
 pub(crate) struct State {
     current_function: Option<FunctionMetadata>,
+    pub(crate) global_functions: HashMap<SymbolId, FunctionMetadata>,
     loop_depth: usize,
     encountered_break: bool,
     encountered_return: bool,
@@ -23,13 +30,15 @@ impl State {
     pub(crate) fn new() -> Self {
         Self {
             current_function: None,
+            global_functions: HashMap::new(),
             loop_depth: 0,
             encountered_break: false,
             encountered_return: false,
         }
     }
 
-    pub(crate) fn entered_function(&mut self, function: FunctionMetadata) {
+    pub(crate) fn add_global_function(&mut self, symbol_id: SymbolId, function: FunctionMetadata) {
+        self.global_functions.insert(symbol_id, function.clone());
         self.current_function = Some(function);
     }
 
@@ -85,9 +94,12 @@ mod tests {
     }
 
     #[test]
-    fn state_records_the_current_function_metadata() {
+    fn state_records_the_global_function_metadata() {
         let mut state = State::new();
-        state.entered_function(FunctionMetadata::new("calculate".to_string(), true));
+        state.add_global_function(
+            SymbolId(0),
+            FunctionMetadata::new("calculate".to_string(), 0, true),
+        );
 
         let current = state.current_function().unwrap();
         assert_eq!(current.name, "calculate");
@@ -95,9 +107,25 @@ mod tests {
     }
 
     #[test]
+    fn state_records_the_current_function_metadata() {
+        let mut state = State::new();
+        state.add_global_function(
+            SymbolId(0),
+            FunctionMetadata::new("calculate".to_string(), 0, true),
+        );
+
+        let function_metadata = state.global_functions.get(&SymbolId(0)).unwrap();
+        assert_eq!(function_metadata.name, "calculate");
+        assert!(function_metadata.has_return_type);
+    }
+
+    #[test]
     fn state_exits_the_function() {
         let mut state = State::new();
-        state.entered_function(FunctionMetadata::new("calculate".to_string(), true));
+        state.add_global_function(
+            SymbolId(0),
+            FunctionMetadata::new("calculate".to_string(), 0, true),
+        );
         state.exited_function();
 
         assert!(state.current_function().is_none());
