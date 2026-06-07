@@ -9,6 +9,7 @@ pub(crate) enum SemanticError {
     MissingReturnExpression,
     UnexpectedReturnExpression,
     BreakOutsideLoop,
+    UnreachableCode,
 }
 
 impl Display for SemanticError {
@@ -40,6 +41,9 @@ impl Display for SemanticError {
             }
             SemanticError::BreakOutsideLoop => {
                 write!(formatter, "break statement outside of any loop")
+            }
+            SemanticError::UnreachableCode => {
+                write!(formatter, "unreachable code")
             }
         }
     }

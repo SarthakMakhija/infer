@@ -1,5 +1,5 @@
 use crate::ast::statement::{
-    Assignment, Block, FunctionDefinition, If, Loop, NodeId, Return, VariableDeclaration,
+    Assignment, Block, FunctionDefinition, If, Loop, NodeId, Return, Statement, VariableDeclaration,
 };
 use crate::semantic::error::SemanticError;
 use crate::semantic::next_symbol_id;
@@ -48,6 +48,16 @@ impl Analyzer {
             state: State::new(),
             resolution_table: ResolutionTable::new(),
         }
+    }
+
+    fn visit_statements(&mut self, statements: &[Statement]) -> Result<(), SemanticError> {
+        for statement in statements {
+            if self.state.is_unreachable() {
+                return Err(SemanticError::UnreachableCode);
+            }
+            statement.accept(self)?
+        }
+        Ok(())
     }
 }
 
@@ -102,6 +112,7 @@ impl Visitor for Analyzer {
         if !self.state.is_in_loop() {
             return Err(SemanticError::BreakOutsideLoop);
         }
+        self.state.encountered_break();
         Ok(())
     }
 
@@ -129,20 +140,22 @@ impl Visitor for Analyzer {
             self.scopes
                 .define(parameter_name.to_string(), next_symbol_id());
         }
-        for statement in definition.body() {
-            statement.accept(self)?;
-        }
+        self.visit_statements(definition.body())?;
         self.scopes.end_scope();
         self.state.exited_function();
+        self.state.reset_return();
         Ok(())
     }
 
     fn visit_block(&mut self, block: &Block) -> Result<(), SemanticError> {
-        self.scopes.begin_scope();
-        for statement in block.statements() {
-            statement.accept(self)?
+        if self.state.is_unreachable() {
+            return Err(SemanticError::UnreachableCode);
         }
+        self.scopes.begin_scope();
+        self.visit_statements(&block.statements)?;
         self.scopes.end_scope();
+        self.state.reset_break();
+        self.state.reset_return();
         Ok(())
     }
 
@@ -156,6 +169,7 @@ impl Visitor for Analyzer {
                 if return_statement.expression().is_some() && !function_metadata.has_return_type {
                     return Err(SemanticError::UnexpectedReturnExpression);
                 }
+                self.state.encountered_return();
                 Ok(())
             }
         }
@@ -715,5 +729,153 @@ mod return_tests {
         let result = return_statement.accept(&mut analyzer);
 
         assert!(result.is_ok());
+    }
+}
+
+#[cfg(test)]
+mod unreachable_code_tests {
+    use super::*;
+    use crate::ast::expr::Expression;
+    use crate::ast::statement::{
+        Block, Break, FunctionDefinition, Return, Statement, VariableDeclaration,
+    };
+
+    #[test]
+    fn unreachable_statement_after_return_in_function_body_returns_error() {
+        let mut analyzer = Analyzer::new();
+
+        let return_statement = Statement::return_(Return::new(None));
+        let variable_declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "score".to_string(),
+            None,
+            None,
+        ));
+
+        let function_definition = Statement::function_definition(FunctionDefinition::new(
+            "calculate".to_string(),
+            vec![],
+            None,
+            Block::new(vec![return_statement, variable_declaration]),
+        ));
+
+        let result = function_definition.accept(&mut analyzer);
+        assert_eq!(result, Err(SemanticError::UnreachableCode));
+    }
+
+    #[test]
+    fn unreachable_statement_after_break_in_loop_body_returns_error() {
+        let mut analyzer = Analyzer::new();
+
+        let break_statement = Statement::control_flow(Break::new());
+        let variable_declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "score".to_string(),
+            None,
+            None,
+        ));
+
+        let loop_statement = Statement::iteration(Loop::new(Block::new(vec![
+            break_statement,
+            variable_declaration,
+        ])));
+        let result = loop_statement.accept(&mut analyzer);
+        assert_eq!(result, Err(SemanticError::UnreachableCode));
+    }
+
+    #[test]
+    fn unreachable_nested_block_after_return_in_function_body_returns_error() {
+        let mut analyzer = Analyzer::new();
+
+        let return_statement = Statement::return_(Return::new(None));
+        let nested_block = Statement::block(Block::new(vec![]));
+
+        let function_definition = Statement::function_definition(FunctionDefinition::new(
+            "calculate".to_string(),
+            vec![],
+            None,
+            Block::new(vec![return_statement, nested_block]),
+        ));
+
+        let result = function_definition.accept(&mut analyzer);
+        assert_eq!(result, Err(SemanticError::UnreachableCode));
+    }
+
+    #[test]
+    fn statement_after_conditional_return_in_if_is_reachable() {
+        let mut analyzer = Analyzer::new();
+
+        let return_statement = Statement::return_(Return::new(None));
+        let if_statement = Statement::conditional(If::new(
+            Expression::Boolean(true),
+            Block::new(vec![return_statement]),
+            None,
+        ));
+
+        let variable_declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "score".to_string(),
+            None,
+            None,
+        ));
+
+        let function_definition = Statement::function_definition(FunctionDefinition::new(
+            "calculate".to_string(),
+            vec![],
+            None,
+            Block::new(vec![if_statement, variable_declaration]),
+        ));
+
+        let result = function_definition.accept(&mut analyzer);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn statement_after_loop_with_break_is_reachable() {
+        let mut analyzer = Analyzer::new();
+
+        let break_statement = Statement::control_flow(Break::new());
+        let loop_statement = Statement::iteration(Loop::new(Block::new(vec![break_statement])));
+
+        let variable_declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "score".to_string(),
+            None,
+            None,
+        ));
+
+        let function_definition = Statement::function_definition(FunctionDefinition::new(
+            "calculate".to_string(),
+            vec![],
+            None,
+            Block::new(vec![loop_statement, variable_declaration]),
+        ));
+
+        let result = function_definition.accept(&mut analyzer);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn return_in_first_function_does_not_affect_second_function_reachability() {
+        let mut analyzer = Analyzer::new();
+
+        let return_statement = Statement::return_(Return::new(None));
+        let first_function = Statement::function_definition(FunctionDefinition::new(
+            "first".to_string(),
+            vec![],
+            None,
+            Block::new(vec![return_statement]),
+        ));
+
+        let variable_declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "score".to_string(),
+            None,
+            None,
+        ));
+        let second_function = Statement::function_definition(FunctionDefinition::new(
+            "second".to_string(),
+            vec![],
+            None,
+            Block::new(vec![variable_declaration]),
+        ));
+
+        assert!(first_function.accept(&mut analyzer).is_ok());
+        assert!(second_function.accept(&mut analyzer).is_ok());
     }
 }
