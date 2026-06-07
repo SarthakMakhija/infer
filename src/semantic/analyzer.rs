@@ -1,3 +1,4 @@
+use crate::ast::expr::Expression;
 use crate::ast::statement::{
     Assignment, Block, FunctionDefinition, If, Loop, NodeId, Return, Statement, VariableDeclaration,
 };
@@ -29,6 +30,8 @@ pub(crate) trait Visitor {
         &mut self,
         definition: &FunctionDefinition,
     ) -> Result<(), SemanticError>;
+
+    fn visit_function_call(&mut self, call: &Expression) -> Result<(), SemanticError>;
 
     fn visit_break(&mut self) -> Result<(), SemanticError>;
 
@@ -155,6 +158,35 @@ impl Visitor for Analyzer {
         self.scopes.end_scope();
         self.state.exited_function();
         self.state.reset_return();
+        Ok(())
+    }
+
+    fn visit_function_call(&mut self, call: &Expression) -> Result<(), SemanticError> {
+        let Expression::FunctionCall(ref callee, ref arguments, _) = call else {
+            panic!("Expected Expression::FunctionCall variant");
+        };
+
+        let Expression::Identifier(ref name, _) = &**callee else {
+            return Err(SemanticError::NotAFunction("".to_string()));
+        };
+
+        match self.scopes.get(name) {
+            None => self.state.add_pending_call(name.clone(), arguments.len()),
+            Some(symbol_id) => {
+                let metadata = self
+                    .state
+                    .get_global_function(&symbol_id)
+                    .ok_or_else(|| SemanticError::NotAFunction(name.clone()))?;
+
+                if metadata.parameter_count != arguments.len() {
+                    return Err(SemanticError::ArgumentCountMismatch(
+                        name.clone(),
+                        metadata.parameter_count,
+                        arguments.len(),
+                    ));
+                }
+            }
+        }
         Ok(())
     }
 
@@ -657,9 +689,122 @@ mod function_definition_tests {
         assert!(function_definition.accept(&mut analyzer).is_ok());
 
         let symbol_id = analyzer.scopes.get("greeting").unwrap();
-        let metadata = analyzer.state.global_functions.get(&symbol_id).unwrap();
+        let metadata = analyzer.state.get_global_function(&symbol_id).unwrap();
         assert_eq!(metadata.name, "greeting");
         assert_eq!(metadata.parameter_count, 1);
+    }
+}
+
+#[cfg(test)]
+mod function_call_tests {
+    use super::*;
+    use crate::ast::expr::Expression;
+    use crate::ast::statement::{Block, FunctionDefinition, FunctionParameter, Statement};
+    use crate::semantic::state::PendingCall;
+
+    #[test]
+    fn analyzer_accepts_valid_function_call() {
+        let mut analyzer = Analyzer::new();
+
+        let function_definition = Statement::function_definition(FunctionDefinition::new(
+            "calculate_total".to_string(),
+            vec![],
+            None,
+            Block::new(vec![]),
+        ));
+        assert!(function_definition.accept(&mut analyzer).is_ok());
+
+        let callee = Expression::identifier("calculate_total".to_string());
+        let call_expression = Expression::function_call(callee, vec![]);
+        let call_statement = Statement::function_call(call_expression);
+
+        let result = call_statement.accept(&mut analyzer);
+        assert!(result.is_ok());
+        assert!(analyzer.state.pending_calls.is_empty());
+    }
+
+    #[test]
+    fn analyzer_detects_arity_mismatch_on_function_call() {
+        let mut analyzer = Analyzer::new();
+
+        let parameter = FunctionParameter::new("score".to_string(), Some("i32".to_string()));
+        let function_definition = Statement::function_definition(FunctionDefinition::new(
+            "calculate_total".to_string(),
+            vec![parameter],
+            None,
+            Block::new(vec![]),
+        ));
+        assert!(function_definition.accept(&mut analyzer).is_ok());
+
+        let callee = Expression::identifier("calculate_total".to_string());
+        let call_expression = Expression::function_call(callee, vec![]);
+        let call_statement = Statement::function_call(call_expression);
+
+        let result = call_statement.accept(&mut analyzer);
+        assert_eq!(
+            result,
+            Err(SemanticError::ArgumentCountMismatch(
+                "calculate_total".to_string(),
+                1,
+                0
+            ))
+        );
+    }
+
+    #[test]
+    fn analyzer_detects_shadowed_function_call_on_variable() {
+        let mut analyzer = Analyzer::new();
+
+        let function_definition = Statement::function_definition(FunctionDefinition::new(
+            "calculate_total".to_string(),
+            vec![],
+            None,
+            Block::new(vec![]),
+        ));
+        assert!(function_definition.accept(&mut analyzer).is_ok());
+
+        let variable_declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "calculate_total".to_string(),
+            None,
+            None,
+        ));
+
+        let callee = Expression::identifier("calculate_total".to_string());
+        let call_expression = Expression::function_call(callee, vec![]);
+        let call_statement = Statement::function_call(call_expression);
+
+        let main_definition = Statement::function_definition(FunctionDefinition::new(
+            "main".to_string(),
+            vec![],
+            None,
+            Block::new(vec![variable_declaration, call_statement]),
+        ));
+
+        let result = main_definition.accept(&mut analyzer);
+        assert_eq!(
+            result,
+            Err(SemanticError::NotAFunction("calculate_total".to_string()))
+        );
+    }
+
+    #[test]
+    fn analyzer_defers_unresolved_function_call_to_pending_calls() {
+        let mut analyzer = Analyzer::new();
+
+        let callee = Expression::identifier("calculate_total".to_string());
+        let call_expression = Expression::function_call(callee, vec![Expression::I32(42)]);
+        let call_statement = Statement::function_call(call_expression);
+
+        let result = call_statement.accept(&mut analyzer);
+        assert!(result.is_ok());
+
+        assert_eq!(
+            analyzer.state.pending_calls,
+            vec![PendingCall {
+                name: "calculate_total".to_string(),
+                argument_count: 1,
+            }]
+        );
     }
 }
 

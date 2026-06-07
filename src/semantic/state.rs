@@ -1,6 +1,12 @@
 use crate::semantic::SymbolId;
 use std::collections::HashMap;
 
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct PendingCall {
+    pub(crate) name: String,
+    pub(crate) argument_count: usize,
+}
+
 #[derive(Clone)]
 pub(crate) struct FunctionMetadata {
     pub(crate) name: String,
@@ -20,7 +26,8 @@ impl FunctionMetadata {
 
 pub(crate) struct State {
     current_function: Option<FunctionMetadata>,
-    pub(crate) global_functions: HashMap<SymbolId, FunctionMetadata>,
+    global_functions: HashMap<SymbolId, FunctionMetadata>,
+    pub(crate) pending_calls: Vec<PendingCall>,
     loop_depth: usize,
     encountered_break: bool,
     encountered_return: bool,
@@ -31,15 +38,27 @@ impl State {
         Self {
             current_function: None,
             global_functions: HashMap::new(),
+            pending_calls: Vec::new(),
             loop_depth: 0,
             encountered_break: false,
             encountered_return: false,
         }
     }
 
+    pub(crate) fn add_pending_call(&mut self, name: String, argument_count: usize) {
+        self.pending_calls.push(PendingCall {
+            name,
+            argument_count,
+        });
+    }
+
     pub(crate) fn add_global_function(&mut self, symbol_id: SymbolId, function: FunctionMetadata) {
         self.global_functions.insert(symbol_id, function.clone());
         self.current_function = Some(function);
+    }
+
+    pub(crate) fn get_global_function(&self, symbol_id: &SymbolId) -> Option<&FunctionMetadata> {
+        self.global_functions.get(symbol_id)
     }
 
     pub(crate) fn exited_function(&mut self) {
@@ -101,7 +120,7 @@ mod tests {
             FunctionMetadata::new("calculate".to_string(), 0, true),
         );
 
-        let current = state.current_function().unwrap();
+        let current = state.get_global_function(&SymbolId(0)).unwrap();
         assert_eq!(current.name, "calculate");
         assert!(current.has_return_type);
     }

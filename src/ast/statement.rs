@@ -143,6 +143,7 @@ impl Statement {
             Statement::FunctionDefinition(ref definition, _) => {
                 visitor.visit_function_definition(definition)
             }
+            Statement::FunctionCall(ref expression, _) => visitor.visit_function_call(expression),
             Statement::Break(_, _) => visitor.visit_break(),
             Statement::Return(ref return_statement, _) => visitor.visit_return(return_statement),
             _ => unimplemented!(),
@@ -599,6 +600,13 @@ mod accept_tests {
             _definition: &FunctionDefinition,
         ) -> Result<(), SemanticError> {
             self.visited_function_definition = true;
+            Ok(())
+        }
+
+        fn visit_function_call(
+            &mut self,
+            _call: &crate::ast::expr::Expression,
+        ) -> Result<(), SemanticError> {
             Ok(())
         }
 

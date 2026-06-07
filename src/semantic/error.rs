@@ -10,6 +10,8 @@ pub(crate) enum SemanticError {
     UnexpectedReturnExpression,
     BreakOutsideLoop,
     UnreachableCode,
+    NotAFunction(String),
+    ArgumentCountMismatch(String, usize, usize),
 }
 
 impl Display for SemanticError {
@@ -44,6 +46,16 @@ impl Display for SemanticError {
             }
             SemanticError::UnreachableCode => {
                 write!(formatter, "unreachable code")
+            }
+            SemanticError::NotAFunction(name) => {
+                write!(formatter, "not a function: {}", name)
+            }
+            SemanticError::ArgumentCountMismatch(name, expected, actual) => {
+                write!(
+                    formatter,
+                    "arity mismatch for function {}: expected {}, got {}",
+                    name, expected, actual
+                )
             }
         }
     }
