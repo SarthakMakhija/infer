@@ -21,16 +21,16 @@ pub(crate) trait Visitor {
 
     fn visit_if(&mut self, if_statement: &If) -> Result<(), SemanticError>;
 
-    fn visit_loop(&mut self, loop_statement: &Loop) -> Result<(), SemanticError>;
+    fn visit_loop(&mut self, block: &Loop) -> Result<(), SemanticError>;
 
-    fn visit_break(&mut self) -> Result<(), SemanticError>;
+    fn visit_block(&mut self, block: &Block) -> Result<(), SemanticError>;
 
     fn visit_function_definition(
         &mut self,
         definition: &FunctionDefinition,
     ) -> Result<(), SemanticError>;
 
-    fn visit_block(&mut self, block: &Block) -> Result<(), SemanticError>;
+    fn visit_break(&mut self) -> Result<(), SemanticError>;
 
     fn visit_return(&mut self, return_statement: &Return) -> Result<(), SemanticError>;
 }
@@ -108,11 +108,15 @@ impl Visitor for Analyzer {
         Ok(())
     }
 
-    fn visit_break(&mut self) -> Result<(), SemanticError> {
-        if !self.state.is_in_loop() {
-            return Err(SemanticError::BreakOutsideLoop);
+    fn visit_block(&mut self, block: &Block) -> Result<(), SemanticError> {
+        if self.state.is_unreachable() {
+            return Err(SemanticError::UnreachableCode);
         }
-        self.state.encountered_break();
+        self.scopes.begin_scope();
+        self.visit_statements(&block.statements)?;
+        self.scopes.end_scope();
+        self.state.reset_break();
+        self.state.reset_return();
         Ok(())
     }
 
@@ -147,15 +151,11 @@ impl Visitor for Analyzer {
         Ok(())
     }
 
-    fn visit_block(&mut self, block: &Block) -> Result<(), SemanticError> {
-        if self.state.is_unreachable() {
-            return Err(SemanticError::UnreachableCode);
+    fn visit_break(&mut self) -> Result<(), SemanticError> {
+        if !self.state.is_in_loop() {
+            return Err(SemanticError::BreakOutsideLoop);
         }
-        self.scopes.begin_scope();
-        self.visit_statements(&block.statements)?;
-        self.scopes.end_scope();
-        self.state.reset_break();
-        self.state.reset_return();
+        self.state.encountered_break();
         Ok(())
     }
 
@@ -451,28 +451,80 @@ mod loop_tests {
 }
 
 #[cfg(test)]
-mod break_tests {
+mod block_tests {
     use super::*;
-    use crate::ast::statement::{Break, Statement};
+    use crate::ast::expr::Expression;
+    use crate::ast::statement::{Assignment, Block, Statement, VariableDeclaration};
 
     #[test]
-    fn break_statement_outside_any_loop_is_invalid() {
+    fn block_creates_a_new_lexical_scope_allowing_shadowing() {
         let mut analyzer = Analyzer::new();
-        let break_statement = Statement::control_flow(Break::new());
 
-        let result = break_statement.accept(&mut analyzer);
-        assert_eq!(result, Err(SemanticError::BreakOutsideLoop));
+        let outer_declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "score".to_string(),
+            None,
+            None,
+        ));
+        assert!(outer_declaration.accept(&mut analyzer).is_ok());
+        let outer_symbol_id = analyzer.scopes.get("score").unwrap();
+
+        let inner_declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "score".to_string(),
+            None,
+            None,
+        ));
+
+        let block = Statement::block(Block::new(vec![inner_declaration]));
+        assert!(block.accept(&mut analyzer).is_ok());
+
+        assert_eq!(analyzer.scopes.get("score"), Some(outer_symbol_id));
     }
 
     #[test]
-    fn break_statement_inside_a_loop_is_valid() {
+    fn variables_declared_inside_block_are_inaccessible_after_block_exits() {
         let mut analyzer = Analyzer::new();
-        analyzer.state.entered_loop();
 
-        let break_statement = Statement::control_flow(Break::new());
-        let result = break_statement.accept(&mut analyzer);
+        let declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "temp".to_string(),
+            None,
+            None,
+        ));
+        let block = Statement::block(Block::new(vec![declaration]));
+        assert!(block.accept(&mut analyzer).is_ok());
 
-        assert!(result.is_ok());
+        // Assign to "temp" outside the block.
+        let assignment =
+            Statement::assignment(Assignment::new("temp".to_string(), Expression::I32(42)));
+        let result = assignment.accept(&mut analyzer);
+
+        assert_eq!(
+            result,
+            Err(SemanticError::UndefinedVariable("temp".to_string()))
+        );
+    }
+
+    #[test]
+    fn inner_block_can_access_variables_declared_in_enclosing_scope() {
+        let mut analyzer = Analyzer::new();
+
+        let outer_declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "score".to_string(),
+            None,
+            None,
+        ));
+        assert!(outer_declaration.accept(&mut analyzer).is_ok());
+        let expected_symbol_id = analyzer.scopes.get("score").unwrap();
+
+        let inner_assignment =
+            Statement::assignment(Assignment::new("score".to_string(), Expression::I32(50)));
+        let assignment_id = inner_assignment.id();
+        let block = Statement::block(Block::new(vec![inner_assignment]));
+
+        assert!(block.accept(&mut analyzer).is_ok());
+        assert_eq!(
+            analyzer.resolution_table.get(&assignment_id),
+            Some(expected_symbol_id)
+        );
     }
 }
 
@@ -585,80 +637,28 @@ mod function_definition_tests {
 }
 
 #[cfg(test)]
-mod block_tests {
+mod break_tests {
     use super::*;
-    use crate::ast::expr::Expression;
-    use crate::ast::statement::{Assignment, Block, Statement, VariableDeclaration};
+    use crate::ast::statement::{Break, Statement};
 
     #[test]
-    fn block_creates_a_new_lexical_scope_allowing_shadowing() {
+    fn break_statement_outside_any_loop_is_invalid() {
         let mut analyzer = Analyzer::new();
+        let break_statement = Statement::control_flow(Break::new());
 
-        let outer_declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "score".to_string(),
-            None,
-            None,
-        ));
-        assert!(outer_declaration.accept(&mut analyzer).is_ok());
-        let outer_symbol_id = analyzer.scopes.get("score").unwrap();
-
-        let inner_declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "score".to_string(),
-            None,
-            None,
-        ));
-
-        let block = Statement::block(Block::new(vec![inner_declaration]));
-        assert!(block.accept(&mut analyzer).is_ok());
-
-        assert_eq!(analyzer.scopes.get("score"), Some(outer_symbol_id));
+        let result = break_statement.accept(&mut analyzer);
+        assert_eq!(result, Err(SemanticError::BreakOutsideLoop));
     }
 
     #[test]
-    fn variables_declared_inside_block_are_inaccessible_after_block_exits() {
+    fn break_statement_inside_a_loop_is_valid() {
         let mut analyzer = Analyzer::new();
+        analyzer.state.entered_loop();
 
-        let declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "temp".to_string(),
-            None,
-            None,
-        ));
-        let block = Statement::block(Block::new(vec![declaration]));
-        assert!(block.accept(&mut analyzer).is_ok());
+        let break_statement = Statement::control_flow(Break::new());
+        let result = break_statement.accept(&mut analyzer);
 
-        // Assign to "temp" outside the block.
-        let assignment =
-            Statement::assignment(Assignment::new("temp".to_string(), Expression::I32(42)));
-        let result = assignment.accept(&mut analyzer);
-
-        assert_eq!(
-            result,
-            Err(SemanticError::UndefinedVariable("temp".to_string()))
-        );
-    }
-
-    #[test]
-    fn inner_block_can_access_variables_declared_in_enclosing_scope() {
-        let mut analyzer = Analyzer::new();
-
-        let outer_declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "score".to_string(),
-            None,
-            None,
-        ));
-        assert!(outer_declaration.accept(&mut analyzer).is_ok());
-        let expected_symbol_id = analyzer.scopes.get("score").unwrap();
-
-        let inner_assignment =
-            Statement::assignment(Assignment::new("score".to_string(), Expression::I32(50)));
-        let assignment_id = inner_assignment.id();
-        let block = Statement::block(Block::new(vec![inner_assignment]));
-
-        assert!(block.accept(&mut analyzer).is_ok());
-        assert_eq!(
-            analyzer.resolution_table.get(&assignment_id),
-            Some(expected_symbol_id)
-        );
+        assert!(result.is_ok());
     }
 }
 
@@ -773,10 +773,11 @@ mod unreachable_code_tests {
             None,
         ));
 
-        let loop_statement = Statement::iteration(Loop::new(Block::new(vec![
-            break_statement,
-            variable_declaration,
-        ])));
+        let loop_statement =
+            Statement::iteration(crate::ast::statement::Loop::new(Block::new(vec![
+                break_statement,
+                variable_declaration,
+            ])));
         let result = loop_statement.accept(&mut analyzer);
         assert_eq!(result, Err(SemanticError::UnreachableCode));
     }
@@ -804,7 +805,7 @@ mod unreachable_code_tests {
         let mut analyzer = Analyzer::new();
 
         let return_statement = Statement::return_(Return::new(None));
-        let if_statement = Statement::conditional(If::new(
+        let if_statement = Statement::conditional(crate::ast::statement::If::new(
             Expression::Boolean(true),
             Block::new(vec![return_statement]),
             None,
@@ -832,7 +833,10 @@ mod unreachable_code_tests {
         let mut analyzer = Analyzer::new();
 
         let break_statement = Statement::control_flow(Break::new());
-        let loop_statement = Statement::iteration(Loop::new(Block::new(vec![break_statement])));
+        let loop_statement =
+            Statement::iteration(crate::ast::statement::Loop::new(Block::new(vec![
+                break_statement,
+            ])));
 
         let variable_declaration = Statement::variable_declaration(VariableDeclaration::new(
             "score".to_string(),

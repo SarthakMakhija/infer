@@ -42,14 +42,14 @@ pub enum Statement {
     If(If, NodeId),
     /// A loop iteration block.
     Loop(Loop, NodeId),
-    /// A break control flow statement.
-    Break(Break, NodeId),
+    /// A standalone block statement containing a sequence of statements (e.g. `{ var score = 10; }`).
+    Block(Block, NodeId),
     /// A function definition statement.
     FunctionDefinition(FunctionDefinition, NodeId),
     /// A standalone expression evaluated as a statement (typically a function call).
     FunctionCall(Expression, NodeId),
-    /// A standalone block statement containing a sequence of statements (e.g. `{ var score = 10; }`).
-    Block(Block, NodeId),
+    /// A break control flow statement.
+    Break(Break, NodeId),
     /// A return statement.
     Return(Return, NodeId),
     /// A print statement.
@@ -65,12 +65,12 @@ impl PartialEq for Statement {
             (Statement::Assignment(this, _), Statement::Assignment(other, _)) => this == other,
             (Statement::If(this, _), Statement::If(other, _)) => this == other,
             (Statement::Loop(this, _), Statement::Loop(other, _)) => this == other,
-            (Statement::Break(this, _), Statement::Break(other, _)) => this == other,
+            (Statement::Block(this, _), Statement::Block(other, _)) => this == other,
             (Statement::FunctionDefinition(this, _), Statement::FunctionDefinition(other, _)) => {
                 this == other
             }
             (Statement::FunctionCall(this, _), Statement::FunctionCall(other, _)) => this == other,
-            (Statement::Block(this, _), Statement::Block(other, _)) => this == other,
+            (Statement::Break(this, _), Statement::Break(other, _)) => this == other,
             (Statement::Return(this, _), Statement::Return(other, _)) => this == other,
             (Statement::Print(this, _), Statement::Print(other, _)) => this == other,
             _ => false,
@@ -99,6 +99,23 @@ impl Statement {
         Statement::Loop(statement, Self::statement_id())
     }
 
+    /// Wraps a [`Block`] into a [`Statement::Block`].
+    pub(crate) fn block(block: Block) -> Self {
+        Statement::Block(block, Self::statement_id())
+    }
+
+    /// Wraps a [`FunctionDefinition`] into a [`Statement::FunctionDefinition`].
+    pub(crate) fn function_definition(statement: FunctionDefinition) -> Self {
+        Statement::FunctionDefinition(statement, Self::statement_id())
+    }
+
+    /// Wraps a function call [`Expression`] into a [`Statement::FunctionCall`].
+    ///
+    /// The caller is expected to pass a [`Expression::FunctionCall`] variant.
+    pub(crate) fn function_call(expression: Expression) -> Self {
+        Statement::FunctionCall(expression, Self::statement_id())
+    }
+
     /// Wraps a [`Break`] into a [`Statement::Break`].
     pub(crate) fn control_flow(statement: Break) -> Self {
         Statement::Break(statement, Self::statement_id())
@@ -114,23 +131,6 @@ impl Statement {
         Statement::Print(statement, Self::statement_id())
     }
 
-    /// Wraps a [`FunctionDefinition`] into a [`Statement::FunctionDefinition`].
-    pub(crate) fn function_definition(statement: FunctionDefinition) -> Self {
-        Statement::FunctionDefinition(statement, Self::statement_id())
-    }
-
-    /// Wraps a function call [`Expression`] into a [`Statement::FunctionCall`].
-    ///
-    /// The caller is expected to pass a [`Expression::FunctionCall`] variant.
-    pub(crate) fn function_call(expression: Expression) -> Self {
-        Statement::FunctionCall(expression, Self::statement_id())
-    }
-
-    /// Wraps a [`Block`] into a [`Statement::Block`].
-    pub(crate) fn block(block: Block) -> Self {
-        Statement::Block(block, Self::statement_id())
-    }
-
     pub(crate) fn accept(&self, visitor: &mut dyn Visitor) -> Result<(), SemanticError> {
         match self {
             Statement::VariableDeclaration(ref declaration, _) => {
@@ -139,11 +139,11 @@ impl Statement {
             Statement::Assignment(ref assignment, id) => visitor.visit_assignment(assignment, *id),
             Statement::If(ref if_statement, _) => visitor.visit_if(if_statement),
             Statement::Loop(ref loop_statement, _) => visitor.visit_loop(loop_statement),
-            Statement::Break(_, _) => visitor.visit_break(),
+            Statement::Block(ref block, _) => visitor.visit_block(block),
             Statement::FunctionDefinition(ref definition, _) => {
                 visitor.visit_function_definition(definition)
             }
-            Statement::Block(ref block, _) => visitor.visit_block(block),
+            Statement::Break(_, _) => visitor.visit_break(),
             Statement::Return(ref return_statement, _) => visitor.visit_return(return_statement),
             _ => unimplemented!(),
         }
@@ -156,10 +156,10 @@ impl Statement {
             Statement::Assignment(_, id) => *id,
             Statement::If(_, id) => *id,
             Statement::Loop(_, id) => *id,
-            Statement::Break(_, id) => *id,
+            Statement::Block(_, id) => *id,
             Statement::FunctionDefinition(_, id) => *id,
             Statement::FunctionCall(_, id) => *id,
-            Statement::Block(_, id) => *id,
+            Statement::Break(_, id) => *id,
             Statement::Return(_, id) => *id,
             Statement::Print(_, id) => *id,
         }
@@ -291,53 +291,23 @@ impl Loop {
     }
 }
 
-/// Represents a break control flow statement.
+/// Represents a block statement `{ ... }` in the AST.
 ///
-/// Example: `break;`
+/// A block contains a sequence of statements executed in a new lexical scope.
 #[derive(Debug, PartialEq)]
-pub struct Break;
-
-impl Break {
-    pub(crate) fn new() -> Self {
-        Break {}
-    }
+pub struct Block {
+    pub(crate) statements: Vec<Statement>,
 }
 
-/// Represents a return control flow statement.
-///
-/// Example: `return expression;` or `return;`
-#[derive(Debug, PartialEq)]
-pub struct Return {
-    pub(crate) expression: Option<Expression>,
-}
-
-impl Return {
-    pub(crate) fn new(expression: Option<Expression>) -> Self {
-        Self { expression }
+impl Block {
+    /// Creates a new `Block` enclosing the given statements.
+    pub(crate) fn new(statements: Vec<Statement>) -> Self {
+        Self { statements }
     }
 
-    /// Returns the expression being returned, if any.
-    pub fn expression(&self) -> Option<&Expression> {
-        self.expression.as_ref()
-    }
-}
-
-/// Represents a print statement.
-///
-/// Example: `print name, age;`
-#[derive(Debug, PartialEq)]
-pub struct Print {
-    pub(crate) arguments: Vec<Expression>,
-}
-
-impl Print {
-    pub(crate) fn new(arguments: Vec<Expression>) -> Self {
-        Self { arguments }
-    }
-
-    /// Returns the arguments of the print statement.
-    pub fn arguments(&self) -> &[Expression] {
-        &self.arguments
+    /// Returns a slice of statements in the block.
+    pub fn statements(&self) -> &[Statement] {
+        &self.statements
     }
 }
 
@@ -413,23 +383,53 @@ impl FunctionParameter {
     }
 }
 
-/// Represents a block statement `{ ... }` in the AST.
+/// Represents a break control flow statement.
 ///
-/// A block contains a sequence of statements executed in a new lexical scope.
+/// Example: `break;`
 #[derive(Debug, PartialEq)]
-pub struct Block {
-    pub(crate) statements: Vec<Statement>,
+pub struct Break;
+
+impl Break {
+    pub(crate) fn new() -> Self {
+        Break {}
+    }
 }
 
-impl Block {
-    /// Creates a new `Block` enclosing the given statements.
-    pub(crate) fn new(statements: Vec<Statement>) -> Self {
-        Self { statements }
+/// Represents a return control flow statement.
+///
+/// Example: `return expression;` or `return;`
+#[derive(Debug, PartialEq)]
+pub struct Return {
+    pub(crate) expression: Option<Expression>,
+}
+
+impl Return {
+    pub(crate) fn new(expression: Option<Expression>) -> Self {
+        Self { expression }
     }
 
-    /// Returns a slice of statements in the block.
-    pub fn statements(&self) -> &[Statement] {
-        &self.statements
+    /// Returns the expression being returned, if any.
+    pub fn expression(&self) -> Option<&Expression> {
+        self.expression.as_ref()
+    }
+}
+
+/// Represents a print statement.
+///
+/// Example: `print name, age;`
+#[derive(Debug, PartialEq)]
+pub struct Print {
+    pub(crate) arguments: Vec<Expression>,
+}
+
+impl Print {
+    pub(crate) fn new(arguments: Vec<Expression>) -> Self {
+        Self { arguments }
+    }
+
+    /// Returns the arguments of the print statement.
+    pub fn arguments(&self) -> &[Expression] {
+        &self.arguments
     }
 }
 
@@ -470,6 +470,42 @@ mod tests {
     }
 
     #[test]
+    fn if_id() {
+        let statement =
+            Statement::conditional(If::new(Expression::Boolean(true), Block::new(vec![]), None));
+        assert!(*statement.id() > 0);
+    }
+
+    #[test]
+    fn loop_id() {
+        let statement = Statement::iteration(Loop::new(Block::new(vec![])));
+        assert!(*statement.id() > 0);
+    }
+
+    #[test]
+    fn block_id() {
+        let statement = Statement::block(Block::new(vec![]));
+        assert!(*statement.id() > 0);
+    }
+
+    #[test]
+    fn function_definition_id() {
+        let statement = Statement::function_definition(FunctionDefinition::new(
+            "calculate_total".to_string(),
+            vec![],
+            None,
+            Block::new(vec![]),
+        ));
+        assert!(*statement.id() > 0);
+    }
+
+    #[test]
+    fn function_call_id() {
+        let statement = Statement::function_call(Expression::I32(42));
+        assert!(*statement.id() > 0);
+    }
+
+    #[test]
     fn break_id() {
         let statement = Statement::control_flow(Break::new());
         assert!(*statement.id() > 0);
@@ -484,42 +520,6 @@ mod tests {
     #[test]
     fn print_id() {
         let statement = Statement::print(Print::new(vec![Expression::I32(1)]));
-        assert!(*statement.id() > 0);
-    }
-
-    #[test]
-    fn function_call_id() {
-        let statement = Statement::function_call(Expression::I32(42));
-        assert!(*statement.id() > 0);
-    }
-
-    #[test]
-    fn block_id() {
-        let statement = Statement::block(Block::new(vec![]));
-        assert!(*statement.id() > 0);
-    }
-
-    #[test]
-    fn loop_id() {
-        let statement = Statement::iteration(Loop::new(Block::new(vec![])));
-        assert!(*statement.id() > 0);
-    }
-
-    #[test]
-    fn if_id() {
-        let statement =
-            Statement::conditional(If::new(Expression::Boolean(true), Block::new(vec![]), None));
-        assert!(*statement.id() > 0);
-    }
-
-    #[test]
-    fn function_definition_id() {
-        let statement = Statement::function_definition(FunctionDefinition::new(
-            "calculate_total".to_string(),
-            vec![],
-            None,
-            Block::new(vec![]),
-        ));
         assert!(*statement.id() > 0);
     }
 
@@ -553,12 +553,12 @@ mod accept_tests {
     struct TestVisitor {
         visited_var_declaration: bool,
         visited_assignment: bool,
-        visited_block: bool,
-        visited_loop: bool,
         visited_if: bool,
+        visited_loop: bool,
+        visited_block: bool,
         visited_function_definition: bool,
-        visited_return: bool,
         visited_break: bool,
+        visited_return: bool,
     }
 
     impl Visitor for TestVisitor {
@@ -589,8 +589,8 @@ mod accept_tests {
             Ok(())
         }
 
-        fn visit_break(&mut self) -> Result<(), SemanticError> {
-            self.visited_break = true;
+        fn visit_block(&mut self, _block: &Block) -> Result<(), SemanticError> {
+            self.visited_block = true;
             Ok(())
         }
 
@@ -602,8 +602,8 @@ mod accept_tests {
             Ok(())
         }
 
-        fn visit_block(&mut self, _block: &Block) -> Result<(), SemanticError> {
-            self.visited_block = true;
+        fn visit_break(&mut self) -> Result<(), SemanticError> {
+            self.visited_break = true;
             Ok(())
         }
 
@@ -623,12 +623,12 @@ mod accept_tests {
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
             visited_assignment: false,
-            visited_block: false,
-            visited_loop: false,
             visited_if: false,
+            visited_loop: false,
+            visited_block: false,
             visited_function_definition: false,
-            visited_return: false,
             visited_break: false,
+            visited_return: false,
         };
         let result = statement.accept(&mut visitor);
 
@@ -644,12 +644,12 @@ mod accept_tests {
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
             visited_assignment: false,
-            visited_block: false,
-            visited_loop: false,
             visited_if: false,
+            visited_loop: false,
+            visited_block: false,
             visited_function_definition: false,
-            visited_return: false,
             visited_break: false,
+            visited_return: false,
         };
         let result = statement.accept(&mut visitor);
 
@@ -665,12 +665,12 @@ mod accept_tests {
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
             visited_assignment: false,
-            visited_block: false,
-            visited_loop: false,
             visited_if: false,
+            visited_loop: false,
+            visited_block: false,
             visited_function_definition: false,
-            visited_return: false,
             visited_break: false,
+            visited_return: false,
         };
         let result = statement.accept(&mut visitor);
 
@@ -684,12 +684,12 @@ mod accept_tests {
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
             visited_assignment: false,
-            visited_block: false,
-            visited_loop: false,
             visited_if: false,
+            visited_loop: false,
+            visited_block: false,
             visited_function_definition: false,
-            visited_return: false,
             visited_break: false,
+            visited_return: false,
         };
         let result = statement.accept(&mut visitor);
 
@@ -698,22 +698,22 @@ mod accept_tests {
     }
 
     #[test]
-    fn statement_accept_dispatches_break_to_visitor() {
-        let statement = Statement::control_flow(Break::new());
+    fn statement_accept_dispatches_block_to_visitor() {
+        let statement = Statement::block(Block::new(vec![]));
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
             visited_assignment: false,
-            visited_block: false,
-            visited_loop: false,
             visited_if: false,
+            visited_loop: false,
+            visited_block: false,
             visited_function_definition: false,
-            visited_return: false,
             visited_break: false,
+            visited_return: false,
         };
         let result = statement.accept(&mut visitor);
 
         assert!(result.is_ok());
-        assert!(visitor.visited_break);
+        assert!(visitor.visited_block);
     }
 
     #[test]
@@ -727,12 +727,12 @@ mod accept_tests {
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
             visited_assignment: false,
-            visited_block: false,
-            visited_loop: false,
             visited_if: false,
+            visited_loop: false,
+            visited_block: false,
             visited_function_definition: false,
-            visited_return: false,
             visited_break: false,
+            visited_return: false,
         };
         let result = statement.accept(&mut visitor);
 
@@ -741,22 +741,22 @@ mod accept_tests {
     }
 
     #[test]
-    fn statement_accept_dispatches_block_to_visitor() {
-        let statement = Statement::block(Block::new(vec![]));
+    fn statement_accept_dispatches_break_to_visitor() {
+        let statement = Statement::control_flow(Break::new());
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
             visited_assignment: false,
-            visited_block: false,
-            visited_loop: false,
             visited_if: false,
+            visited_loop: false,
+            visited_block: false,
             visited_function_definition: false,
-            visited_return: false,
             visited_break: false,
+            visited_return: false,
         };
         let result = statement.accept(&mut visitor);
 
         assert!(result.is_ok());
-        assert!(visitor.visited_block);
+        assert!(visitor.visited_break);
     }
 
     #[test]
@@ -765,12 +765,12 @@ mod accept_tests {
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
             visited_assignment: false,
-            visited_block: false,
-            visited_loop: false,
             visited_if: false,
+            visited_loop: false,
+            visited_block: false,
             visited_function_definition: false,
-            visited_return: false,
             visited_break: false,
+            visited_return: false,
         };
         let result = statement.accept(&mut visitor);
 
