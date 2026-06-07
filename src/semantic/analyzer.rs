@@ -1,4 +1,4 @@
-use crate::ast::statement::{Assignment, Block, NodeId, Return, VariableDeclaration};
+use crate::ast::statement::{Assignment, Block, Loop, NodeId, Return, VariableDeclaration};
 use crate::semantic::error::SemanticError;
 use crate::semantic::next_symbol_id;
 use crate::semantic::resolution::ResolutionTable;
@@ -16,6 +16,8 @@ pub(crate) trait Visitor {
         assignment: &Assignment,
         node_id: NodeId,
     ) -> Result<(), SemanticError>;
+
+    fn visit_loop(&mut self, block: &Loop) -> Result<(), SemanticError>;
 
     fn visit_block(&mut self, block: &Block) -> Result<(), SemanticError>;
 
@@ -68,6 +70,13 @@ impl Visitor for Analyzer {
         }
         //SAFETY: symbol_id has been checked for non-none.
         self.resolution_table.resolve(node_id, symbol_id.unwrap());
+        Ok(())
+    }
+
+    fn visit_loop(&mut self, loop_statement: &Loop) -> Result<(), SemanticError> {
+        self.state.entered_loop();
+        self.visit_block(&loop_statement.body)?;
+        self.state.exited_loop();
         Ok(())
     }
 
@@ -189,6 +198,63 @@ mod assignment_tests {
         assert_eq!(
             result,
             Err(SemanticError::UndefinedVariable("score".to_string()))
+        );
+    }
+}
+
+#[cfg(test)]
+mod loop_tests {
+    use super::*;
+    use crate::ast::expr::Expression;
+    use crate::ast::statement::{Assignment, Block, Break, Loop, Statement, VariableDeclaration};
+
+    #[test]
+    fn entering_a_loop_updates_the_state_to_be_inside_a_loop() {
+        let mut analyzer = Analyzer::new();
+
+        let break_statement = Statement::control_flow(Break::new());
+        let loop_statement = Statement::iteration(Loop::new(Block::new(vec![break_statement])));
+
+        let result = loop_statement.accept(&mut analyzer);
+        assert!(result.is_ok());
+        assert!(!analyzer.state.is_in_loop());
+    }
+
+    #[test]
+    fn nested_loops_track_state_depth_correctly() {
+        let mut analyzer = Analyzer::new();
+
+        let inner_break = Statement::control_flow(Break::new());
+        let inner_loop = Statement::iteration(Loop::new(Block::new(vec![inner_break])));
+
+        let outer_break = Statement::control_flow(Break::new());
+        let outer_loop = Statement::iteration(Loop::new(Block::new(vec![inner_loop, outer_break])));
+
+        let result = outer_loop.accept(&mut analyzer);
+        assert!(result.is_ok());
+        assert!(!analyzer.state.is_in_loop());
+    }
+
+    #[test]
+    fn variables_declared_inside_loop_are_inaccessible_after_loop_exits() {
+        let mut analyzer = Analyzer::new();
+
+        let var_declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "name".to_string(),
+            None,
+            None,
+        ));
+        let loop_statement = Statement::iteration(Loop::new(Block::new(vec![var_declaration])));
+        assert!(loop_statement.accept(&mut analyzer).is_ok());
+
+        let assignment = Statement::assignment(Assignment::new(
+            "name".to_string(),
+            Expression::String("John".to_string()),
+        ));
+        let result = assignment.accept(&mut analyzer);
+        assert_eq!(
+            result,
+            Err(SemanticError::UndefinedVariable("name".to_string()))
         );
     }
 }
