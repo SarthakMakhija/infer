@@ -1,4 +1,5 @@
 use crate::ast::expr::Expression;
+use crate::ast::program::Program;
 use crate::ast::statement::{
     Assignment, Block, FunctionDefinition, If, Loop, NodeId, Return, Statement, VariableDeclaration,
 };
@@ -53,12 +54,46 @@ impl Analyzer {
         }
     }
 
+    pub(crate) fn analyze(&mut self, program: &Program) -> Result<(), SemanticError> {
+        self.visit_statements(program.statements())?;
+
+        for pending_call in &self.state.pending_calls {
+            self.validate_function_call(&pending_call.name, pending_call.argument_count)?;
+        }
+        Ok(())
+    }
+
     fn visit_statements(&mut self, statements: &[Statement]) -> Result<(), SemanticError> {
         for statement in statements {
             if self.state.is_unreachable() {
                 return Err(SemanticError::UnreachableCode);
             }
             statement.accept(self)?
+        }
+        Ok(())
+    }
+
+    fn validate_function_call(
+        &self,
+        name: &str,
+        argument_count: usize,
+    ) -> Result<(), SemanticError> {
+        let symbol_id = self
+            .scopes
+            .get(name)
+            .ok_or_else(|| SemanticError::UndefinedVariable(name.to_string()))?;
+
+        let metadata = self
+            .state
+            .get_global_function(&symbol_id)
+            .ok_or_else(|| SemanticError::NotAFunction(name.to_string()))?;
+
+        if metadata.parameter_count != argument_count {
+            return Err(SemanticError::ArgumentCountMismatch(
+                name.to_string(),
+                metadata.parameter_count,
+                argument_count,
+            ));
         }
         Ok(())
     }
@@ -172,20 +207,7 @@ impl Visitor for Analyzer {
 
         match self.scopes.get(name) {
             None => self.state.add_pending_call(name.clone(), arguments.len()),
-            Some(symbol_id) => {
-                let metadata = self
-                    .state
-                    .get_global_function(&symbol_id)
-                    .ok_or_else(|| SemanticError::NotAFunction(name.clone()))?;
-
-                if metadata.parameter_count != arguments.len() {
-                    return Err(SemanticError::ArgumentCountMismatch(
-                        name.clone(),
-                        metadata.parameter_count,
-                        arguments.len(),
-                    ));
-                }
-            }
+            Some(_) => self.validate_function_call(name, arguments.len())?,
         }
         Ok(())
     }
@@ -804,6 +826,105 @@ mod function_call_tests {
                 name: "calculate_total".to_string(),
                 argument_count: 1,
             }]
+        );
+    }
+}
+
+#[cfg(test)]
+mod pending_call_tests {
+    use super::*;
+    use crate::ast::expr::Expression;
+    use crate::ast::program::Program;
+    use crate::ast::statement::{Block, FunctionDefinition, Statement, VariableDeclaration};
+
+    #[test]
+    fn analyzer_successfully_resolves_valid_pending_call() {
+        let mut analyzer = Analyzer::new();
+
+        let callee = Expression::identifier("calculate_total".to_string());
+        let call_expression = Expression::function_call(callee, vec![]);
+        let call_statement = Statement::function_call(call_expression);
+
+        let function_definition = Statement::function_definition(FunctionDefinition::new(
+            "calculate_total".to_string(),
+            vec![],
+            None,
+            Block::new(vec![]),
+        ));
+
+        let program = Program::new(vec![call_statement, function_definition]);
+        let result = analyzer.analyze(&program);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn analyzer_detects_arity_mismatch_on_deferred_call() {
+        let mut analyzer = Analyzer::new();
+
+        let callee = Expression::identifier("calculate_total".to_string());
+        let call_expression = Expression::function_call(callee, vec![Expression::I32(10)]);
+        let call_statement = Statement::function_call(call_expression);
+
+        let function_definition = Statement::function_definition(FunctionDefinition::new(
+            "calculate_total".to_string(),
+            vec![],
+            None,
+            Block::new(vec![]),
+        ));
+
+        let program = Program::new(vec![call_statement, function_definition]);
+        let result = analyzer.analyze(&program);
+
+        assert_eq!(
+            result,
+            Err(SemanticError::ArgumentCountMismatch(
+                "calculate_total".to_string(),
+                0,
+                1
+            ))
+        );
+    }
+
+    #[test]
+    fn analyzer_detects_undefined_deferred_call() {
+        let mut analyzer = Analyzer::new();
+
+        let callee = Expression::identifier("calculate_total".to_string());
+        let call_expression = Expression::function_call(callee, vec![]);
+        let call_statement = Statement::function_call(call_expression);
+
+        let program = Program::new(vec![call_statement]);
+        let result = analyzer.analyze(&program);
+
+        assert_eq!(
+            result,
+            Err(SemanticError::UndefinedVariable(
+                "calculate_total".to_string()
+            ))
+        );
+    }
+
+    #[test]
+    fn analyzer_detects_shadowed_deferred_call_on_variable() {
+        let mut analyzer = Analyzer::new();
+
+        let callee = Expression::identifier("calculate_total".to_string());
+        let call_expression = Expression::function_call(callee, vec![]);
+        let call_statement = Statement::function_call(call_expression);
+
+        let variable_declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "calculate_total".to_string(),
+            None,
+            None,
+        ));
+
+        let program = Program::new(vec![call_statement, variable_declaration]);
+        let result = analyzer.analyze(&program);
+
+        assert_eq!(
+            result,
+            Err(SemanticError::NotAFunction("calculate_total".to_string()))
         );
     }
 }
