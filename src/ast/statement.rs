@@ -579,8 +579,8 @@ mod accept_tests {
             Ok(())
         }
 
-        fn visit_block(&mut self, _block: &Block) -> Result<(), SemanticError> {
-            self.visited_block = true;
+        fn visit_if(&mut self, _if_statement: &If) -> Result<(), SemanticError> {
+            self.visited_if = true;
             Ok(())
         }
 
@@ -589,8 +589,8 @@ mod accept_tests {
             Ok(())
         }
 
-        fn visit_if(&mut self, _if_statement: &If) -> Result<(), SemanticError> {
-            self.visited_if = true;
+        fn visit_break(&mut self) -> Result<(), SemanticError> {
+            self.visited_break = true;
             Ok(())
         }
 
@@ -602,13 +602,13 @@ mod accept_tests {
             Ok(())
         }
 
-        fn visit_return(&mut self, _return_statement: &Return) -> Result<(), SemanticError> {
-            self.visited_return = true;
+        fn visit_block(&mut self, _block: &Block) -> Result<(), SemanticError> {
+            self.visited_block = true;
             Ok(())
         }
 
-        fn visit_break(&mut self) -> Result<(), SemanticError> {
-            self.visited_break = true;
+        fn visit_return(&mut self, _return_statement: &Return) -> Result<(), SemanticError> {
+            self.visited_return = true;
             Ok(())
         }
     }

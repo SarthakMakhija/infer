@@ -15,6 +15,8 @@ impl FunctionMetadata {
 pub(crate) struct State {
     current_function: Option<FunctionMetadata>,
     loop_depth: usize,
+    encountered_break: bool,
+    encountered_return: bool,
 }
 
 impl State {
@@ -22,6 +24,8 @@ impl State {
         Self {
             current_function: None,
             loop_depth: 0,
+            encountered_break: false,
+            encountered_return: false,
         }
     }
 
@@ -47,6 +51,26 @@ impl State {
 
     pub(crate) fn is_in_loop(&self) -> bool {
         self.loop_depth != 0
+    }
+
+    pub(crate) fn encountered_break(&mut self) {
+        self.encountered_break = true;
+    }
+
+    pub(crate) fn encountered_return(&mut self) {
+        self.encountered_return = true;
+    }
+
+    pub(crate) fn reset_break(&mut self) {
+        self.encountered_break = false;
+    }
+
+    pub(crate) fn reset_return(&mut self) {
+        self.encountered_return = false;
+    }
+
+    pub(crate) fn is_unreachable(&self) -> bool {
+        self.encountered_break || self.encountered_return
     }
 }
 
@@ -109,5 +133,41 @@ mod tests {
 
         state.exited_loop();
         assert!(!state.is_in_loop());
+    }
+
+    #[test]
+    fn state_starts_with_no_unreachable_flags() {
+        let state = State::new();
+        assert!(!state.is_unreachable());
+    }
+
+    #[test]
+    fn state_tracks_when_break_is_encountered() {
+        let mut state = State::new();
+        state.encountered_break();
+        assert!(state.is_unreachable());
+    }
+
+    #[test]
+    fn state_tracks_when_return_is_encountered() {
+        let mut state = State::new();
+        state.encountered_return();
+        assert!(state.is_unreachable());
+    }
+
+    #[test]
+    fn state_resets_break_flag_correctly() {
+        let mut state = State::new();
+        state.encountered_break();
+        state.reset_break();
+        assert!(!state.is_unreachable());
+    }
+
+    #[test]
+    fn state_resets_return_flag_correctly() {
+        let mut state = State::new();
+        state.encountered_return();
+        state.reset_return();
+        assert!(!state.is_unreachable());
     }
 }

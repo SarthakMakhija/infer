@@ -21,7 +21,7 @@ pub(crate) trait Visitor {
 
     fn visit_if(&mut self, if_statement: &If) -> Result<(), SemanticError>;
 
-    fn visit_loop(&mut self, block: &Loop) -> Result<(), SemanticError>;
+    fn visit_loop(&mut self, loop_statement: &Loop) -> Result<(), SemanticError>;
 
     fn visit_break(&mut self) -> Result<(), SemanticError>;
 
