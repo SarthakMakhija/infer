@@ -828,6 +828,26 @@ mod function_call_tests {
             }]
         );
     }
+
+    #[test]
+    fn analyzer_detects_non_identifier_callee_as_not_a_function() {
+        let mut analyzer = Analyzer::new();
+
+        let callee = Expression::I32(42);
+        let call_expression = Expression::function_call(callee, vec![]);
+        let call_statement = Statement::function_call(call_expression);
+
+        let result = call_statement.accept(&mut analyzer);
+        assert_eq!(result, Err(SemanticError::NotAFunction("".to_string())));
+    }
+
+    #[test]
+    #[should_panic(expected = "Expected Expression::FunctionCall variant")]
+    fn analyzer_panics_on_non_function_call_expression_variant() {
+        let mut analyzer = Analyzer::new();
+        let expression = Expression::I32(42);
+        let _ = analyzer.visit_function_call(&expression);
+    }
 }
 
 #[cfg(test)]
