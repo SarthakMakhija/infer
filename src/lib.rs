@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub mod ast;
 pub mod infer;
 
@@ -18,7 +20,7 @@ pub(crate) mod semantic;
 /// * `$statement` - the `Statement` to inspect.
 /// * `$expected_name` - expected variable name (`&str`).
 /// * `$expected_type` - expected type annotation (`Option<&str>`).
-/// * `$expected_expression` - expected initialiser expression (`Option<&Expression>`).
+/// * `$expected_expression` - expected initializer expression (`Option<&Expression>`).
 #[macro_export]
 macro_rules! assert_variable_declaration {
     ($statement:expr, $expected_name:expr, $expected_type:expr, $expected_expression:expr) => {{
