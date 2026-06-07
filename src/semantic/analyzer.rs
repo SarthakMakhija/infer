@@ -1,4 +1,4 @@
-use crate::ast::statement::{Assignment, Block, Return, VariableDeclaration};
+use crate::ast::statement::{Assignment, Block, NodeId, Return, VariableDeclaration};
 use crate::semantic::error::SemanticError;
 use crate::semantic::next_symbol_id;
 use crate::semantic::resolution::ResolutionTable;
@@ -14,7 +14,7 @@ pub(crate) trait Visitor {
     fn visit_assignment(
         &mut self,
         assignment: &Assignment,
-        node_id: usize,
+        node_id: NodeId,
     ) -> Result<(), SemanticError>;
 
     fn visit_block(&mut self, block: &Block) -> Result<(), SemanticError>;
@@ -57,7 +57,7 @@ impl Visitor for Analyzer {
     fn visit_assignment(
         &mut self,
         assignment: &Assignment,
-        node_id: usize,
+        node_id: NodeId,
     ) -> Result<(), SemanticError> {
         //TODO: handle expression later
         let symbol_id = self.scopes.get(assignment.variable());
@@ -173,7 +173,7 @@ mod assignment_tests {
 
         assert!(result.is_ok());
         assert_eq!(
-            analyzer.resolution_table.get(assignment_id),
+            analyzer.resolution_table.get(&assignment_id),
             Some(expected_symbol_id)
         );
     }
@@ -265,7 +265,7 @@ mod block_tests {
 
         assert!(block.accept(&mut analyzer).is_ok());
         assert_eq!(
-            analyzer.resolution_table.get(assignment_id),
+            analyzer.resolution_table.get(&assignment_id),
             Some(expected_symbol_id)
         );
     }

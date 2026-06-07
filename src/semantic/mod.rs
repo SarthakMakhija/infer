@@ -6,7 +6,7 @@ pub(crate) mod resolution;
 pub(crate) mod scope;
 pub(crate) mod state;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct SymbolId(pub usize);
 
 thread_local! {

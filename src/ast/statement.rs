@@ -2,18 +2,31 @@ use crate::ast::expr::Expression;
 use crate::semantic::analyzer::Visitor;
 use crate::semantic::error::SemanticError;
 use std::cell::Cell;
+use std::ops::Deref;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd)]
+pub struct NodeId(pub usize);
+
+impl Deref for NodeId {
+    type Target = usize;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 thread_local! {
     /// A thread-local cell holding an auto-incrementing counter to generate unique ID numbers
     /// for each parsed AST statements and expressions.
-    static ID: Cell<usize> = const { Cell::new(0) };
+    static ID: Cell<NodeId> = const { Cell::new(NodeId(0)) };
 }
 
 /// Generates a new, thread-safe, unique statement and expression identifier in a single-threaded execution.
-pub(crate) fn next_id() -> usize {
-    ID.with(|counter| {
-        let next = counter.get() + 1;
-        counter.set(next);
+pub(crate) fn next_id() -> NodeId {
+    ID.with(|id| {
+        let current = id.get();
+        let next = NodeId(current.0 + 1);
+        id.set(next);
         next
     })
 }
@@ -22,25 +35,25 @@ pub(crate) fn next_id() -> usize {
 #[derive(Debug)]
 pub enum Statement {
     /// A variable declaration statement (e.g. `var age: int = 30;`).
-    VariableDeclaration(VariableDeclaration, usize),
+    VariableDeclaration(VariableDeclaration, NodeId),
     /// A variable assignment statement (e.g. `age = 31;`).
-    Assignment(Assignment, usize),
+    Assignment(Assignment, NodeId),
     /// An if-else conditional block.
-    If(If, usize),
+    If(If, NodeId),
     /// A loop iteration block.
-    Loop(Loop, usize),
+    Loop(Loop, NodeId),
     /// A break control flow statement.
-    Break(Break, usize),
+    Break(Break, NodeId),
     /// A function definition statement.
-    FunctionDefinition(FunctionDefinition, usize),
+    FunctionDefinition(FunctionDefinition, NodeId),
     /// A standalone expression evaluated as a statement (typically a function call).
-    FunctionCall(Expression, usize),
+    FunctionCall(Expression, NodeId),
     /// A standalone block statement containing a sequence of statements (e.g. `{ var score = 10; }`).
-    Block(Block, usize),
+    Block(Block, NodeId),
     /// A return statement.
-    Return(Return, usize),
+    Return(Return, NodeId),
     /// A print statement.
-    Print(Print, usize),
+    Print(Print, NodeId),
 }
 
 impl PartialEq for Statement {
@@ -132,7 +145,7 @@ impl Statement {
     }
 
     /// Returns the unique id of the statement.
-    pub fn id(&self) -> usize {
+    pub fn id(&self) -> NodeId {
         match self {
             Statement::VariableDeclaration(_, id) => *id,
             Statement::Assignment(_, id) => *id,
@@ -147,7 +160,7 @@ impl Statement {
         }
     }
 
-    fn statement_id() -> usize {
+    fn statement_id() -> NodeId {
         next_id()
     }
 }
@@ -438,7 +451,7 @@ mod tests {
             None,
         ));
 
-        assert!(statement.id() > 0);
+        assert!(*statement.id() > 0);
     }
 
     #[test]
@@ -448,50 +461,50 @@ mod tests {
             Expression::I32(100),
         ));
 
-        assert!(statement.id() > 0);
+        assert!(*statement.id() > 0);
     }
 
     #[test]
     fn break_id() {
         let statement = Statement::control_flow(Break::new());
-        assert!(statement.id() > 0);
+        assert!(*statement.id() > 0);
     }
 
     #[test]
     fn return_id() {
         let statement = Statement::return_(Return::new(Some(Expression::I32(1))));
-        assert!(statement.id() > 0);
+        assert!(*statement.id() > 0);
     }
 
     #[test]
     fn print_id() {
         let statement = Statement::print(Print::new(vec![Expression::I32(1)]));
-        assert!(statement.id() > 0);
+        assert!(*statement.id() > 0);
     }
 
     #[test]
     fn function_call_id() {
         let statement = Statement::function_call(Expression::I32(42));
-        assert!(statement.id() > 0);
+        assert!(*statement.id() > 0);
     }
 
     #[test]
     fn block_id() {
         let statement = Statement::block(Block::new(vec![]));
-        assert!(statement.id() > 0);
+        assert!(*statement.id() > 0);
     }
 
     #[test]
     fn loop_id() {
         let statement = Statement::iteration(Loop::new(Block::new(vec![])));
-        assert!(statement.id() > 0);
+        assert!(*statement.id() > 0);
     }
 
     #[test]
     fn if_id() {
         let statement =
             Statement::conditional(If::new(Expression::Boolean(true), Block::new(vec![]), None));
-        assert!(statement.id() > 0);
+        assert!(*statement.id() > 0);
     }
 
     #[test]
@@ -502,7 +515,7 @@ mod tests {
             None,
             Block::new(vec![]),
         ));
-        assert!(statement.id() > 0);
+        assert!(*statement.id() > 0);
     }
 
     #[test]
@@ -518,15 +531,16 @@ mod tests {
             None,
         ));
 
-        assert!(first.id() > 0);
-        assert!(second.id() > 0);
-        assert_eq!(second.id(), first.id() + 1);
+        assert_eq!(first.id(), NodeId(1));
+        assert_eq!(second.id(), NodeId(2));
     }
 }
 
 #[cfg(test)]
 mod accept_tests {
-    use crate::ast::statement::{Assignment, Block, Break, Return, Statement, VariableDeclaration};
+    use crate::ast::statement::{
+        Assignment, Block, Break, NodeId, Return, Statement, VariableDeclaration,
+    };
     use crate::semantic::analyzer::Visitor;
     use crate::semantic::error::SemanticError;
 
@@ -550,7 +564,7 @@ mod accept_tests {
         fn visit_assignment(
             &mut self,
             _assignment: &Assignment,
-            _node_id: usize,
+            _node_id: NodeId,
         ) -> Result<(), SemanticError> {
             self.visited_assignment = true;
             Ok(())

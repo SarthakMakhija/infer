@@ -1,4 +1,4 @@
-use crate::ast::statement::next_id;
+use crate::ast::statement::{next_id, NodeId};
 use crate::lexer::token::{Token, TokenType};
 use std::fmt;
 
@@ -50,7 +50,7 @@ pub enum Expression {
     /// A string literal (e.g., `"hello"`).
     String(String),
     /// A reference to a named variable or function (e.g., `score`), along with unique identifier.
-    Identifier(String, usize),
+    Identifier(String, NodeId),
     /// A boolean literal: `true` or `false`.
     Boolean(bool),
     /// A unary expression applying an operator to a single operand (e.g., `-x`, `!flag`).
@@ -60,7 +60,7 @@ pub enum Expression {
     /// A parenthesised expression that controls evaluation order (e.g., `(a + b)`).
     Grouped(Box<Expression>),
     /// A function call expression with a callee expression and a list of argument expressions, along with unique identifier.
-    FunctionCall(Box<Expression>, Vec<Expression>, usize),
+    FunctionCall(Box<Expression>, Vec<Expression>, NodeId),
 }
 
 impl PartialEq for Expression {
@@ -380,7 +380,7 @@ mod expression_tests {
         let Expression::Identifier(_name, id) = &expression else {
             panic!("Expected Expression::Identifier");
         };
-        assert!(*id > 0);
+        assert!(*id > NodeId(0));
     }
 
     #[test]
@@ -391,7 +391,7 @@ mod expression_tests {
         let Expression::FunctionCall(_callee, _arguments, id) = &expression else {
             panic!("Expected Expression::FunctionCall");
         };
-        assert!(*id > 0);
+        assert!(*id > NodeId(0));
     }
 
     #[test]
@@ -402,12 +402,12 @@ mod expression_tests {
         let Expression::Identifier(_name, first_name_id) = &first_name else {
             panic!("Expected Expression::Identifier");
         };
-        assert!(*first_name_id > 0);
+        assert!(*first_name_id > NodeId(0));
 
         let Expression::Identifier(_name, second_name_id) = &second_name else {
             panic!("Expected Expression::Identifier");
         };
-        assert!(*second_name_id > 0);
+        assert!(*second_name_id > NodeId(0));
     }
 }
 
