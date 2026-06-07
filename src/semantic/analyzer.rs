@@ -1,4 +1,4 @@
-use crate::ast::statement::{Assignment, Return, VariableDeclaration};
+use crate::ast::statement::{Assignment, Block, Return, VariableDeclaration};
 use crate::semantic::error::SemanticError;
 use crate::semantic::next_symbol_id;
 use crate::semantic::resolution::ResolutionTable;
@@ -16,6 +16,8 @@ pub(crate) trait Visitor {
         assignment: &Assignment,
         node_id: usize,
     ) -> Result<(), SemanticError>;
+
+    fn visit_block(&mut self, block: &Block) -> Result<(), SemanticError>;
 
     fn visit_return(&mut self, return_statement: &Return) -> Result<(), SemanticError>;
 
@@ -66,6 +68,15 @@ impl Visitor for Analyzer {
         }
         //SAFETY: symbol_id has been checked for non-none.
         self.resolution_table.resolve(node_id, symbol_id.unwrap());
+        Ok(())
+    }
+
+    fn visit_block(&mut self, block: &Block) -> Result<(), SemanticError> {
+        self.scopes.begin_scope();
+        for statement in block.statements() {
+            statement.accept(self)?
+        }
+        self.scopes.end_scope();
         Ok(())
     }
 
@@ -178,6 +189,84 @@ mod assignment_tests {
         assert_eq!(
             result,
             Err(SemanticError::UndefinedVariable("score".to_string()))
+        );
+    }
+}
+
+#[cfg(test)]
+mod block_tests {
+    use super::*;
+    use crate::ast::expr::Expression;
+    use crate::ast::statement::{Assignment, Block, Statement, VariableDeclaration};
+
+    #[test]
+    fn block_creates_a_new_lexical_scope_allowing_shadowing() {
+        let mut analyzer = Analyzer::new();
+
+        let outer_declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "score".to_string(),
+            None,
+            None,
+        ));
+        assert!(outer_declaration.accept(&mut analyzer).is_ok());
+        let outer_symbol_id = analyzer.scopes.get("score").unwrap();
+
+        let inner_declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "score".to_string(),
+            None,
+            None,
+        ));
+
+        let block = Statement::block(Block::new(vec![inner_declaration]));
+        assert!(block.accept(&mut analyzer).is_ok());
+
+        assert_eq!(analyzer.scopes.get("score"), Some(outer_symbol_id));
+    }
+
+    #[test]
+    fn variables_declared_inside_block_are_inaccessible_after_block_exits() {
+        let mut analyzer = Analyzer::new();
+
+        let declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "temp".to_string(),
+            None,
+            None,
+        ));
+        let block = Statement::block(Block::new(vec![declaration]));
+        assert!(block.accept(&mut analyzer).is_ok());
+
+        // Assign to "temp" outside the block.
+        let assignment =
+            Statement::assignment(Assignment::new("temp".to_string(), Expression::I32(42)));
+        let result = assignment.accept(&mut analyzer);
+
+        assert_eq!(
+            result,
+            Err(SemanticError::UndefinedVariable("temp".to_string()))
+        );
+    }
+
+    #[test]
+    fn inner_block_can_access_variables_declared_in_enclosing_scope() {
+        let mut analyzer = Analyzer::new();
+
+        let outer_declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "score".to_string(),
+            None,
+            None,
+        ));
+        assert!(outer_declaration.accept(&mut analyzer).is_ok());
+        let expected_symbol_id = analyzer.scopes.get("score").unwrap();
+
+        let inner_assignment =
+            Statement::assignment(Assignment::new("score".to_string(), Expression::I32(50)));
+        let assignment_id = inner_assignment.id();
+        let block = Statement::block(Block::new(vec![inner_assignment]));
+
+        assert!(block.accept(&mut analyzer).is_ok());
+        assert_eq!(
+            analyzer.resolution_table.get(assignment_id),
+            Some(expected_symbol_id)
         );
     }
 }
