@@ -137,11 +137,14 @@ impl Statement {
                 visitor.visit_var_declaration(declaration)
             }
             Statement::Assignment(ref assignment, id) => visitor.visit_assignment(assignment, *id),
-            Statement::Block(ref block, _) => visitor.visit_block(block),
-            Statement::Loop(ref loop_statement, _) => visitor.visit_loop(loop_statement),
             Statement::If(ref if_statement, _) => visitor.visit_if(if_statement),
-            Statement::Return(ref return_statement, _) => visitor.visit_return(return_statement),
+            Statement::Loop(ref loop_statement, _) => visitor.visit_loop(loop_statement),
             Statement::Break(_, _) => visitor.visit_break(),
+            Statement::FunctionDefinition(ref definition, _) => {
+                visitor.visit_function_definition(definition)
+            }
+            Statement::Block(ref block, _) => visitor.visit_block(block),
+            Statement::Return(ref return_statement, _) => visitor.visit_return(return_statement),
             _ => unimplemented!(),
         }
     }
@@ -541,7 +544,8 @@ mod tests {
 #[cfg(test)]
 mod accept_tests {
     use crate::ast::statement::{
-        Assignment, Block, Break, If, Loop, NodeId, Return, Statement, VariableDeclaration,
+        Assignment, Block, Break, FunctionDefinition, If, Loop, NodeId, Return, Statement,
+        VariableDeclaration,
     };
     use crate::semantic::analyzer::Visitor;
     use crate::semantic::error::SemanticError;
@@ -552,6 +556,7 @@ mod accept_tests {
         visited_block: bool,
         visited_loop: bool,
         visited_if: bool,
+        visited_function_definition: bool,
         visited_return: bool,
         visited_break: bool,
     }
@@ -589,6 +594,14 @@ mod accept_tests {
             Ok(())
         }
 
+        fn visit_function_definition(
+            &mut self,
+            _definition: &FunctionDefinition,
+        ) -> Result<(), SemanticError> {
+            self.visited_function_definition = true;
+            Ok(())
+        }
+
         fn visit_return(&mut self, _return_statement: &Return) -> Result<(), SemanticError> {
             self.visited_return = true;
             Ok(())
@@ -613,6 +626,7 @@ mod accept_tests {
             visited_block: false,
             visited_loop: false,
             visited_if: false,
+            visited_function_definition: false,
             visited_return: false,
             visited_break: false,
         };
@@ -633,6 +647,7 @@ mod accept_tests {
             visited_block: false,
             visited_loop: false,
             visited_if: false,
+            visited_function_definition: false,
             visited_return: false,
             visited_break: false,
         };
@@ -653,6 +668,7 @@ mod accept_tests {
             visited_block: false,
             visited_loop: false,
             visited_if: false,
+            visited_function_definition: false,
             visited_return: false,
             visited_break: false,
         };
@@ -671,6 +687,7 @@ mod accept_tests {
             visited_block: false,
             visited_loop: false,
             visited_if: false,
+            visited_function_definition: false,
             visited_return: false,
             visited_break: false,
         };
@@ -678,6 +695,49 @@ mod accept_tests {
 
         assert!(result.is_ok());
         assert!(visitor.visited_loop);
+    }
+
+    #[test]
+    fn statement_accept_dispatches_break_to_visitor() {
+        let statement = Statement::control_flow(Break::new());
+        let mut visitor = TestVisitor {
+            visited_var_declaration: false,
+            visited_assignment: false,
+            visited_block: false,
+            visited_loop: false,
+            visited_if: false,
+            visited_function_definition: false,
+            visited_return: false,
+            visited_break: false,
+        };
+        let result = statement.accept(&mut visitor);
+
+        assert!(result.is_ok());
+        assert!(visitor.visited_break);
+    }
+
+    #[test]
+    fn statement_accept_dispatches_function_definition_to_visitor() {
+        let statement = Statement::function_definition(FunctionDefinition::new(
+            "calculate".to_string(),
+            vec![],
+            None,
+            Block::new(vec![]),
+        ));
+        let mut visitor = TestVisitor {
+            visited_var_declaration: false,
+            visited_assignment: false,
+            visited_block: false,
+            visited_loop: false,
+            visited_if: false,
+            visited_function_definition: false,
+            visited_return: false,
+            visited_break: false,
+        };
+        let result = statement.accept(&mut visitor);
+
+        assert!(result.is_ok());
+        assert!(visitor.visited_function_definition);
     }
 
     #[test]
@@ -689,6 +749,7 @@ mod accept_tests {
             visited_block: false,
             visited_loop: false,
             visited_if: false,
+            visited_function_definition: false,
             visited_return: false,
             visited_break: false,
         };
@@ -707,6 +768,7 @@ mod accept_tests {
             visited_block: false,
             visited_loop: false,
             visited_if: false,
+            visited_function_definition: false,
             visited_return: false,
             visited_break: false,
         };
@@ -714,23 +776,5 @@ mod accept_tests {
 
         assert!(result.is_ok());
         assert!(visitor.visited_return);
-    }
-
-    #[test]
-    fn statement_accept_dispatches_break_to_visitor() {
-        let statement = Statement::control_flow(Break::new());
-        let mut visitor = TestVisitor {
-            visited_var_declaration: false,
-            visited_assignment: false,
-            visited_block: false,
-            visited_loop: false,
-            visited_if: false,
-            visited_return: false,
-            visited_break: false,
-        };
-        let result = statement.accept(&mut visitor);
-
-        assert!(result.is_ok());
-        assert!(visitor.visited_break);
     }
 }

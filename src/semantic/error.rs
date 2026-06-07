@@ -4,6 +4,7 @@ use std::fmt::{Display, Formatter};
 pub(crate) enum SemanticError {
     DuplicateVariable(String),
     UndefinedVariable(String),
+    DuplicateFunctionName(String),
     ReturnOutsideFunction,
     MissingReturnExpression,
     UnexpectedReturnExpression,
@@ -15,6 +16,9 @@ impl Display for SemanticError {
         match self {
             SemanticError::DuplicateVariable(variable) => {
                 write!(formatter, "duplicate variable declaration: {}", variable)
+            }
+            SemanticError::DuplicateFunctionName(name) => {
+                write!(formatter, "duplicate function name: {}", name)
             }
             SemanticError::UndefinedVariable(variable) => {
                 write!(formatter, "undefined variable: {}", variable)

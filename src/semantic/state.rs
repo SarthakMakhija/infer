@@ -29,6 +29,10 @@ impl State {
         self.current_function = Some(function);
     }
 
+    pub(crate) fn exited_function(&mut self) {
+        self.current_function = None;
+    }
+
     pub(crate) fn current_function(&self) -> Option<&FunctionMetadata> {
         self.current_function.as_ref()
     }
@@ -64,6 +68,15 @@ mod tests {
         let current = state.current_function().unwrap();
         assert_eq!(current.name, "calculate");
         assert!(current.has_return_type);
+    }
+
+    #[test]
+    fn state_exits_the_function() {
+        let mut state = State::new();
+        state.entered_function(FunctionMetadata::new("calculate".to_string(), true));
+        state.exited_function();
+
+        assert!(state.current_function().is_none());
     }
 
     #[test]

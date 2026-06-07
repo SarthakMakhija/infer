@@ -1,9 +1,11 @@
-use crate::ast::statement::{Assignment, Block, If, Loop, NodeId, Return, VariableDeclaration};
+use crate::ast::statement::{
+    Assignment, Block, FunctionDefinition, If, Loop, NodeId, Return, VariableDeclaration,
+};
 use crate::semantic::error::SemanticError;
 use crate::semantic::next_symbol_id;
 use crate::semantic::resolution::ResolutionTable;
 use crate::semantic::scope::Scopes;
-use crate::semantic::state::State;
+use crate::semantic::state::{FunctionMetadata, State};
 
 pub(crate) trait Visitor {
     fn visit_var_declaration(
@@ -21,11 +23,16 @@ pub(crate) trait Visitor {
 
     fn visit_loop(&mut self, block: &Loop) -> Result<(), SemanticError>;
 
+    fn visit_break(&mut self) -> Result<(), SemanticError>;
+
+    fn visit_function_definition(
+        &mut self,
+        definition: &FunctionDefinition,
+    ) -> Result<(), SemanticError>;
+
     fn visit_block(&mut self, block: &Block) -> Result<(), SemanticError>;
 
     fn visit_return(&mut self, return_statement: &Return) -> Result<(), SemanticError>;
-
-    fn visit_break(&mut self) -> Result<(), SemanticError>;
 }
 
 pub(crate) struct Analyzer {
@@ -91,6 +98,45 @@ impl Visitor for Analyzer {
         Ok(())
     }
 
+    fn visit_break(&mut self) -> Result<(), SemanticError> {
+        if !self.state.is_in_loop() {
+            return Err(SemanticError::BreakOutsideLoop);
+        }
+        Ok(())
+    }
+
+    fn visit_function_definition(
+        &mut self,
+        definition: &FunctionDefinition,
+    ) -> Result<(), SemanticError> {
+        if self.scopes.contains_locally(definition.name()) {
+            return Err(SemanticError::DuplicateFunctionName(
+                definition.name().to_string(),
+            ));
+        }
+        self.scopes
+            .define(definition.name.to_string(), next_symbol_id());
+        self.state.entered_function(FunctionMetadata::new(
+            definition.name.to_string(),
+            definition.return_type.is_some(),
+        ));
+        self.scopes.begin_scope();
+        for parameter in definition.parameters() {
+            let parameter_name = parameter.name();
+            if self.scopes.contains_locally(parameter_name) {
+                return Err(SemanticError::DuplicateVariable(parameter_name.to_string()));
+            }
+            self.scopes
+                .define(parameter_name.to_string(), next_symbol_id());
+        }
+        for statement in definition.body() {
+            statement.accept(self)?;
+        }
+        self.scopes.end_scope();
+        self.state.exited_function();
+        Ok(())
+    }
+
     fn visit_block(&mut self, block: &Block) -> Result<(), SemanticError> {
         self.scopes.begin_scope();
         for statement in block.statements() {
@@ -113,13 +159,6 @@ impl Visitor for Analyzer {
                 Ok(())
             }
         }
-    }
-
-    fn visit_break(&mut self) -> Result<(), SemanticError> {
-        if !self.state.is_in_loop() {
-            return Err(SemanticError::BreakOutsideLoop);
-        }
-        Ok(())
     }
 }
 
@@ -398,6 +437,140 @@ mod loop_tests {
 }
 
 #[cfg(test)]
+mod break_tests {
+    use super::*;
+    use crate::ast::statement::{Break, Statement};
+
+    #[test]
+    fn break_statement_outside_any_loop_is_invalid() {
+        let mut analyzer = Analyzer::new();
+        let break_statement = Statement::control_flow(Break::new());
+
+        let result = break_statement.accept(&mut analyzer);
+        assert_eq!(result, Err(SemanticError::BreakOutsideLoop));
+    }
+
+    #[test]
+    fn break_statement_inside_a_loop_is_valid() {
+        let mut analyzer = Analyzer::new();
+        analyzer.state.entered_loop();
+
+        let break_statement = Statement::control_flow(Break::new());
+        let result = break_statement.accept(&mut analyzer);
+
+        assert!(result.is_ok());
+    }
+}
+
+#[cfg(test)]
+mod function_definition_tests {
+    use super::*;
+    use crate::ast::expr::Expression;
+    use crate::ast::statement::{
+        Assignment, Block, FunctionDefinition, FunctionParameter, Statement, VariableDeclaration,
+    };
+
+    #[test]
+    fn analyzer_accepts_a_valid_function_definition() {
+        let mut analyzer = Analyzer::new();
+
+        let first_parameter =
+            FunctionParameter::new("first_score".to_string(), Some("i32".to_string()));
+        let second_parameter =
+            FunctionParameter::new("second_score".to_string(), Some("i32".to_string()));
+
+        let function_definition = Statement::function_definition(FunctionDefinition::new(
+            "calculate_total".to_string(),
+            vec![first_parameter, second_parameter],
+            Some("i32".to_string()),
+            Block::new(vec![]),
+        ));
+
+        let result = function_definition.accept(&mut analyzer);
+        assert!(result.is_ok());
+        assert!(analyzer.scopes.contains("calculate_total"));
+    }
+
+    #[test]
+    fn analyzer_detects_duplicate_function_names_in_the_same_scope() {
+        let mut analyzer = Analyzer::new();
+
+        let first_function = Statement::function_definition(FunctionDefinition::new(
+            "calculate_total".to_string(),
+            vec![],
+            None,
+            Block::new(vec![]),
+        ));
+        assert!(first_function.accept(&mut analyzer).is_ok());
+
+        let second_function = Statement::function_definition(FunctionDefinition::new(
+            "calculate_total".to_string(),
+            vec![],
+            None,
+            Block::new(vec![]),
+        ));
+        let result = second_function.accept(&mut analyzer);
+        assert_eq!(
+            result,
+            Err(SemanticError::DuplicateFunctionName(
+                "calculate_total".to_string()
+            ))
+        );
+    }
+
+    #[test]
+    fn analyzer_rejects_function_definitions_with_duplicate_parameter_names() {
+        let mut analyzer = Analyzer::new();
+
+        let first_parameter = FunctionParameter::new("score".to_string(), Some("int".to_string()));
+        let second_parameter = FunctionParameter::new("score".to_string(), Some("int".to_string()));
+
+        let function_definition = Statement::function_definition(FunctionDefinition::new(
+            "calculate_total".to_string(),
+            vec![first_parameter, second_parameter],
+            None,
+            Block::new(vec![]),
+        ));
+
+        let result = function_definition.accept(&mut analyzer);
+        assert_eq!(
+            result,
+            Err(SemanticError::DuplicateVariable("score".to_string()))
+        );
+    }
+
+    #[test]
+    fn parameters_shadow_outer_scope_variables_inside_function_body() {
+        let mut analyzer = Analyzer::new();
+
+        let outer_variable_declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "score".to_string(),
+            None,
+            None,
+        ));
+        assert!(outer_variable_declaration.accept(&mut analyzer).is_ok());
+        let outer_symbol_id = analyzer.scopes.get("score").unwrap();
+
+        let function_parameter =
+            FunctionParameter::new("score".to_string(), Some("int".to_string()));
+        let inner_assignment =
+            Statement::assignment(Assignment::new("score".to_string(), Expression::I32(100)));
+        let assignment_id = inner_assignment.id();
+
+        let function_definition = Statement::function_definition(FunctionDefinition::new(
+            "calculate_total".to_string(),
+            vec![function_parameter],
+            None,
+            Block::new(vec![inner_assignment]),
+        ));
+        assert!(function_definition.accept(&mut analyzer).is_ok());
+
+        let inner_symbol_id = analyzer.resolution_table.get(&assignment_id).unwrap();
+        assert_ne!(inner_symbol_id, outer_symbol_id);
+    }
+}
+
+#[cfg(test)]
 mod block_tests {
     use super::*;
     use crate::ast::expr::Expression;
@@ -540,32 +713,6 @@ mod return_tests {
 
         let return_statement = Statement::return_(Return::new(Some(Expression::I32(100))));
         let result = return_statement.accept(&mut analyzer);
-
-        assert!(result.is_ok());
-    }
-}
-
-#[cfg(test)]
-mod break_tests {
-    use super::*;
-    use crate::ast::statement::{Break, Statement};
-
-    #[test]
-    fn break_statement_outside_any_loop_is_invalid() {
-        let mut analyzer = Analyzer::new();
-        let break_statement = Statement::control_flow(Break::new());
-
-        let result = break_statement.accept(&mut analyzer);
-        assert_eq!(result, Err(SemanticError::BreakOutsideLoop));
-    }
-
-    #[test]
-    fn break_statement_inside_a_loop_is_valid() {
-        let mut analyzer = Analyzer::new();
-        analyzer.state.entered_loop();
-
-        let break_statement = Statement::control_flow(Break::new());
-        let result = break_statement.accept(&mut analyzer);
 
         assert!(result.is_ok());
     }
