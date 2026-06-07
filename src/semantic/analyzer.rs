@@ -1,4 +1,4 @@
-use crate::ast::statement::{Assignment, Block, Loop, NodeId, Return, VariableDeclaration};
+use crate::ast::statement::{Assignment, Block, If, Loop, NodeId, Return, VariableDeclaration};
 use crate::semantic::error::SemanticError;
 use crate::semantic::next_symbol_id;
 use crate::semantic::resolution::ResolutionTable;
@@ -16,6 +16,8 @@ pub(crate) trait Visitor {
         assignment: &Assignment,
         node_id: NodeId,
     ) -> Result<(), SemanticError>;
+
+    fn visit_if(&mut self, if_statement: &If) -> Result<(), SemanticError>;
 
     fn visit_loop(&mut self, block: &Loop) -> Result<(), SemanticError>;
 
@@ -70,6 +72,15 @@ impl Visitor for Analyzer {
         }
         //SAFETY: symbol_id has been checked for non-none.
         self.resolution_table.resolve(node_id, symbol_id.unwrap());
+        Ok(())
+    }
+
+    fn visit_if(&mut self, if_statement: &If) -> Result<(), SemanticError> {
+        //TODO: handle expression later
+        self.visit_block(&if_statement.body)?;
+        if let Some(body) = if_statement.else_body.as_ref() {
+            self.visit_block(body)?;
+        };
         Ok(())
     }
 
@@ -198,6 +209,133 @@ mod assignment_tests {
         assert_eq!(
             result,
             Err(SemanticError::UndefinedVariable("score".to_string()))
+        );
+    }
+}
+
+#[cfg(test)]
+mod if_tests {
+    use super::*;
+    use crate::ast::expr::Expression;
+    use crate::ast::statement::{Assignment, Block, If, Statement, VariableDeclaration};
+
+    #[test]
+    fn variables_declared_inside_then_block_are_inaccessible_after_if_statement_exits() {
+        let mut analyzer = Analyzer::new();
+
+        let then_declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "then_var".to_string(),
+            None,
+            None,
+        ));
+        let if_statement = Statement::conditional(If::new(
+            Expression::Boolean(true),
+            Block::new(vec![then_declaration]),
+            None,
+        ));
+        assert!(if_statement.accept(&mut analyzer).is_ok());
+
+        let assignment =
+            Statement::assignment(Assignment::new("then_var".to_string(), Expression::I32(10)));
+        let result = assignment.accept(&mut analyzer);
+        assert_eq!(
+            result,
+            Err(SemanticError::UndefinedVariable("then_var".to_string()))
+        );
+    }
+
+    #[test]
+    fn variables_declared_inside_else_block_are_inaccessible_after_if_statement_exits() {
+        let mut analyzer = Analyzer::new();
+
+        let else_declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "else_var".to_string(),
+            None,
+            None,
+        ));
+        let if_statement = Statement::conditional(If::new(
+            Expression::Boolean(false),
+            Block::new(vec![]),
+            Some(Block::new(vec![else_declaration])),
+        ));
+        assert!(if_statement.accept(&mut analyzer).is_ok());
+
+        let assignment =
+            Statement::assignment(Assignment::new("else_var".to_string(), Expression::I32(10)));
+        let result = assignment.accept(&mut analyzer);
+        assert_eq!(
+            result,
+            Err(SemanticError::UndefinedVariable("else_var".to_string()))
+        );
+    }
+
+    #[test]
+    fn variables_declared_inside_then_block_are_not_accessible_within_else_block() {
+        let mut analyzer = Analyzer::new();
+
+        let then_decl = Statement::variable_declaration(VariableDeclaration::new(
+            "first_name".to_string(),
+            None,
+            None,
+        ));
+
+        let else_assign = Statement::assignment(Assignment::new(
+            "first_name".to_string(),
+            Expression::I32(10),
+        ));
+
+        let if_statement = Statement::conditional(If::new(
+            Expression::Boolean(true),
+            Block::new(vec![then_decl]),
+            Some(Block::new(vec![else_assign])),
+        ));
+
+        let result = if_statement.accept(&mut analyzer);
+        assert_eq!(
+            result,
+            Err(SemanticError::UndefinedVariable("first_name".to_string()))
+        );
+    }
+
+    #[test]
+    fn then_and_else_blocks_can_access_variables_declared_in_outer_scope() {
+        let mut analyzer = Analyzer::new();
+
+        let outer_declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "outer_var".to_string(),
+            None,
+            None,
+        ));
+        assert!(outer_declaration.accept(&mut analyzer).is_ok());
+        let expected_symbol_id = analyzer.scopes.get("outer_var").unwrap();
+
+        let then_assign = Statement::assignment(Assignment::new(
+            "outer_var".to_string(),
+            Expression::I32(10),
+        ));
+        let then_assign_id = then_assign.id();
+
+        let else_assign = Statement::assignment(Assignment::new(
+            "outer_var".to_string(),
+            Expression::I32(20),
+        ));
+        let else_assign_id = else_assign.id();
+
+        let if_statement = Statement::conditional(If::new(
+            Expression::Boolean(true),
+            Block::new(vec![then_assign]),
+            Some(Block::new(vec![else_assign])),
+        ));
+
+        assert!(if_statement.accept(&mut analyzer).is_ok());
+
+        assert_eq!(
+            analyzer.resolution_table.get(&then_assign_id),
+            Some(expected_symbol_id)
+        );
+        assert_eq!(
+            analyzer.resolution_table.get(&else_assign_id),
+            Some(expected_symbol_id)
         );
     }
 }

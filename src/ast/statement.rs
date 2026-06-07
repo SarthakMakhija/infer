@@ -137,8 +137,9 @@ impl Statement {
                 visitor.visit_var_declaration(declaration)
             }
             Statement::Assignment(ref assignment, id) => visitor.visit_assignment(assignment, *id),
-            Statement::Loop(ref loop_statement, _) => visitor.visit_loop(loop_statement),
             Statement::Block(ref block, _) => visitor.visit_block(block),
+            Statement::Loop(ref loop_statement, _) => visitor.visit_loop(loop_statement),
+            Statement::If(ref if_statement, _) => visitor.visit_if(if_statement),
             Statement::Return(ref return_statement, _) => visitor.visit_return(return_statement),
             Statement::Break(_, _) => visitor.visit_break(),
             _ => unimplemented!(),
@@ -540,7 +541,7 @@ mod tests {
 #[cfg(test)]
 mod accept_tests {
     use crate::ast::statement::{
-        Assignment, Block, Break, Loop, NodeId, Return, Statement, VariableDeclaration,
+        Assignment, Block, Break, If, Loop, NodeId, Return, Statement, VariableDeclaration,
     };
     use crate::semantic::analyzer::Visitor;
     use crate::semantic::error::SemanticError;
@@ -550,6 +551,7 @@ mod accept_tests {
         visited_assignment: bool,
         visited_block: bool,
         visited_loop: bool,
+        visited_if: bool,
         visited_return: bool,
         visited_break: bool,
     }
@@ -582,6 +584,11 @@ mod accept_tests {
             Ok(())
         }
 
+        fn visit_if(&mut self, _if_statement: &If) -> Result<(), SemanticError> {
+            self.visited_if = true;
+            Ok(())
+        }
+
         fn visit_return(&mut self, _return_statement: &Return) -> Result<(), SemanticError> {
             self.visited_return = true;
             Ok(())
@@ -605,6 +612,7 @@ mod accept_tests {
             visited_assignment: false,
             visited_block: false,
             visited_loop: false,
+            visited_if: false,
             visited_return: false,
             visited_break: false,
         };
@@ -624,6 +632,7 @@ mod accept_tests {
             visited_assignment: false,
             visited_block: false,
             visited_loop: false,
+            visited_if: false,
             visited_return: false,
             visited_break: false,
         };
@@ -634,6 +643,26 @@ mod accept_tests {
     }
 
     #[test]
+    fn statement_accept_dispatches_if_to_visitor() {
+        use crate::ast::expr::Expression;
+        let statement =
+            Statement::conditional(If::new(Expression::Boolean(true), Block::new(vec![]), None));
+        let mut visitor = TestVisitor {
+            visited_var_declaration: false,
+            visited_assignment: false,
+            visited_block: false,
+            visited_loop: false,
+            visited_if: false,
+            visited_return: false,
+            visited_break: false,
+        };
+        let result = statement.accept(&mut visitor);
+
+        assert!(result.is_ok());
+        assert!(visitor.visited_if);
+    }
+
+    #[test]
     fn statement_accept_dispatches_loop_to_visitor() {
         let statement = Statement::iteration(Loop::new(Block::new(vec![])));
         let mut visitor = TestVisitor {
@@ -641,6 +670,7 @@ mod accept_tests {
             visited_assignment: false,
             visited_block: false,
             visited_loop: false,
+            visited_if: false,
             visited_return: false,
             visited_break: false,
         };
@@ -658,6 +688,7 @@ mod accept_tests {
             visited_assignment: false,
             visited_block: false,
             visited_loop: false,
+            visited_if: false,
             visited_return: false,
             visited_break: false,
         };
@@ -675,6 +706,7 @@ mod accept_tests {
             visited_assignment: false,
             visited_block: false,
             visited_loop: false,
+            visited_if: false,
             visited_return: false,
             visited_break: false,
         };
@@ -692,6 +724,7 @@ mod accept_tests {
             visited_assignment: false,
             visited_block: false,
             visited_loop: false,
+            visited_if: false,
             visited_return: false,
             visited_break: false,
         };
