@@ -247,6 +247,7 @@ impl ExpressionVisitor for SymbolResolutionVisitor {
 mod var_declaration_tests {
     use super::*;
     use crate::ast::statement::Statement;
+    use crate::semantic::SymbolId;
 
     #[test]
     fn accepts_a_valid_variable_declaration() {
@@ -265,12 +266,7 @@ mod var_declaration_tests {
     #[test]
     fn detects_duplicate_variable_declarations_in_the_same_scope() {
         let mut visitor = SymbolResolutionVisitor::new();
-        let first_declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "username".to_string(),
-            None,
-            None,
-        ));
-        assert!(first_declaration.accept(&mut visitor).is_ok());
+        visitor.scopes.define("username".to_string(), SymbolId(1));
 
         let second_declaration = Statement::variable_declaration(VariableDeclaration::new(
             "username".to_string(),
@@ -291,19 +287,16 @@ mod assignment_tests {
     use super::*;
     use crate::ast::expr::Expression;
     use crate::ast::statement::{Assignment, Statement};
+    use crate::semantic::SymbolId;
 
     #[test]
     fn assignment_to_a_defined_variable_succeeds_and_records_resolution() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "score".to_string(),
-            None,
-            None,
-        ));
-        assert!(declaration.accept(&mut visitor).is_ok());
-
-        let expected_symbol_id = visitor.scopes.get("score").unwrap();
+        let expected_symbol_id = SymbolId(10);
+        visitor
+            .scopes
+            .define("score".to_string(), expected_symbol_id);
 
         let assignment =
             Statement::assignment(Assignment::new("score".to_string(), Expression::I32(100)));
@@ -338,6 +331,7 @@ mod if_tests {
     use super::*;
     use crate::ast::expr::Expression;
     use crate::ast::statement::{Assignment, Block, If, Statement, VariableDeclaration};
+    use crate::semantic::SymbolId;
 
     #[test]
     fn variables_declared_inside_then_block_are_inaccessible_after_if_statement_exits() {
@@ -421,13 +415,10 @@ mod if_tests {
     fn then_and_else_blocks_can_access_variables_declared_in_outer_scope() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let outer_declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "outer_var".to_string(),
-            None,
-            None,
-        ));
-        assert!(outer_declaration.accept(&mut visitor).is_ok());
-        let expected_symbol_id = visitor.scopes.get("outer_var").unwrap();
+        let expected_symbol_id = SymbolId(1);
+        visitor
+            .scopes
+            .define("outer_var".to_string(), expected_symbol_id);
 
         let then_assign = Statement::assignment(Assignment::new(
             "outer_var".to_string(),
@@ -448,7 +439,6 @@ mod if_tests {
         ));
 
         assert!(if_statement.accept(&mut visitor).is_ok());
-
         assert_eq!(
             visitor.resolution_table.get(&then_assign_id),
             Some(expected_symbol_id)
@@ -522,18 +512,14 @@ mod block_tests {
     use super::*;
     use crate::ast::expr::Expression;
     use crate::ast::statement::{Assignment, Block, Statement, VariableDeclaration};
+    use crate::semantic::SymbolId;
 
     #[test]
     fn block_creates_a_new_lexical_scope_allowing_shadowing() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let outer_declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "score".to_string(),
-            None,
-            None,
-        ));
-        assert!(outer_declaration.accept(&mut visitor).is_ok());
-        let outer_symbol_id = visitor.scopes.get("score").unwrap();
+        let outer_symbol_id = SymbolId(1);
+        visitor.scopes.define("score".to_string(), outer_symbol_id);
 
         let inner_declaration = Statement::variable_declaration(VariableDeclaration::new(
             "score".to_string(),
@@ -543,7 +529,6 @@ mod block_tests {
 
         let block = Statement::block(Block::new(vec![inner_declaration]));
         assert!(block.accept(&mut visitor).is_ok());
-
         assert_eq!(visitor.scopes.get("score"), Some(outer_symbol_id));
     }
 
@@ -574,13 +559,10 @@ mod block_tests {
     fn inner_block_can_access_variables_declared_in_enclosing_scope() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let outer_declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "score".to_string(),
-            None,
-            None,
-        ));
-        assert!(outer_declaration.accept(&mut visitor).is_ok());
-        let expected_symbol_id = visitor.scopes.get("score").unwrap();
+        let expected_symbol_id = SymbolId(1);
+        visitor
+            .scopes
+            .define("score".to_string(), expected_symbol_id);
 
         let inner_assignment =
             Statement::assignment(Assignment::new("score".to_string(), Expression::I32(50)));
@@ -600,8 +582,9 @@ mod function_definition_tests {
     use super::*;
     use crate::ast::expr::Expression;
     use crate::ast::statement::{
-        Assignment, Block, FunctionDefinition, FunctionParameter, Statement, VariableDeclaration,
+        Assignment, Block, FunctionDefinition, FunctionParameter, Statement,
     };
+    use crate::semantic::SymbolId;
 
     #[test]
     fn accepts_a_valid_function_definition() {
@@ -627,14 +610,9 @@ mod function_definition_tests {
     #[test]
     fn detects_duplicate_function_names_in_the_same_scope() {
         let mut visitor = SymbolResolutionVisitor::new();
-
-        let first_function = Statement::function_definition(FunctionDefinition::new(
-            "calculate_total".to_string(),
-            vec![],
-            None,
-            Block::new(vec![]),
-        ));
-        assert!(first_function.accept(&mut visitor).is_ok());
+        visitor
+            .scopes
+            .define("calculate_total".to_string(), SymbolId(1));
 
         let second_function = Statement::function_definition(FunctionDefinition::new(
             "calculate_total".to_string(),
@@ -675,14 +653,9 @@ mod function_definition_tests {
     #[test]
     fn parameters_shadow_outer_scope_variables_inside_function_body() {
         let mut visitor = SymbolResolutionVisitor::new();
+        let outer_symbol_id = SymbolId(1);
 
-        let outer_variable_declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "score".to_string(),
-            None,
-            None,
-        ));
-        assert!(outer_variable_declaration.accept(&mut visitor).is_ok());
-        let outer_symbol_id = visitor.scopes.get("score").unwrap();
+        visitor.scopes.define("score".to_string(), outer_symbol_id);
 
         let function_parameter =
             FunctionParameter::new("score".to_string(), Some("int".to_string()));
@@ -727,7 +700,7 @@ mod function_definition_tests {
 mod function_call_tests {
     use super::*;
     use crate::ast::expr::Expression;
-    use crate::ast::statement::{Block, FunctionDefinition, FunctionParameter, Statement};
+    use crate::ast::statement::Statement;
     use crate::semantic::state::PendingCall;
     use crate::semantic::SymbolId;
 
@@ -735,13 +708,14 @@ mod function_call_tests {
     fn accepts_valid_function_call() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let function_definition = Statement::function_definition(FunctionDefinition::new(
-            "calculate_total".to_string(),
-            vec![],
-            None,
-            Block::new(vec![]),
-        ));
-        assert!(function_definition.accept(&mut visitor).is_ok());
+        let function_symbol_id = SymbolId(1);
+        visitor
+            .scopes
+            .define("calculate_total".to_string(), function_symbol_id);
+        visitor.state.add_global_function(
+            function_symbol_id,
+            FunctionMetadata::new("calculate_total".to_string(), 0, false),
+        );
 
         let callee = Expression::identifier("calculate_total".to_string());
         let call_expression = Expression::function_call(callee, vec![]);
@@ -756,14 +730,14 @@ mod function_call_tests {
     fn detects_arity_mismatch_on_function_call() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let parameter = FunctionParameter::new("score".to_string(), Some("i32".to_string()));
-        let function_definition = Statement::function_definition(FunctionDefinition::new(
-            "calculate_total".to_string(),
-            vec![parameter],
-            None,
-            Block::new(vec![]),
-        ));
-        assert!(function_definition.accept(&mut visitor).is_ok());
+        let function_symbol_id = SymbolId(1);
+        visitor
+            .scopes
+            .define("calculate_total".to_string(), function_symbol_id);
+        visitor.state.add_global_function(
+            function_symbol_id,
+            FunctionMetadata::new("calculate_total".to_string(), 1, false),
+        );
 
         let callee = Expression::identifier("calculate_total".to_string());
         let call_expression = Expression::function_call(callee, vec![]);
@@ -784,32 +758,16 @@ mod function_call_tests {
     fn detects_shadowed_function_call_on_variable() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let function_definition = Statement::function_definition(FunctionDefinition::new(
-            "calculate_total".to_string(),
-            vec![],
-            None,
-            Block::new(vec![]),
-        ));
-        assert!(function_definition.accept(&mut visitor).is_ok());
-
-        let variable_declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "calculate_total".to_string(),
-            None,
-            None,
-        ));
+        let variable_symbol_id = SymbolId(1);
+        visitor
+            .scopes
+            .define("calculate_total".to_string(), variable_symbol_id);
 
         let callee = Expression::identifier("calculate_total".to_string());
         let call_expression = Expression::function_call(callee, vec![]);
         let call_statement = Statement::function_call(call_expression);
 
-        let main_definition = Statement::function_definition(FunctionDefinition::new(
-            "main".to_string(),
-            vec![],
-            None,
-            Block::new(vec![variable_declaration, call_statement]),
-        ));
-
-        let result = main_definition.accept(&mut visitor);
+        let result = call_statement.accept(&mut visitor);
         assert_eq!(
             result,
             Err(SemanticError::NotAFunction("calculate_total".to_string()))
