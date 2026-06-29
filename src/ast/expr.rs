@@ -51,10 +51,10 @@ pub enum Expression {
     I32(i32),
     /// A string literal (e.g., `"hello"`).
     String(String),
-    /// A reference to a named variable or function (e.g., `score`), along with unique identifier.
-    Identifier(String, NodeId),
     /// A boolean literal: `true` or `false`.
     Boolean(bool),
+    /// A reference to a named variable or function (e.g., `score`), along with unique identifier.
+    Identifier(String, NodeId),
     /// A unary expression applying an operator to a single operand (e.g., `-x`, `!flag`).
     Unary(Box<Expression>, UnaryOperator),
     /// A binary expression applying an operator to a left and right operand (e.g., `a + b`).
@@ -70,8 +70,8 @@ impl PartialEq for Expression {
         match (self, other) {
             (Expression::I32(this), Expression::I32(other)) => this == other,
             (Expression::String(this), Expression::String(other)) => this == other,
-            (Expression::Identifier(this, _), Expression::Identifier(other, _)) => this == other,
             (Expression::Boolean(this), Expression::Boolean(other)) => this == other,
+            (Expression::Identifier(this, _), Expression::Identifier(other, _)) => this == other,
             (Expression::Unary(this, this_op), Expression::Unary(other, other_op)) => {
                 this == other && this_op == other_op
             }
