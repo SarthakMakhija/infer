@@ -9,26 +9,6 @@ struct Scope {
     symbols: HashMap<String, SymbolId>,
 }
 
-impl Scope {
-    fn new() -> Self {
-        Self {
-            symbols: HashMap::new(),
-        }
-    }
-
-    fn define(&mut self, name: String, id: SymbolId) {
-        self.symbols.insert(name, id);
-    }
-
-    fn contains(&self, name: &str) -> bool {
-        self.symbols.contains_key(name)
-    }
-
-    fn get(&self, name: &str) -> Option<SymbolId> {
-        self.symbols.get(name).copied()
-    }
-}
-
 impl Scopes {
     pub(crate) fn new() -> Self {
         Self {
@@ -81,38 +61,23 @@ impl Scopes {
     }
 }
 
-#[cfg(test)]
-mod scope_tests {
-    use super::*;
-
-    #[test]
-    fn scope_defines_a_symbol() {
-        let mut scope = Scope::new();
-        scope.define("username".to_string(), SymbolId(1));
-
-        assert!(scope.contains("username"));
+impl Scope {
+    fn new() -> Self {
+        Self {
+            symbols: HashMap::new(),
+        }
     }
 
-    #[test]
-    fn scope_does_not_contain_a_symbol() {
-        let scope = Scope::new();
-
-        assert!(!scope.contains("username"));
+    fn define(&mut self, name: String, id: SymbolId) {
+        self.symbols.insert(name, id);
     }
 
-    #[test]
-    fn scope_get_a_defined_symbol() {
-        let mut scope = Scope::new();
-        scope.define("username".to_string(), SymbolId(1));
-
-        assert_eq!(scope.get("username"), Some(SymbolId(1)));
+    fn contains(&self, name: &str) -> bool {
+        self.symbols.contains_key(name)
     }
 
-    #[test]
-    fn scope_returns_none_for_an_undefined_symbol() {
-        let scope = Scope::new();
-
-        assert_eq!(scope.get("username"), None);
+    fn get(&self, name: &str) -> Option<SymbolId> {
+        self.symbols.get(name).copied()
     }
 }
 
@@ -220,5 +185,40 @@ mod scopes_tests {
     fn scopes_returns_none_for_undefined_symbol() {
         let scopes = Scopes::new();
         assert_eq!(scopes.get("username"), None);
+    }
+}
+
+#[cfg(test)]
+mod scope_tests {
+    use super::*;
+
+    #[test]
+    fn scope_defines_a_symbol() {
+        let mut scope = Scope::new();
+        scope.define("username".to_string(), SymbolId(1));
+
+        assert!(scope.contains("username"));
+    }
+
+    #[test]
+    fn scope_does_not_contain_a_symbol() {
+        let scope = Scope::new();
+
+        assert!(!scope.contains("username"));
+    }
+
+    #[test]
+    fn scope_get_a_defined_symbol() {
+        let mut scope = Scope::new();
+        scope.define("username".to_string(), SymbolId(1));
+
+        assert_eq!(scope.get("username"), Some(SymbolId(1)));
+    }
+
+    #[test]
+    fn scope_returns_none_for_an_undefined_symbol() {
+        let scope = Scope::new();
+
+        assert_eq!(scope.get("username"), None);
     }
 }
