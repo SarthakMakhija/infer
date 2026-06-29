@@ -1,6 +1,6 @@
 use crate::ast::expr::Expression;
-use crate::semantic::analyzer::Visitor;
 use crate::semantic::error::SemanticError;
+use crate::semantic::visitor::Visitor;
 use std::cell::Cell;
 use std::ops::Deref;
 
@@ -548,8 +548,8 @@ mod accept_tests {
         Assignment, Block, Break, FunctionDefinition, If, Loop, NodeId, Return, Statement,
         VariableDeclaration,
     };
-    use crate::semantic::analyzer::Visitor;
     use crate::semantic::error::SemanticError;
+    use crate::semantic::visitor::Visitor;
 
     struct TestVisitor {
         visited_var_declaration: bool,

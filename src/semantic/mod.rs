@@ -5,6 +5,7 @@ pub(crate) mod error;
 pub(crate) mod resolution;
 pub(crate) mod scope;
 pub(crate) mod state;
+pub(crate) mod visitor;
 
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
 pub(crate) struct SymbolId(pub usize);
