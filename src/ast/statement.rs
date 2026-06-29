@@ -1,6 +1,6 @@
 use crate::ast::expr::Expression;
 use crate::semantic::error::SemanticError;
-use crate::semantic::visitor::Visitor;
+use crate::semantic::visitor::StatementVisitor;
 use std::cell::Cell;
 use std::ops::Deref;
 
@@ -21,7 +21,7 @@ thread_local! {
     static ID: Cell<NodeId> = const { Cell::new(NodeId(0)) };
 }
 
-/// Generates a new, thread-safe, unique statement and expression identifier in a single-threaded execution.
+/// Generates a new, unique statement and expression identifier in a single-threaded execution.
 pub(crate) fn next_id() -> NodeId {
     ID.with(|id| {
         let current = id.get();
@@ -131,7 +131,7 @@ impl Statement {
         Statement::Print(statement, Self::statement_id())
     }
 
-    pub(crate) fn accept(&self, visitor: &mut dyn Visitor) -> Result<(), SemanticError> {
+    pub(crate) fn accept(&self, visitor: &mut dyn StatementVisitor) -> Result<(), SemanticError> {
         match self {
             Statement::VariableDeclaration(ref declaration, _) => {
                 visitor.visit_var_declaration(declaration)
@@ -549,7 +549,7 @@ mod accept_tests {
         VariableDeclaration,
     };
     use crate::semantic::error::SemanticError;
-    use crate::semantic::visitor::Visitor;
+    use crate::semantic::visitor::StatementVisitor;
 
     struct TestVisitor {
         visited_var_declaration: bool,
@@ -562,7 +562,7 @@ mod accept_tests {
         visited_return: bool,
     }
 
-    impl Visitor for TestVisitor {
+    impl StatementVisitor for TestVisitor {
         fn visit_var_declaration(
             &mut self,
             _variable_declaration: &VariableDeclaration,

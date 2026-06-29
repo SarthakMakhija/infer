@@ -8,7 +8,7 @@ use crate::semantic::resolution::ResolutionTable;
 use crate::semantic::scope::Scopes;
 use crate::semantic::state::{FunctionMetadata, State};
 
-pub(crate) trait Visitor {
+pub(crate) trait StatementVisitor {
     fn visit_var_declaration(
         &mut self,
         variable_declaration: &VariableDeclaration,
@@ -99,7 +99,7 @@ impl SymbolResolutionVisitor {
     }
 }
 
-impl Visitor for SymbolResolutionVisitor {
+impl StatementVisitor for SymbolResolutionVisitor {
     fn visit_var_declaration(
         &mut self,
         variable_declaration: &VariableDeclaration,
