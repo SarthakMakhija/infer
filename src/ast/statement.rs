@@ -146,6 +146,7 @@ impl Statement {
             Statement::FunctionCall(ref expression, _) => visitor.visit_function_call(expression),
             Statement::Break(_, _) => visitor.visit_break(),
             Statement::Return(ref return_statement, _) => visitor.visit_return(return_statement),
+            //TODO: Visit print
             _ => unimplemented!(),
         }
     }
