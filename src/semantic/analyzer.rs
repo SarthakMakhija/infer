@@ -1,6 +1,6 @@
 use crate::ast::program::Program;
 use crate::semantic::error::SemanticError;
-use crate::semantic::visitor::SymbolResolutionVisitor;
+use crate::semantic::symbol_resolution::SymbolResolutionVisitor;
 
 pub(crate) struct Analyzer {
     visitor: SymbolResolutionVisitor,
