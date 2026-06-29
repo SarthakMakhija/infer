@@ -7,7 +7,7 @@ use crate::semantic::next_symbol_id;
 use crate::semantic::resolution_table::ResolutionTable;
 use crate::semantic::scope::Scopes;
 use crate::semantic::state::{FunctionMetadata, State};
-use crate::semantic::visitor::StatementVisitor;
+use crate::semantic::visitor::{ExpressionVisitor, StatementVisitor};
 
 pub(crate) struct SymbolResolutionVisitor {
     scopes: Scopes,
@@ -208,6 +208,18 @@ impl StatementVisitor for SymbolResolutionVisitor {
                 Ok(())
             }
         }
+    }
+}
+
+impl ExpressionVisitor for SymbolResolutionVisitor {
+    fn visit_identifier(&mut self, name: &str, node_id: NodeId) -> Result<(), SemanticError> {
+        let symbol_id = self
+            .scopes
+            .get(name)
+            .ok_or_else(|| SemanticError::UndefinedVariable(name.to_string()))?;
+
+        self.resolution_table.resolve(node_id, symbol_id);
+        Ok(())
     }
 }
 
@@ -1072,5 +1084,47 @@ mod unreachable_code_tests {
 
         assert!(first_function.accept(&mut visitor).is_ok());
         assert!(second_function.accept(&mut visitor).is_ok());
+    }
+}
+
+#[cfg(test)]
+mod identifier_expression_tests {
+    use super::*;
+    use crate::ast::expr::Expression;
+    use crate::semantic::SymbolId;
+
+    #[test]
+    fn visitor_resolves_valid_identifier_expression() {
+        let mut visitor = SymbolResolutionVisitor::new();
+
+        let expected_symbol_id = SymbolId(10);
+        visitor
+            .scopes
+            .define("score".to_string(), expected_symbol_id);
+
+        let identifier_expression = Expression::identifier("score".to_string());
+        let Expression::Identifier(_, node_id) = &identifier_expression else {
+            panic!("Expected Expression::Identifier");
+        };
+
+        let result = identifier_expression.accept(&mut visitor);
+        assert!(result.is_ok());
+        assert_eq!(
+            visitor.resolution_table.get(node_id),
+            Some(expected_symbol_id)
+        );
+    }
+
+    #[test]
+    fn visitor_fails_for_undefined_identifier_expression() {
+        let mut visitor = SymbolResolutionVisitor::new();
+
+        let identifier_expression = Expression::identifier("score".to_string());
+        let result = identifier_expression.accept(&mut visitor);
+
+        assert_eq!(
+            result,
+            Err(SemanticError::UndefinedVariable("score".to_string()))
+        );
     }
 }

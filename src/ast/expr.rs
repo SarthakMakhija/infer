@@ -1,5 +1,7 @@
 use crate::ast::statement::{next_id, NodeId};
 use crate::lexer::token::{Token, TokenType};
+use crate::semantic::error::SemanticError;
+use crate::semantic::visitor::ExpressionVisitor;
 use std::fmt;
 
 /// Represents errors encountered while parsing tokens into AST expressions.
@@ -104,6 +106,13 @@ impl Expression {
     /// Factory method to construct an `Expression::FunctionCall`.
     pub fn function_call(callee: Expression, arguments: Vec<Expression>) -> Self {
         Expression::FunctionCall(Box::new(callee), arguments, next_id())
+    }
+
+    pub(crate) fn accept(&self, visitor: &mut dyn ExpressionVisitor) -> Result<(), SemanticError> {
+        match self {
+            Expression::Identifier(ref name, id) => visitor.visit_identifier(name, *id),
+            _ => Ok(()),
+        }
     }
 }
 
@@ -408,6 +417,36 @@ mod expression_tests {
             panic!("Expected Expression::Identifier");
         };
         assert!(*second_name_id > NodeId(0));
+    }
+
+    struct TestExpressionVisitor {
+        visited_identifier: Option<(String, NodeId)>,
+    }
+
+    impl ExpressionVisitor for TestExpressionVisitor {
+        fn visit_identifier(&mut self, name: &str, node_id: NodeId) -> Result<(), SemanticError> {
+            self.visited_identifier = Some((name.to_string(), node_id));
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn accept_dispatches_identifier_to_visitor() {
+        let identifier_expression = Expression::identifier("score".to_string());
+        let Expression::Identifier(_, expected_node_id) = &identifier_expression else {
+            panic!("Expected Expression::Identifier");
+        };
+
+        let mut visitor = TestExpressionVisitor {
+            visited_identifier: None,
+        };
+
+        let result = identifier_expression.accept(&mut visitor);
+        assert!(result.is_ok());
+        assert_eq!(
+            visitor.visited_identifier,
+            Some(("score".to_string(), *expected_node_id))
+        );
     }
 }
 

@@ -33,3 +33,7 @@ pub(crate) trait StatementVisitor {
 
     fn visit_return(&mut self, return_statement: &Return) -> Result<(), SemanticError>;
 }
+
+pub(crate) trait ExpressionVisitor {
+    fn visit_identifier(&mut self, name: &str, node_id: NodeId) -> Result<(), SemanticError>;
+}
