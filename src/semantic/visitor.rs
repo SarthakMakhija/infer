@@ -42,4 +42,6 @@ pub(crate) trait ExpressionVisitor {
         callee: &Expression,
         arguments: &[Expression],
     ) -> Result<(), SemanticError>;
+
+    fn visit_binary(&mut self, left: &Expression, right: &Expression) -> Result<(), SemanticError>;
 }

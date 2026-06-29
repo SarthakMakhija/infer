@@ -114,6 +114,7 @@ impl Expression {
             Expression::FunctionCall(ref callee, ref arguments, _) => {
                 visitor.visit_function_call(callee, arguments)
             }
+            Expression::Binary(ref left, _, ref right) => visitor.visit_binary(left, right),
             _ => Ok(()),
         }
     }
@@ -425,6 +426,7 @@ mod expression_tests {
     struct TestExpressionVisitor {
         visited_identifier: Option<(String, NodeId)>,
         visited_function_call: bool,
+        visited_binary: bool,
     }
 
     impl ExpressionVisitor for TestExpressionVisitor {
@@ -441,6 +443,15 @@ mod expression_tests {
             self.visited_function_call = true;
             Ok(())
         }
+
+        fn visit_binary(
+            &mut self,
+            _left: &Expression,
+            _right: &Expression,
+        ) -> Result<(), SemanticError> {
+            self.visited_binary = true;
+            Ok(())
+        }
     }
 
     #[test]
@@ -453,6 +464,7 @@ mod expression_tests {
         let mut visitor = TestExpressionVisitor {
             visited_identifier: None,
             visited_function_call: false,
+            visited_binary: false,
         };
 
         let result = identifier_expression.accept(&mut visitor);
@@ -471,11 +483,30 @@ mod expression_tests {
         let mut visitor = TestExpressionVisitor {
             visited_identifier: None,
             visited_function_call: false,
+            visited_binary: false,
         };
 
         let result = call_expression.accept(&mut visitor);
         assert!(result.is_ok());
         assert!(visitor.visited_function_call);
+    }
+
+    #[test]
+    fn accept_dispatches_binary_to_visitor() {
+        let left = Expression::I32(10);
+        let right = Expression::I32(20);
+        let binary_expression =
+            Expression::Binary(Box::new(left), BinaryOperator::Plus, Box::new(right));
+
+        let mut visitor = TestExpressionVisitor {
+            visited_identifier: None,
+            visited_function_call: false,
+            visited_binary: false,
+        };
+
+        let result = binary_expression.accept(&mut visitor);
+        assert!(result.is_ok());
+        assert!(visitor.visited_binary);
     }
 }
 

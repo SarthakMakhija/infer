@@ -1,4 +1,4 @@
-use crate::ast::expr::Expression;
+use crate::ast::expr::{BinaryOperator, Expression};
 use crate::ast::statement::{
     Assignment, Block, FunctionDefinition, If, Loop, NodeId, Return, Statement, VariableDeclaration,
 };
@@ -239,6 +239,12 @@ impl ExpressionVisitor for SymbolResolutionVisitor {
         for argument in arguments {
             argument.accept(self)?
         }
+        Ok(())
+    }
+
+    fn visit_binary(&mut self, left: &Expression, right: &Expression) -> Result<(), SemanticError> {
+        left.accept(self)?;
+        right.accept(self)?;
         Ok(())
     }
 }
@@ -1217,6 +1223,86 @@ mod identifier_expression_tests {
         assert_eq!(
             result,
             Err(SemanticError::UndefinedVariable("score".to_string()))
+        );
+    }
+}
+
+#[cfg(test)]
+mod binary_expression_tests {
+    use super::*;
+    use crate::ast::expr::{BinaryOperator, Expression};
+    use crate::semantic::SymbolId;
+
+    #[test]
+    fn visitor_resolves_identifiers_inside_binary_expression() {
+        let mut visitor = SymbolResolutionVisitor::new();
+
+        let score_symbol_id = SymbolId(1);
+        visitor.scopes.define("score".to_string(), score_symbol_id);
+
+        let bonus_symbol_id = SymbolId(2);
+        visitor.scopes.define("bonus".to_string(), bonus_symbol_id);
+
+        let left = Expression::identifier("score".to_string());
+        let score_node_id = match &left {
+            Expression::Identifier(_, node_id) => *node_id,
+            _ => unreachable!(),
+        };
+
+        let right = Expression::identifier("bonus".to_string());
+        let bonus_node_id = match &right {
+            Expression::Identifier(_, node_id) => *node_id,
+            _ => unreachable!(),
+        };
+
+        let binary_expression =
+            Expression::Binary(Box::new(left), BinaryOperator::Plus, Box::new(right));
+
+        let result = binary_expression.accept(&mut visitor);
+        assert!(result.is_ok());
+        assert_eq!(
+            visitor.resolution_table.get(&score_node_id),
+            Some(score_symbol_id)
+        );
+        assert_eq!(
+            visitor.resolution_table.get(&bonus_node_id),
+            Some(bonus_symbol_id)
+        );
+    }
+
+    #[test]
+    fn visitor_fails_if_left_operand_has_undefined_variable() {
+        let mut visitor = SymbolResolutionVisitor::new();
+        visitor.scopes.define("bonus".to_string(), SymbolId(1));
+
+        let left = Expression::identifier("score".to_string());
+        let right = Expression::identifier("bonus".to_string());
+
+        let binary_expression =
+            Expression::Binary(Box::new(left), BinaryOperator::Plus, Box::new(right));
+
+        let result = binary_expression.accept(&mut visitor);
+        assert_eq!(
+            result,
+            Err(SemanticError::UndefinedVariable("score".to_string()))
+        );
+    }
+
+    #[test]
+    fn visitor_fails_if_right_operand_has_undefined_variable() {
+        let mut visitor = SymbolResolutionVisitor::new();
+        visitor.scopes.define("score".to_string(), SymbolId(1));
+
+        let left = Expression::identifier("score".to_string());
+        let right = Expression::identifier("bonus".to_string());
+
+        let binary_expression =
+            Expression::Binary(Box::new(left), BinaryOperator::Plus, Box::new(right));
+
+        let result = binary_expression.accept(&mut visitor);
+        assert_eq!(
+            result,
+            Err(SemanticError::UndefinedVariable("bonus".to_string()))
         );
     }
 }
