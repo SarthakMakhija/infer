@@ -111,6 +111,9 @@ impl Expression {
     pub(crate) fn accept(&self, visitor: &mut dyn ExpressionVisitor) -> Result<(), SemanticError> {
         match self {
             Expression::Identifier(ref name, id) => visitor.visit_identifier(name, *id),
+            Expression::FunctionCall(ref callee, ref arguments, _) => {
+                visitor.visit_function_call(callee, arguments)
+            }
             _ => Ok(()),
         }
     }
@@ -421,11 +424,21 @@ mod expression_tests {
 
     struct TestExpressionVisitor {
         visited_identifier: Option<(String, NodeId)>,
+        visited_function_call: bool,
     }
 
     impl ExpressionVisitor for TestExpressionVisitor {
         fn visit_identifier(&mut self, name: &str, node_id: NodeId) -> Result<(), SemanticError> {
             self.visited_identifier = Some((name.to_string(), node_id));
+            Ok(())
+        }
+
+        fn visit_function_call(
+            &mut self,
+            _callee: &Expression,
+            _arguments: &[Expression],
+        ) -> Result<(), SemanticError> {
+            self.visited_function_call = true;
             Ok(())
         }
     }
@@ -439,6 +452,7 @@ mod expression_tests {
 
         let mut visitor = TestExpressionVisitor {
             visited_identifier: None,
+            visited_function_call: false,
         };
 
         let result = identifier_expression.accept(&mut visitor);
@@ -447,6 +461,21 @@ mod expression_tests {
             visitor.visited_identifier,
             Some(("score".to_string(), *expected_node_id))
         );
+    }
+
+    #[test]
+    fn accept_dispatches_function_call_to_visitor() {
+        let callee = Expression::identifier("calculate_total".to_string());
+        let call_expression = Expression::function_call(callee, vec![]);
+
+        let mut visitor = TestExpressionVisitor {
+            visited_identifier: None,
+            visited_function_call: false,
+        };
+
+        let result = call_expression.accept(&mut visitor);
+        assert!(result.is_ok());
+        assert!(visitor.visited_function_call);
     }
 }
 

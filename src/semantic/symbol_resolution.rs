@@ -37,9 +37,16 @@ impl SymbolResolutionVisitor {
         Ok(())
     }
 
-    pub(crate) fn resolve_pending_calls(&self) -> Result<(), SemanticError> {
+    pub(crate) fn resolve_pending_calls(&mut self) -> Result<(), SemanticError> {
         for pending_call in &self.state.pending_calls {
+            let symbol_id = self
+                .scopes
+                .get(&pending_call.name)
+                .ok_or_else(|| SemanticError::UndefinedVariable(pending_call.name.clone()))?;
+
             self.validate_function_call(&pending_call.name, pending_call.argument_count)?;
+            self.resolution_table
+                .resolve(pending_call.callee_node_id, symbol_id);
         }
         Ok(())
     }
@@ -168,21 +175,10 @@ impl StatementVisitor for SymbolResolutionVisitor {
     }
 
     fn visit_function_call(&mut self, call: &Expression) -> Result<(), SemanticError> {
-        //TODO: delegate to ExpressionVisitor to recursively traverse, validate arguments,
-        // and resolve the callee in the resolution table (or defer resolution to pending_calls)
-        let Expression::FunctionCall(ref callee, ref arguments, _) = call else {
+        let Expression::FunctionCall(..) = call else {
             panic!("Expected Expression::FunctionCall variant");
         };
-
-        let Expression::Identifier(ref name, _) = &**callee else {
-            return Err(SemanticError::NotAFunction("".to_string()));
-        };
-
-        match self.scopes.get(name) {
-            None => self.state.add_pending_call(name.clone(), arguments.len()),
-            Some(_) => self.validate_function_call(name, arguments.len())?,
-        }
-        Ok(())
+        call.accept(self)
     }
 
     fn visit_break(&mut self) -> Result<(), SemanticError> {
@@ -219,6 +215,30 @@ impl ExpressionVisitor for SymbolResolutionVisitor {
             .ok_or_else(|| SemanticError::UndefinedVariable(name.to_string()))?;
 
         self.resolution_table.resolve(node_id, symbol_id);
+        Ok(())
+    }
+
+    fn visit_function_call(
+        &mut self,
+        callee: &Expression,
+        arguments: &[Expression],
+    ) -> Result<(), SemanticError> {
+        let Expression::Identifier(ref name, callee_node_id) = callee else {
+            return Err(SemanticError::NotAFunction("".to_string()));
+        };
+
+        match self.scopes.get(name) {
+            None => self
+                .state
+                .add_pending_call(name.clone(), arguments.len(), *callee_node_id),
+            Some(symbol_id) => {
+                self.validate_function_call(name, arguments.len())?;
+                self.resolution_table.resolve(*callee_node_id, symbol_id);
+            }
+        }
+        for argument in arguments {
+            argument.accept(self)?
+        }
         Ok(())
     }
 }
@@ -709,6 +729,7 @@ mod function_call_tests {
     use crate::ast::expr::Expression;
     use crate::ast::statement::{Block, FunctionDefinition, FunctionParameter, Statement};
     use crate::semantic::state::PendingCall;
+    use crate::semantic::SymbolId;
 
     #[test]
     fn accepts_valid_function_call() {
@@ -800,6 +821,10 @@ mod function_call_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let callee = Expression::identifier("calculate_total".to_string());
+        let expected_callee_node_id = match &callee {
+            Expression::Identifier(_, node_id) => *node_id,
+            _ => unreachable!(),
+        };
         let call_expression = Expression::function_call(callee, vec![Expression::I32(42)]);
         let call_statement = Statement::function_call(call_expression);
 
@@ -811,6 +836,7 @@ mod function_call_tests {
             vec![PendingCall {
                 name: "calculate_total".to_string(),
                 argument_count: 1,
+                callee_node_id: expected_callee_node_id,
             }]
         );
     }
@@ -832,7 +858,115 @@ mod function_call_tests {
     fn panics_on_non_function_call_expression_variant() {
         let mut visitor = SymbolResolutionVisitor::new();
         let expression = Expression::I32(42);
-        let _ = visitor.visit_function_call(&expression);
+        let _ = StatementVisitor::visit_function_call(&mut visitor, &expression);
+    }
+
+    #[test]
+    fn visitor_resolves_immediate_function_call_in_resolution_table() {
+        let mut visitor = SymbolResolutionVisitor::new();
+
+        let function_symbol_id = SymbolId(1);
+        visitor
+            .scopes
+            .define("calculate_total".to_string(), function_symbol_id);
+        visitor.state.add_global_function(
+            function_symbol_id,
+            FunctionMetadata::new("calculate_total".to_string(), 0, false),
+        );
+
+        let callee = Expression::identifier("calculate_total".to_string());
+        let callee_node_id = match &callee {
+            Expression::Identifier(_, node_id) => *node_id,
+            _ => unreachable!(),
+        };
+        let call_expression = Expression::function_call(callee, vec![]);
+
+        let result = call_expression.accept(&mut visitor);
+        assert!(result.is_ok());
+        assert_eq!(
+            visitor.resolution_table.get(&callee_node_id),
+            Some(function_symbol_id)
+        );
+    }
+
+    #[test]
+    fn visitor_resolves_deferred_function_call_in_resolution_table_on_pending_calls_resolve() {
+        let mut visitor = SymbolResolutionVisitor::new();
+
+        let callee = Expression::identifier("calculate_total".to_string());
+        let callee_node_id = match &callee {
+            Expression::Identifier(_, node_id) => *node_id,
+            _ => unreachable!(),
+        };
+        let call_expression = Expression::function_call(callee, vec![]);
+
+        // Visit call, which defers it
+        let result = call_expression.accept(&mut visitor);
+        assert!(result.is_ok());
+        assert_eq!(visitor.resolution_table.get(&callee_node_id), None);
+
+        // Define the function globally later
+        let function_symbol_id = SymbolId(2);
+        visitor
+            .scopes
+            .define("calculate_total".to_string(), function_symbol_id);
+        visitor.state.add_global_function(
+            function_symbol_id,
+            FunctionMetadata::new("calculate_total".to_string(), 0, false),
+        );
+
+        // Resolve pending calls
+        let resolve_result = visitor.resolve_pending_calls();
+        assert!(resolve_result.is_ok());
+        assert_eq!(
+            visitor.resolution_table.get(&callee_node_id),
+            Some(function_symbol_id)
+        );
+    }
+
+    #[test]
+    fn visitor_resolves_identifier_inside_function_call_arguments() {
+        let mut visitor = SymbolResolutionVisitor::new();
+
+        let function_symbol_id = SymbolId(1);
+        visitor
+            .scopes
+            .define("calculate_total".to_string(), function_symbol_id);
+        visitor.state.add_global_function(
+            function_symbol_id,
+            FunctionMetadata::new("calculate_total".to_string(), 1, false),
+        );
+
+        let variable_symbol_id = SymbolId(2);
+        visitor
+            .scopes
+            .define("score".to_string(), variable_symbol_id);
+
+        let callee = Expression::identifier("calculate_total".to_string());
+        let callee_node_id = match &callee {
+            Expression::Identifier(_, node_id) => *node_id,
+            _ => unreachable!(),
+        };
+
+        let argument = Expression::identifier("score".to_string());
+        let argument_node_id = match &argument {
+            Expression::Identifier(_, node_id) => *node_id,
+            _ => unreachable!(),
+        };
+
+        let call_expression = Expression::function_call(callee, vec![argument]);
+
+        let result = call_expression.accept(&mut visitor);
+        assert!(result.is_ok());
+
+        assert_eq!(
+            visitor.resolution_table.get(&callee_node_id),
+            Some(function_symbol_id)
+        );
+        assert_eq!(
+            visitor.resolution_table.get(&argument_node_id),
+            Some(variable_symbol_id)
+        );
     }
 }
 

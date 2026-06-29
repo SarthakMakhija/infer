@@ -1,3 +1,4 @@
+use crate::ast::statement::NodeId;
 use crate::semantic::SymbolId;
 use std::collections::HashMap;
 
@@ -5,6 +6,7 @@ use std::collections::HashMap;
 pub(crate) struct PendingCall {
     pub(crate) name: String,
     pub(crate) argument_count: usize,
+    pub(crate) callee_node_id: NodeId,
 }
 
 #[derive(Clone)]
@@ -45,10 +47,16 @@ impl State {
         }
     }
 
-    pub(crate) fn add_pending_call(&mut self, name: String, argument_count: usize) {
+    pub(crate) fn add_pending_call(
+        &mut self,
+        name: String,
+        argument_count: usize,
+        callee_node_id: NodeId,
+    ) {
         self.pending_calls.push(PendingCall {
             name,
             argument_count,
+            callee_node_id,
         });
     }
 
