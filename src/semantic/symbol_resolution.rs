@@ -4,7 +4,7 @@ use crate::ast::statement::{
 };
 use crate::semantic::error::SemanticError;
 use crate::semantic::next_symbol_id;
-use crate::semantic::resolution::ResolutionTable;
+use crate::semantic::resolution_table::ResolutionTable;
 use crate::semantic::scope::Scopes;
 use crate::semantic::state::{FunctionMetadata, State};
 use crate::semantic::visitor::StatementVisitor;
@@ -75,7 +75,7 @@ impl StatementVisitor for SymbolResolutionVisitor {
         &mut self,
         variable_declaration: &VariableDeclaration,
     ) -> Result<(), SemanticError> {
-        //TODO: handle expression later
+        //TODO: traverse and validate the initializer expression using ExpressionVisitor
         let name = variable_declaration.variable();
         if self.scopes.contains_locally(name) {
             return Err(SemanticError::DuplicateVariable(name.to_string()));
@@ -89,7 +89,7 @@ impl StatementVisitor for SymbolResolutionVisitor {
         assignment: &Assignment,
         node_id: NodeId,
     ) -> Result<(), SemanticError> {
-        //TODO: handle expression later
+        //TODO: traverse and validate the right-hand side expression using ExpressionVisitor
         let symbol_id = self.scopes.get(assignment.variable());
         if symbol_id.is_none() {
             return Err(SemanticError::UndefinedVariable(
@@ -102,7 +102,7 @@ impl StatementVisitor for SymbolResolutionVisitor {
     }
 
     fn visit_if(&mut self, if_statement: &If) -> Result<(), SemanticError> {
-        //TODO: handle expression later
+        //TODO: traverse and validate the condition expression using ExpressionVisitor
         self.visit_block(&if_statement.body)?;
         if let Some(body) = if_statement.else_body.as_ref() {
             self.visit_block(body)?;
@@ -168,6 +168,8 @@ impl StatementVisitor for SymbolResolutionVisitor {
     }
 
     fn visit_function_call(&mut self, call: &Expression) -> Result<(), SemanticError> {
+        //TODO: delegate to ExpressionVisitor to recursively traverse, validate arguments,
+        // and resolve the callee in the resolution table (or defer resolution to pending_calls)
         let Expression::FunctionCall(ref callee, ref arguments, _) = call else {
             panic!("Expected Expression::FunctionCall variant");
         };
@@ -192,6 +194,7 @@ impl StatementVisitor for SymbolResolutionVisitor {
     }
 
     fn visit_return(&mut self, return_statement: &Return) -> Result<(), SemanticError> {
+        //TODO: traverse and validate the return expression using ExpressionVisitor
         match self.state.current_function() {
             None => Err(SemanticError::ReturnOutsideFunction),
             Some(function_metadata) => {

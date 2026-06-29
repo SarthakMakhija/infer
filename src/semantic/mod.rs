@@ -2,7 +2,7 @@ use std::cell::Cell;
 
 pub(crate) mod analyzer;
 pub(crate) mod error;
-pub(crate) mod resolution;
+pub(crate) mod resolution_table;
 pub(crate) mod scope;
 pub(crate) mod state;
 pub(crate) mod symbol_resolution;
