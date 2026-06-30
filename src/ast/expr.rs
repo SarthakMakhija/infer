@@ -41,6 +41,22 @@ impl fmt::Display for ExpressionError {
 
 impl std::error::Error for ExpressionError {}
 
+/// Represents a parsed expression with source location metadata in the AST.
+#[derive(Debug, PartialEq)]
+pub struct Expression {
+    /// The specific variant of this expression.
+    kind: ExpressionKind,
+    /// The line number in the source code where this expression was parsed.
+    line: usize,
+}
+
+impl Expression {
+    /// Creates a new `Expression` wrapping an `ExpressionKind` and its source line number.
+    pub(crate) fn new(kind: ExpressionKind, line: usize) -> Self {
+        Expression { kind, line }
+    }
+}
+
 /// Represents a parsed expression kind in the AST.
 ///
 /// Expression kinds evaluate to values and can appear on the right-hand side
@@ -636,5 +652,18 @@ mod unary_operator_tests {
             result.err().unwrap(),
             ExpressionError::UnsupportedOperator(TokenType::Identifier, 2)
         );
+    }
+}
+
+#[cfg(test)]
+mod expression_struct_tests {
+    use super::*;
+
+    #[test]
+    fn creates_new_expression_with_kind_and_line() {
+        let kind = ExpressionKind::I32(42);
+        let expression = Expression::new(kind, 10);
+        assert_eq!(expression.kind, ExpressionKind::I32(42));
+        assert_eq!(expression.line, 10);
     }
 }
