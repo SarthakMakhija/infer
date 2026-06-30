@@ -110,12 +110,13 @@ mod tests {
         let mut parser = StatementParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        let line = 1;
         assert_eq!(
             statement,
             Statement::variable_declaration(VariableDeclaration::new(
                 "id".to_string(),
                 None,
-                Some(ExpressionKind::I32(10))
+                Some(Expression::new(ExpressionKind::I32(10), line))
             ))
         );
     }
@@ -255,6 +256,7 @@ mod tests {
         let mut parser = StatementParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        let line = 1;
         assert_eq!(
             statement,
             Statement::function_definition(FunctionDefinition::new(
@@ -268,7 +270,10 @@ mod tests {
                     VariableDeclaration::new(
                         "risk_level".to_string(),
                         None,
-                        Some(ExpressionKind::identifier("score".to_string()))
+                        Some(Expression::new(
+                            ExpressionKind::identifier("score".to_string()),
+                            line
+                        ))
                     )
                 )])
             ))

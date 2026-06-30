@@ -30,7 +30,10 @@ macro_rules! assert_variable_declaration {
         };
         assert_eq!(declaration.variable(), $expected_name);
         assert_eq!(declaration.data_type(), $expected_type);
-        assert_eq!(declaration.expression(), $expected_expression);
+        assert_eq!(
+            declaration.expression().map(|expression| &expression.kind),
+            $expected_expression
+        );
         declaration
     }};
 }

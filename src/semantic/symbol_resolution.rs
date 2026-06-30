@@ -277,6 +277,7 @@ impl ExpressionVisitor for SymbolResolutionVisitor {
 #[cfg(test)]
 mod var_declaration_tests {
     use super::*;
+    use crate::ast::expr::Expression;
     use crate::ast::statement::Statement;
     use crate::semantic::SymbolId;
 
@@ -324,7 +325,7 @@ mod var_declaration_tests {
         let declaration = Statement::variable_declaration(VariableDeclaration::new(
             "score".to_string(),
             None,
-            Some(initializer_expression_kind),
+            Some(Expression::new(initializer_expression_kind, 0)),
         ));
 
         let result = declaration.accept(&mut visitor);
@@ -344,7 +345,7 @@ mod var_declaration_tests {
         let declaration = Statement::variable_declaration(VariableDeclaration::new(
             "score".to_string(),
             None,
-            Some(initializer_expression_kind),
+            Some(Expression::new(initializer_expression_kind, 0)),
         ));
 
         let result = declaration.accept(&mut visitor);
@@ -363,7 +364,7 @@ mod var_declaration_tests {
         let declaration = Statement::variable_declaration(VariableDeclaration::new(
             "score".to_string(),
             None,
-            Some(initializer_expression_kind),
+            Some(Expression::new(initializer_expression_kind, 0)),
         ));
 
         let result = declaration.accept(&mut visitor);

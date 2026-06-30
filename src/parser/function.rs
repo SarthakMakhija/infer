@@ -219,7 +219,7 @@ mod tests {
                 Statement::variable_declaration(VariableDeclaration::new(
                     "id".to_string(),
                     None,
-                    Some(ExpressionKind::I32(100)),
+                    Some(Expression::new(ExpressionKind::I32(100), line)),
                 )),
                 Statement::assignment(Assignment::new(
                     "id".to_string(),
@@ -349,6 +349,7 @@ mod tests {
         let mut parser = FnParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        let line = 1;
         let expected = Statement::function_definition(FunctionDefinition::new(
             "test_func".to_string(),
             vec![],
@@ -357,14 +358,19 @@ mod tests {
                 VariableDeclaration::new(
                     "total_cost".to_string(),
                     None,
-                    Some(ExpressionKind::Binary(
-                        Box::new(ExpressionKind::identifier("fixed_cost".to_string())),
-                        BinaryOperator::Plus,
-                        Box::new(ExpressionKind::Binary(
-                            Box::new(ExpressionKind::identifier("variable_unit_cost".to_string())),
-                            BinaryOperator::Multiply,
-                            Box::new(ExpressionKind::identifier("quantity".to_string())),
-                        )),
+                    Some(Expression::new(
+                        ExpressionKind::Binary(
+                            Box::new(ExpressionKind::identifier("fixed_cost".to_string())),
+                            BinaryOperator::Plus,
+                            Box::new(ExpressionKind::Binary(
+                                Box::new(ExpressionKind::identifier(
+                                    "variable_unit_cost".to_string(),
+                                )),
+                                BinaryOperator::Multiply,
+                                Box::new(ExpressionKind::identifier("quantity".to_string())),
+                            )),
+                        ),
+                        line,
                     )),
                 ),
             )]),
@@ -392,10 +398,13 @@ mod tests {
                 Statement::variable_declaration(VariableDeclaration::new(
                     "net_salary".to_string(),
                     None,
-                    Some(ExpressionKind::Binary(
-                        Box::new(ExpressionKind::identifier("gross_salary".to_string())),
-                        BinaryOperator::Minus,
-                        Box::new(ExpressionKind::identifier("deductions".to_string())),
+                    Some(Expression::new(
+                        ExpressionKind::Binary(
+                            Box::new(ExpressionKind::identifier("gross_salary".to_string())),
+                            BinaryOperator::Minus,
+                            Box::new(ExpressionKind::identifier("deductions".to_string())),
+                        ),
+                        line,
                     )),
                 )),
                 Statement::assignment(Assignment::new(

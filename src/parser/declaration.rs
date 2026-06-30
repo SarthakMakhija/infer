@@ -1,4 +1,4 @@
-use crate::ast::expr::ExpressionKind;
+use crate::ast::expr::{Expression, ExpressionKind};
 use crate::ast::statement::{Statement, VariableDeclaration};
 use crate::lexer::token::TokenType;
 use crate::lexer::LexResult;
@@ -26,14 +26,15 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>>
     /// Validates syntax constructs, handles optional type annotations and optional expressions,
     /// and ensures the statement is terminated with a semicolon.
     pub(crate) fn parse(&mut self) -> Result<Statement, ParseError> {
-        self.stream.expect(TokenType::Var)?;
-        let name = self.stream.expect_identifier()?;
+        let var_token = self.stream.expect(TokenType::Var)?;
+        let variable_name = self.stream.expect_identifier()?;
         let data_type = self.maybe_datatype()?;
-        let expression = self.maybe_expression()?;
+        let expression_kind = self.maybe_expression_kind()?;
         self.stream.expect(TokenType::Semicolon)?;
 
+        let expression = expression_kind.map(|kind| Expression::new(kind, var_token.line));
         Ok(Statement::variable_declaration(VariableDeclaration::new(
-            name.owned_value(),
+            variable_name.owned_value(),
             data_type,
             expression,
         )))
@@ -47,11 +48,11 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>>
         Ok(None)
     }
 
-    fn maybe_expression(&mut self) -> Result<Option<ExpressionKind>, ParseError> {
+    fn maybe_expression_kind(&mut self) -> Result<Option<ExpressionKind>, ParseError> {
         if self.stream.maybe_matches(TokenType::Equals) {
             let mut expression_parser = ExpressionParser::new(self.stream);
-            let expression = expression_parser.parse()?;
-            return Ok(Some(expression));
+            let expression_kind = expression_parser.parse()?;
+            return Ok(Some(expression_kind));
         }
         Ok(None)
     }
@@ -70,13 +71,14 @@ mod tests {
         let mut parser = VariableDeclarationParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        let line = 1;
 
         assert_eq!(
             statement,
             Statement::variable_declaration(VariableDeclaration::new(
                 "id".to_string(),
                 Some("i32".to_string()),
-                Some(ExpressionKind::I32(100))
+                Some(Expression::new(ExpressionKind::I32(100), line))
             ))
         );
     }
@@ -88,12 +90,17 @@ mod tests {
         let mut parser = VariableDeclarationParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        let line = 1;
+
         assert_eq!(
             statement,
             Statement::variable_declaration(VariableDeclaration::new(
                 "greeting".to_string(),
                 None,
-                Some(ExpressionKind::String("hello".to_string()))
+                Some(Expression::new(
+                    ExpressionKind::String("hello".to_string()),
+                    line
+                ))
             ))
         );
     }
@@ -162,16 +169,20 @@ mod tests {
         let mut parser = VariableDeclarationParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        let line = 1;
 
         assert_eq!(
             statement,
             Statement::variable_declaration(VariableDeclaration::new(
                 "total".to_string(),
                 None,
-                Some(ExpressionKind::Binary(
-                    Box::new(ExpressionKind::identifier("amount".to_string())),
-                    crate::ast::expr::BinaryOperator::Plus,
-                    Box::new(ExpressionKind::identifier("interest".to_string()))
+                Some(Expression::new(
+                    ExpressionKind::Binary(
+                        Box::new(ExpressionKind::identifier("amount".to_string())),
+                        crate::ast::expr::BinaryOperator::Plus,
+                        Box::new(ExpressionKind::identifier("interest".to_string()))
+                    ),
+                    line
                 ))
             ))
         );

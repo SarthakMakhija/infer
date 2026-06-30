@@ -66,7 +66,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> Parser<'src, 'stream, I
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::ExpressionKind;
+    use crate::ast::expr::{Expression, ExpressionKind};
     use crate::ast::statement::{
         Block, FunctionDefinition, FunctionParameter, Statement, VariableDeclaration,
     };
@@ -90,11 +90,15 @@ mod tests {
         let mut parser = Parser::new(&mut stream);
 
         let program = parser.parse().unwrap();
+        let line = 1;
         let expected = ProgramBuilder::new()
             .add(Statement::variable_declaration(VariableDeclaration::new(
                 "greeting".to_string(),
                 None,
-                Some(ExpressionKind::String("hello".to_string())),
+                Some(Expression::new(
+                    ExpressionKind::String("hello".to_string()),
+                    line,
+                )),
             )))
             .build();
         assert_eq!(program, expected);
@@ -107,16 +111,17 @@ mod tests {
         let mut parser = Parser::new(&mut stream);
 
         let program = parser.parse().unwrap();
+        let line = 1;
         let expected = ProgramBuilder::new()
             .add(Statement::variable_declaration(VariableDeclaration::new(
                 "x".to_string(),
                 None,
-                Some(ExpressionKind::I32(100)),
+                Some(Expression::new(ExpressionKind::I32(100), line)),
             )))
             .add(Statement::variable_declaration(VariableDeclaration::new(
                 "flag".to_string(),
                 None,
-                Some(ExpressionKind::Boolean(true)),
+                Some(Expression::new(ExpressionKind::Boolean(true), line)),
             )))
             .build();
         assert_eq!(program, expected);
@@ -182,6 +187,7 @@ mod tests {
         let mut parser = Parser::new(&mut stream);
 
         let program = parser.parse().unwrap();
+        let line = 1;
         let expected = ProgramBuilder::new()
             .add(Statement::function_definition(FunctionDefinition::new(
                 "adjust_risk".to_string(),
@@ -194,7 +200,10 @@ mod tests {
                     VariableDeclaration::new(
                         "risk_level".to_string(),
                         None,
-                        Some(ExpressionKind::identifier("score".to_string())),
+                        Some(Expression::new(
+                            ExpressionKind::identifier("score".to_string()),
+                            line,
+                        )),
                     ),
                 )]),
             )))

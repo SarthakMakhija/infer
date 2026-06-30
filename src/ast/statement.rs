@@ -178,14 +178,14 @@ impl Statement {
 pub struct VariableDeclaration {
     pub(crate) variable: String,
     pub(crate) data_type: Option<String>,
-    pub(crate) expression: Option<ExpressionKind>,
+    pub(crate) expression: Option<Expression>,
 }
 
 impl VariableDeclaration {
     pub(crate) fn new(
         variable: String,
         data_type: Option<String>,
-        expression: Option<ExpressionKind>,
+        expression: Option<Expression>,
     ) -> Self {
         Self {
             variable,
@@ -205,7 +205,7 @@ impl VariableDeclaration {
     }
 
     /// Returns the initialization expression of the variable, if provided.
-    pub fn expression(&self) -> Option<&ExpressionKind> {
+    pub fn expression(&self) -> Option<&Expression> {
         self.expression.as_ref()
     }
 }

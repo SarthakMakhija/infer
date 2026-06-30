@@ -74,7 +74,7 @@ mod tests {
                 Statement::variable_declaration(VariableDeclaration::new(
                     "score".to_string(),
                     None,
-                    Some(ExpressionKind::I32(10))
+                    Some(Expression::new(ExpressionKind::I32(10), line))
                 )),
                 Statement::assignment(Assignment::new(
                     "score".to_string(),
@@ -94,25 +94,26 @@ mod tests {
         let mut parser = BlockParser::new(&mut stream);
 
         let block = parser.parse().unwrap();
+        let line = 1;
         assert_eq!(
             block,
             Block::new(vec![
                 Statement::variable_declaration(VariableDeclaration::new(
                     "score".to_string(),
                     None,
-                    Some(ExpressionKind::I32(10))
+                    Some(Expression::new(ExpressionKind::I32(10), line))
                 )),
                 Statement::block(Block::new(vec![Statement::variable_declaration(
                     VariableDeclaration::new(
                         "risk_level".to_string(),
                         None,
-                        Some(ExpressionKind::I32(20))
+                        Some(Expression::new(ExpressionKind::I32(20), line))
                     )
                 )])),
                 Statement::variable_declaration(VariableDeclaration::new(
                     "threshold".to_string(),
                     None,
-                    Some(ExpressionKind::I32(30))
+                    Some(Expression::new(ExpressionKind::I32(30), line))
                 ))
             ])
         );
@@ -128,6 +129,7 @@ mod tests {
         let mut parser = BlockParser::new(&mut stream);
 
         let block = parser.parse().unwrap();
+        let line = 1;
         assert_eq!(
             block,
             Block::new(vec![
@@ -135,14 +137,14 @@ mod tests {
                     VariableDeclaration::new(
                         "score".to_string(),
                         None,
-                        Some(ExpressionKind::I32(10))
+                        Some(Expression::new(ExpressionKind::I32(10), line))
                     )
                 )])),
                 Statement::block(Block::new(vec![Statement::variable_declaration(
                     VariableDeclaration::new(
                         "risk_level".to_string(),
                         None,
-                        Some(ExpressionKind::I32(20))
+                        Some(Expression::new(ExpressionKind::I32(20), line))
                     )
                 )]))
             ])
