@@ -146,8 +146,7 @@ impl Statement {
             Statement::FunctionCall(ref expression, _) => visitor.visit_function_call(expression),
             Statement::Break(_, _) => visitor.visit_break(),
             Statement::Return(ref return_statement, _) => visitor.visit_return(return_statement),
-            //TODO: Visit print
-            _ => unimplemented!(),
+            Statement::Print(ref print_statement, _) => visitor.visit_print(print_statement),
         }
     }
 
@@ -546,7 +545,7 @@ mod tests {
 #[cfg(test)]
 mod accept_tests {
     use crate::ast::statement::{
-        Assignment, Block, Break, FunctionDefinition, If, Loop, NodeId, Return, Statement,
+        Assignment, Block, Break, FunctionDefinition, If, Loop, NodeId, Print, Return, Statement,
         VariableDeclaration,
     };
     use crate::semantic::error::SemanticError;
@@ -561,6 +560,7 @@ mod accept_tests {
         visited_function_definition: bool,
         visited_break: bool,
         visited_return: bool,
+        visited_print: bool,
     }
 
     impl StatementVisitor for TestVisitor {
@@ -620,6 +620,11 @@ mod accept_tests {
             self.visited_return = true;
             Ok(())
         }
+
+        fn visit_print(&mut self, _print_statement: &Print) -> Result<(), SemanticError> {
+            self.visited_print = true;
+            Ok(())
+        }
     }
 
     #[test]
@@ -638,6 +643,7 @@ mod accept_tests {
             visited_function_definition: false,
             visited_break: false,
             visited_return: false,
+            visited_print: false,
         };
         let result = statement.accept(&mut visitor);
 
@@ -650,6 +656,7 @@ mod accept_tests {
         use crate::ast::expr::Expression;
         let statement =
             Statement::assignment(Assignment::new("score".to_string(), Expression::I32(10)));
+
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
             visited_assignment: false,
@@ -659,6 +666,7 @@ mod accept_tests {
             visited_function_definition: false,
             visited_break: false,
             visited_return: false,
+            visited_print: false,
         };
         let result = statement.accept(&mut visitor);
 
@@ -671,6 +679,7 @@ mod accept_tests {
         use crate::ast::expr::Expression;
         let statement =
             Statement::conditional(If::new(Expression::Boolean(true), Block::new(vec![]), None));
+
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
             visited_assignment: false,
@@ -680,6 +689,7 @@ mod accept_tests {
             visited_function_definition: false,
             visited_break: false,
             visited_return: false,
+            visited_print: false,
         };
         let result = statement.accept(&mut visitor);
 
@@ -690,6 +700,7 @@ mod accept_tests {
     #[test]
     fn statement_accept_dispatches_loop_to_visitor() {
         let statement = Statement::iteration(Loop::new(Block::new(vec![])));
+
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
             visited_assignment: false,
@@ -699,6 +710,7 @@ mod accept_tests {
             visited_function_definition: false,
             visited_break: false,
             visited_return: false,
+            visited_print: false,
         };
         let result = statement.accept(&mut visitor);
 
@@ -709,6 +721,7 @@ mod accept_tests {
     #[test]
     fn statement_accept_dispatches_block_to_visitor() {
         let statement = Statement::block(Block::new(vec![]));
+
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
             visited_assignment: false,
@@ -718,6 +731,7 @@ mod accept_tests {
             visited_function_definition: false,
             visited_break: false,
             visited_return: false,
+            visited_print: false,
         };
         let result = statement.accept(&mut visitor);
 
@@ -733,6 +747,7 @@ mod accept_tests {
             None,
             Block::new(vec![]),
         ));
+
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
             visited_assignment: false,
@@ -742,6 +757,7 @@ mod accept_tests {
             visited_function_definition: false,
             visited_break: false,
             visited_return: false,
+            visited_print: false,
         };
         let result = statement.accept(&mut visitor);
 
@@ -752,6 +768,7 @@ mod accept_tests {
     #[test]
     fn statement_accept_dispatches_break_to_visitor() {
         let statement = Statement::control_flow(Break::new());
+
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
             visited_assignment: false,
@@ -761,6 +778,7 @@ mod accept_tests {
             visited_function_definition: false,
             visited_break: false,
             visited_return: false,
+            visited_print: false,
         };
         let result = statement.accept(&mut visitor);
 
@@ -771,6 +789,7 @@ mod accept_tests {
     #[test]
     fn statement_accept_dispatches_return_to_visitor() {
         let statement = Statement::return_(Return::new(None));
+
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
             visited_assignment: false,
@@ -780,10 +799,32 @@ mod accept_tests {
             visited_function_definition: false,
             visited_break: false,
             visited_return: false,
+            visited_print: false,
         };
         let result = statement.accept(&mut visitor);
 
         assert!(result.is_ok());
         assert!(visitor.visited_return);
+    }
+
+    #[test]
+    fn statement_accept_dispatches_print_to_visitor() {
+        let statement = Statement::print(Print::new(vec![]));
+
+        let mut visitor = TestVisitor {
+            visited_var_declaration: false,
+            visited_assignment: false,
+            visited_if: false,
+            visited_loop: false,
+            visited_block: false,
+            visited_function_definition: false,
+            visited_break: false,
+            visited_return: false,
+            visited_print: false,
+        };
+        let result = statement.accept(&mut visitor);
+
+        assert!(result.is_ok());
+        assert!(visitor.visited_print);
     }
 }

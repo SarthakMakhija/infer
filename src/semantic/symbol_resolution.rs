@@ -1,6 +1,7 @@
 use crate::ast::expr::Expression;
 use crate::ast::statement::{
-    Assignment, Block, FunctionDefinition, If, Loop, NodeId, Return, Statement, VariableDeclaration,
+    Assignment, Block, FunctionDefinition, If, Loop, NodeId, Print, Return, Statement,
+    VariableDeclaration,
 };
 use crate::semantic::error::SemanticError;
 use crate::semantic::next_symbol_id;
@@ -208,6 +209,13 @@ impl StatementVisitor for SymbolResolutionVisitor {
                 Ok(())
             }
         }
+    }
+
+    fn visit_print(&mut self, print_statement: &Print) -> Result<(), SemanticError> {
+        for expression in print_statement.arguments() {
+            expression.accept(self)?;
+        }
+        Ok(())
     }
 }
 
@@ -1204,6 +1212,48 @@ mod return_tests {
         let expression = Expression::identifier("score".to_string());
         let return_statement = Statement::return_(Return::new(Some(expression)));
         let result = return_statement.accept(&mut visitor);
+
+        assert_eq!(
+            result,
+            Err(SemanticError::UndefinedVariable("score".to_string()))
+        );
+    }
+}
+
+#[cfg(test)]
+mod print_tests {
+    use super::*;
+    use crate::ast::expr::Expression;
+    use crate::ast::statement::{Print, Statement};
+    use crate::semantic::SymbolId;
+
+    #[test]
+    fn print_resolves_identifiers_in_arguments() {
+        let mut visitor = SymbolResolutionVisitor::new();
+        let expected_symbol_id = SymbolId(1);
+        visitor
+            .scopes
+            .define("score".to_string(), expected_symbol_id);
+
+        let argument = Expression::identifier("score".to_string());
+        let score_node_id = argument.node_id().unwrap();
+        let print_statement = Statement::print(Print::new(vec![argument]));
+        let result = print_statement.accept(&mut visitor);
+
+        assert!(result.is_ok());
+        assert_eq!(
+            visitor.resolution_table.get(&score_node_id),
+            Some(expected_symbol_id)
+        );
+    }
+
+    #[test]
+    fn print_fails_if_argument_has_undefined_variable() {
+        let mut visitor = SymbolResolutionVisitor::new();
+
+        let argument = Expression::identifier("score".to_string());
+        let print_statement = Statement::print(Print::new(vec![argument]));
+        let result = print_statement.accept(&mut visitor);
 
         assert_eq!(
             result,

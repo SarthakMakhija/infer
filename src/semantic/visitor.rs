@@ -1,6 +1,6 @@
 use crate::ast::expr::Expression;
 use crate::ast::statement::{
-    Assignment, Block, FunctionDefinition, If, Loop, NodeId, Return, VariableDeclaration,
+    Assignment, Block, FunctionDefinition, If, Loop, NodeId, Print, Return, VariableDeclaration,
 };
 use crate::semantic::error::SemanticError;
 
@@ -32,6 +32,8 @@ pub(crate) trait StatementVisitor {
     fn visit_break(&mut self) -> Result<(), SemanticError>;
 
     fn visit_return(&mut self, return_statement: &Return) -> Result<(), SemanticError>;
+
+    fn visit_print(&mut self, print_statement: &Print) -> Result<(), SemanticError>;
 }
 
 pub(crate) trait ExpressionVisitor {
