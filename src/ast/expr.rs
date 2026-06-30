@@ -120,6 +120,14 @@ impl Expression {
             _ => Ok(()),
         }
     }
+
+    pub(crate) fn node_id(&self) -> Option<NodeId> {
+        match self {
+            Expression::Identifier(_, node_id) => Some(*node_id),
+            Expression::FunctionCall(_, _, node_id) => Some(*node_id),
+            _ => None,
+        }
+    }
 }
 
 /// Represents a binary operator used between two expressions.

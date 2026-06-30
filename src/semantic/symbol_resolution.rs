@@ -793,10 +793,7 @@ mod function_call_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let callee = Expression::identifier("calculate_total".to_string());
-        let expected_callee_node_id = match &callee {
-            Expression::Identifier(_, node_id) => *node_id,
-            _ => unreachable!(),
-        };
+        let expected_callee_node_id = callee.node_id().unwrap();
         let call_expression = Expression::function_call(callee, vec![Expression::I32(42)]);
         let call_statement = Statement::function_call(call_expression);
 
@@ -847,10 +844,7 @@ mod function_call_tests {
         );
 
         let callee = Expression::identifier("calculate_total".to_string());
-        let callee_node_id = match &callee {
-            Expression::Identifier(_, node_id) => *node_id,
-            _ => unreachable!(),
-        };
+        let callee_node_id = callee.node_id().unwrap();
         let call_expression = Expression::function_call(callee, vec![]);
 
         let result = call_expression.accept(&mut visitor);
@@ -866,10 +860,7 @@ mod function_call_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let callee = Expression::identifier("calculate_total".to_string());
-        let callee_node_id = match &callee {
-            Expression::Identifier(_, node_id) => *node_id,
-            _ => unreachable!(),
-        };
+        let callee_node_id = callee.node_id().unwrap();
         let call_expression = Expression::function_call(callee, vec![]);
 
         // Visit call, which defers it
@@ -882,6 +873,7 @@ mod function_call_tests {
         visitor
             .scopes
             .define("calculate_total".to_string(), function_symbol_id);
+
         visitor.state.add_global_function(
             function_symbol_id,
             FunctionMetadata::new("calculate_total".to_string(), 0, false),
@@ -915,22 +907,14 @@ mod function_call_tests {
             .define("score".to_string(), variable_symbol_id);
 
         let callee = Expression::identifier("calculate_total".to_string());
-        let callee_node_id = match &callee {
-            Expression::Identifier(_, node_id) => *node_id,
-            _ => unreachable!(),
-        };
+        let callee_node_id = callee.node_id().unwrap();
 
         let argument = Expression::identifier("score".to_string());
-        let argument_node_id = match &argument {
-            Expression::Identifier(_, node_id) => *node_id,
-            _ => unreachable!(),
-        };
-
+        let argument_node_id = argument.node_id().unwrap();
         let call_expression = Expression::function_call(callee, vec![argument]);
 
         let result = call_expression.accept(&mut visitor);
         assert!(result.is_ok());
-
         assert_eq!(
             visitor.resolution_table.get(&callee_node_id),
             Some(function_symbol_id)
@@ -1209,14 +1193,12 @@ mod identifier_expression_tests {
             .define("score".to_string(), expected_symbol_id);
 
         let identifier_expression = Expression::identifier("score".to_string());
-        let Expression::Identifier(_, node_id) = &identifier_expression else {
-            panic!("Expected Expression::Identifier");
-        };
+        let node_id = identifier_expression.node_id().unwrap();
 
         let result = identifier_expression.accept(&mut visitor);
         assert!(result.is_ok());
         assert_eq!(
-            visitor.resolution_table.get(node_id),
+            visitor.resolution_table.get(&node_id),
             Some(expected_symbol_id)
         );
     }
@@ -1251,16 +1233,12 @@ mod unary_expression_tests {
             .define("score".to_string(), expected_symbol_id);
 
         let operand = Expression::identifier("score".to_string());
-        let score_node_id = match &operand {
-            Expression::Identifier(_, node_id) => *node_id,
-            _ => unreachable!(),
-        };
+        let score_node_id = operand.node_id().unwrap();
 
         let unary_expression = Expression::Unary(Box::new(operand), UnaryOperator::Minus);
 
         let result = unary_expression.accept(&mut visitor);
         assert!(result.is_ok());
-
         assert_eq!(
             visitor.resolution_table.get(&score_node_id),
             Some(expected_symbol_id)
@@ -1299,16 +1277,10 @@ mod binary_expression_tests {
         visitor.scopes.define("bonus".to_string(), bonus_symbol_id);
 
         let left = Expression::identifier("score".to_string());
-        let score_node_id = match &left {
-            Expression::Identifier(_, node_id) => *node_id,
-            _ => unreachable!(),
-        };
+        let score_node_id = left.node_id().unwrap();
 
         let right = Expression::identifier("bonus".to_string());
-        let bonus_node_id = match &right {
-            Expression::Identifier(_, node_id) => *node_id,
-            _ => unreachable!(),
-        };
+        let bonus_node_id = right.node_id().unwrap();
 
         let binary_expression =
             Expression::Binary(Box::new(left), BinaryOperator::Plus, Box::new(right));
@@ -1378,16 +1350,12 @@ mod grouped_expression_tests {
             .define("score".to_string(), expected_symbol_id);
 
         let operand = Expression::identifier("score".to_string());
-        let score_node_id = match &operand {
-            Expression::Identifier(_, node_id) => *node_id,
-            _ => unreachable!(),
-        };
+        let score_node_id = operand.node_id().unwrap();
 
         let grouped_expression = Expression::Grouped(Box::new(operand));
 
         let result = grouped_expression.accept(&mut visitor);
         assert!(result.is_ok());
-
         assert_eq!(
             visitor.resolution_table.get(&score_node_id),
             Some(expected_symbol_id)
