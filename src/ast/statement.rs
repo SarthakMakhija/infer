@@ -1,4 +1,4 @@
-use crate::ast::expr::ExpressionKind;
+use crate::ast::expr::{Expression, ExpressionKind};
 use crate::semantic::error::SemanticError;
 use crate::semantic::visitor::StatementVisitor;
 use std::cell::Cell;
@@ -216,11 +216,11 @@ impl VariableDeclaration {
 #[derive(Debug, PartialEq)]
 pub struct Assignment {
     pub(crate) variable: String,
-    pub(crate) expression: ExpressionKind,
+    pub(crate) expression: Expression,
 }
 
 impl Assignment {
-    pub(crate) fn new(variable: String, expression: ExpressionKind) -> Self {
+    pub(crate) fn new(variable: String, expression: Expression) -> Self {
         Self {
             variable,
             expression,
@@ -233,7 +233,7 @@ impl Assignment {
     }
 
     /// Returns the expression being assigned to the variable.
-    pub fn expression(&self) -> &ExpressionKind {
+    pub fn expression(&self) -> &Expression {
         &self.expression
     }
 }
@@ -448,6 +448,7 @@ impl VariableDeclaration {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ast::expr::Expression;
 
     #[test]
     fn variable_declaration_id() {
@@ -464,7 +465,7 @@ mod tests {
     fn assignment_id() {
         let statement = Statement::assignment(Assignment::new(
             "user_score".to_string(),
-            ExpressionKind::I32(100),
+            Expression::new(ExpressionKind::I32(100), 0),
         ));
 
         assert!(*statement.id() > 0);
@@ -656,10 +657,10 @@ mod accept_tests {
 
     #[test]
     fn statement_accept_dispatches_assignment_to_visitor() {
-        use crate::ast::expr::ExpressionKind;
+        use crate::ast::expr::{Expression, ExpressionKind};
         let statement = Statement::assignment(Assignment::new(
             "score".to_string(),
-            ExpressionKind::I32(10),
+            Expression::new(ExpressionKind::I32(10), 0),
         ));
 
         let mut visitor = TestVisitor {

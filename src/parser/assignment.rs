@@ -1,4 +1,4 @@
-use crate::ast::expr::ExpressionKind;
+use crate::ast::expr::{Expression, ExpressionKind};
 use crate::ast::statement::{Assignment, Statement};
 use crate::lexer::token::TokenType;
 use crate::lexer::LexResult;
@@ -26,19 +26,20 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> AssignmentParser<'src, 
         let name = self.stream.expect_identifier()?;
         self.stream.expect(TokenType::Equals)?;
 
-        let expression = self.expression()?;
+        let expression_kind = self.expression_kind()?;
         self.stream.expect(TokenType::Semicolon)?;
 
+        let expression = Expression::new(expression_kind, name.line);
         Ok(Statement::assignment(Assignment::new(
             name.owned_value(),
             expression,
         )))
     }
 
-    fn expression(&mut self) -> Result<ExpressionKind, ParseError> {
+    fn expression_kind(&mut self) -> Result<ExpressionKind, ParseError> {
         let mut expression_parser = ExpressionParser::new(self.stream);
-        let expression = expression_parser.parse()?;
-        Ok(expression)
+        let expression_kind = expression_parser.parse()?;
+        Ok(expression_kind)
     }
 }
 
@@ -57,7 +58,10 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::assignment(Assignment::new("id".to_string(), ExpressionKind::I32(20)))
+            Statement::assignment(Assignment::new(
+                "id".to_string(),
+                Expression::new(ExpressionKind::I32(20), 1)
+            ))
         );
     }
 
@@ -66,20 +70,24 @@ mod tests {
         let lexer = Lexer::new("total = amount + rate * percentage;", Keywords::new());
         let mut stream = ParserStream::new(lexer);
         let mut parser = AssignmentParser::new(&mut stream);
+        let line = 1;
 
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
             Statement::assignment(Assignment::new(
                 "total".to_string(),
-                ExpressionKind::Binary(
-                    Box::new(ExpressionKind::identifier("amount".to_string())),
-                    crate::ast::expr::BinaryOperator::Plus,
-                    Box::new(ExpressionKind::Binary(
-                        Box::new(ExpressionKind::identifier("rate".to_string())),
-                        crate::ast::expr::BinaryOperator::Multiply,
-                        Box::new(ExpressionKind::identifier("percentage".to_string()))
-                    ))
+                Expression::new(
+                    ExpressionKind::Binary(
+                        Box::new(ExpressionKind::identifier("amount".to_string())),
+                        crate::ast::expr::BinaryOperator::Plus,
+                        Box::new(ExpressionKind::Binary(
+                            Box::new(ExpressionKind::identifier("rate".to_string())),
+                            crate::ast::expr::BinaryOperator::Multiply,
+                            Box::new(ExpressionKind::identifier("percentage".to_string()))
+                        ))
+                    ),
+                    line
                 )
             ))
         );

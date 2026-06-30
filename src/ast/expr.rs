@@ -42,17 +42,35 @@ impl fmt::Display for ExpressionError {
 impl std::error::Error for ExpressionError {}
 
 /// Represents a parsed expression with source location metadata in the AST.
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub struct Expression {
     /// The specific variant of this expression.
-    kind: ExpressionKind,
+    pub kind: ExpressionKind,
     /// The line number in the source code where this expression was parsed.
-    line: usize,
+    pub line: usize,
+}
+
+impl PartialEq for Expression {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind == other.kind && self.line == other.line
+    }
+}
+
+impl PartialEq<ExpressionKind> for Expression {
+    fn eq(&self, other: &ExpressionKind) -> bool {
+        &self.kind == other
+    }
+}
+
+impl PartialEq<Expression> for ExpressionKind {
+    fn eq(&self, other: &Expression) -> bool {
+        self == &other.kind
+    }
 }
 
 impl Expression {
     /// Creates a new `Expression` wrapping an `ExpressionKind` and its source line number.
-    pub(crate) fn new(kind: ExpressionKind, line: usize) -> Self {
+    pub fn new(kind: ExpressionKind, line: usize) -> Self {
         Expression { kind, line }
     }
 

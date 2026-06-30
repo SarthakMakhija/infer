@@ -42,7 +42,7 @@ mod var_declaration_tests {
 #[cfg(test)]
 mod assignment_tests {
     use super::*;
-    use crate::ast::expr::ExpressionKind;
+    use crate::ast::expr::{Expression, ExpressionKind};
     use crate::ast::statement::{Assignment, Statement, VariableDeclaration};
 
     #[test]
@@ -55,7 +55,7 @@ mod assignment_tests {
         ));
         let assignment = Statement::assignment(Assignment::new(
             "score".to_string(),
-            ExpressionKind::I32(100),
+            Expression::new(ExpressionKind::I32(100), 0),
         ));
         let program = Program::new(vec![declaration, assignment]);
 

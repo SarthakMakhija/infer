@@ -95,7 +95,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, '
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::{BinaryOperator, ExpressionKind};
+    use crate::ast::expr::{BinaryOperator, Expression, ExpressionKind};
     use crate::ast::statement::{
         Assignment, Block, Break, FunctionDefinition, FunctionParameter, Loop, Print, Return,
         VariableDeclaration,
@@ -127,9 +127,14 @@ mod tests {
         let mut parser = StatementParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        let line = 1;
+
         assert_eq!(
             statement,
-            Statement::assignment(Assignment::new("id".to_string(), ExpressionKind::I32(20)))
+            Statement::assignment(Assignment::new(
+                "id".to_string(),
+                Expression::new(ExpressionKind::I32(20), line)
+            ))
         );
     }
 

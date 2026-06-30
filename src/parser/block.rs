@@ -44,6 +44,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> BlockParser<'src, 'stre
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ast::expr::{Expression, ExpressionKind};
     use crate::ast::statement::{Assignment, VariableDeclaration};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
@@ -64,18 +65,20 @@ mod tests {
         let mut stream = ParserStream::new(lexer);
         let mut parser = BlockParser::new(&mut stream);
 
+        let line = 1;
         let block = parser.parse().unwrap();
+
         assert_eq!(
             block,
             Block::new(vec![
                 Statement::variable_declaration(VariableDeclaration::new(
                     "score".to_string(),
                     None,
-                    Some(crate::ast::expr::ExpressionKind::I32(10))
+                    Some(ExpressionKind::I32(10))
                 )),
                 Statement::assignment(Assignment::new(
                     "score".to_string(),
-                    crate::ast::expr::ExpressionKind::I32(20)
+                    Expression::new(ExpressionKind::I32(20), line)
                 ))
             ])
         );
@@ -97,19 +100,19 @@ mod tests {
                 Statement::variable_declaration(VariableDeclaration::new(
                     "score".to_string(),
                     None,
-                    Some(crate::ast::expr::ExpressionKind::I32(10))
+                    Some(ExpressionKind::I32(10))
                 )),
                 Statement::block(Block::new(vec![Statement::variable_declaration(
                     VariableDeclaration::new(
                         "risk_level".to_string(),
                         None,
-                        Some(crate::ast::expr::ExpressionKind::I32(20))
+                        Some(ExpressionKind::I32(20))
                     )
                 )])),
                 Statement::variable_declaration(VariableDeclaration::new(
                     "threshold".to_string(),
                     None,
-                    Some(crate::ast::expr::ExpressionKind::I32(30))
+                    Some(ExpressionKind::I32(30))
                 ))
             ])
         );
@@ -132,14 +135,14 @@ mod tests {
                     VariableDeclaration::new(
                         "score".to_string(),
                         None,
-                        Some(crate::ast::expr::ExpressionKind::I32(10))
+                        Some(ExpressionKind::I32(10))
                     )
                 )])),
                 Statement::block(Block::new(vec![Statement::variable_declaration(
                     VariableDeclaration::new(
                         "risk_level".to_string(),
                         None,
-                        Some(crate::ast::expr::ExpressionKind::I32(20))
+                        Some(ExpressionKind::I32(20))
                     )
                 )]))
             ])

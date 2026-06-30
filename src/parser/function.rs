@@ -104,7 +104,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> FnParser<'src, 'stream,
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::{BinaryOperator, ExpressionKind};
+    use crate::ast::expr::{BinaryOperator, Expression, ExpressionKind};
     use crate::ast::statement::{Assignment, Block, If, VariableDeclaration};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
@@ -177,6 +177,8 @@ mod tests {
         let mut parser = FnParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        let line = 1;
+
         assert_eq!(
             statement,
             Statement::function_definition(FunctionDefinition::new(
@@ -186,11 +188,11 @@ mod tests {
                 Block::new(vec![
                     Statement::assignment(Assignment::new(
                         "height".to_string(),
-                        ExpressionKind::I32(200)
+                        Expression::new(ExpressionKind::I32(200), line),
                     )),
                     Statement::assignment(Assignment::new(
                         "weight".to_string(),
-                        ExpressionKind::I32(300)
+                        Expression::new(ExpressionKind::I32(300), line),
                     )),
                 ])
             ))
@@ -207,6 +209,8 @@ mod tests {
         let mut parser = FnParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        let line = 1;
+
         let expected = Statement::function_definition(FunctionDefinition::new(
             "test_func".to_string(),
             vec![],
@@ -217,7 +221,10 @@ mod tests {
                     None,
                     Some(ExpressionKind::I32(100)),
                 )),
-                Statement::assignment(Assignment::new("id".to_string(), ExpressionKind::I32(200))),
+                Statement::assignment(Assignment::new(
+                    "id".to_string(),
+                    Expression::new(ExpressionKind::I32(200), line),
+                )),
             ]),
         ));
         assert_eq!(statement, expected);
@@ -233,6 +240,8 @@ mod tests {
         let mut parser = FnParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        let line = 1;
+
         let expected = Statement::function_definition(FunctionDefinition::new(
             "test_func".to_string(),
             vec![],
@@ -245,10 +254,13 @@ mod tests {
                 ),
                 Block::new(vec![Statement::assignment(Assignment::new(
                     "final_price".to_string(),
-                    ExpressionKind::Binary(
-                        Box::new(ExpressionKind::identifier("regular_price".to_string())),
-                        BinaryOperator::Minus,
-                        Box::new(ExpressionKind::identifier("savings".to_string())),
+                    Expression::new(
+                        ExpressionKind::Binary(
+                            Box::new(ExpressionKind::identifier("regular_price".to_string())),
+                            BinaryOperator::Minus,
+                            Box::new(ExpressionKind::identifier("savings".to_string())),
+                        ),
+                        line,
                     ),
                 ))]),
                 None,
@@ -267,20 +279,25 @@ mod tests {
         let mut parser = FnParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        let line = 1;
+
         let expected = Statement::function_definition(FunctionDefinition::new(
             "test_func".to_string(),
             vec![],
             None,
             Block::new(vec![Statement::assignment(Assignment::new(
                 "total_price".to_string(),
-                ExpressionKind::Binary(
-                    Box::new(ExpressionKind::identifier("base_price".to_string())),
-                    BinaryOperator::Plus,
-                    Box::new(ExpressionKind::Binary(
-                        Box::new(ExpressionKind::identifier("tax_rate".to_string())),
-                        BinaryOperator::Multiply,
-                        Box::new(ExpressionKind::identifier("quantity".to_string())),
-                    )),
+                Expression::new(
+                    ExpressionKind::Binary(
+                        Box::new(ExpressionKind::identifier("base_price".to_string())),
+                        BinaryOperator::Plus,
+                        Box::new(ExpressionKind::Binary(
+                            Box::new(ExpressionKind::identifier("tax_rate".to_string())),
+                            BinaryOperator::Multiply,
+                            Box::new(ExpressionKind::identifier("quantity".to_string())),
+                        )),
+                    ),
+                    line,
                 ),
             ))]),
         ));
@@ -297,20 +314,25 @@ mod tests {
         let mut parser = FnParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        let line = 1;
+
         let expected = Statement::function_definition(FunctionDefinition::new(
             "test_func".to_string(),
             vec![],
             None,
             Block::new(vec![Statement::assignment(Assignment::new(
                 "adjusted_score".to_string(),
-                ExpressionKind::Binary(
-                    Box::new(ExpressionKind::Grouped(Box::new(ExpressionKind::Binary(
-                        Box::new(ExpressionKind::identifier("base_points".to_string())),
-                        BinaryOperator::Plus,
-                        Box::new(ExpressionKind::identifier("bonus_points".to_string())),
-                    )))),
-                    BinaryOperator::Multiply,
-                    Box::new(ExpressionKind::identifier("multiplier".to_string())),
+                Expression::new(
+                    ExpressionKind::Binary(
+                        Box::new(ExpressionKind::Grouped(Box::new(ExpressionKind::Binary(
+                            Box::new(ExpressionKind::identifier("base_points".to_string())),
+                            BinaryOperator::Plus,
+                            Box::new(ExpressionKind::identifier("bonus_points".to_string())),
+                        )))),
+                        BinaryOperator::Multiply,
+                        Box::new(ExpressionKind::identifier("multiplier".to_string())),
+                    ),
+                    line,
                 ),
             ))]),
         ));
@@ -360,6 +382,8 @@ mod tests {
         let mut parser = FnParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        let line = 1;
+
         let expected = Statement::function_definition(FunctionDefinition::new(
             "test_func".to_string(),
             vec![],
@@ -376,10 +400,13 @@ mod tests {
                 )),
                 Statement::assignment(Assignment::new(
                     "net_salary".to_string(),
-                    ExpressionKind::Binary(
-                        Box::new(ExpressionKind::identifier("net_salary".to_string())),
-                        BinaryOperator::Plus,
-                        Box::new(ExpressionKind::identifier("yearly_bonus".to_string())),
+                    Expression::new(
+                        ExpressionKind::Binary(
+                            Box::new(ExpressionKind::identifier("net_salary".to_string())),
+                            BinaryOperator::Plus,
+                            Box::new(ExpressionKind::identifier("yearly_bonus".to_string())),
+                        ),
+                        line,
                     ),
                 )),
             ]),

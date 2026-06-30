@@ -107,7 +107,7 @@ macro_rules! assert_assignment {
             panic!("Expected Assignment, found {:?}", $statement);
         };
         assert_eq!(assignment.variable(), $expected_variable);
-        assert_eq!(assignment.expression(), $expected_expression);
+        assert_eq!(&assignment.expression().kind, $expected_expression);
         assignment
     }};
 }

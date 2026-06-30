@@ -243,6 +243,7 @@ impl ExpressionVisitor for SymbolResolutionVisitor {
             None => self
                 .state
                 .add_pending_call(name.clone(), arguments.len(), *callee_node_id),
+
             Some(symbol_id) => {
                 self.validate_function_call(name, arguments.len())?;
                 self.resolution_table.resolve(*callee_node_id, symbol_id);
@@ -377,7 +378,7 @@ mod var_declaration_tests {
 #[cfg(test)]
 mod assignment_tests {
     use super::*;
-    use crate::ast::expr::ExpressionKind;
+    use crate::ast::expr::{Expression, ExpressionKind};
     use crate::ast::statement::{Assignment, Statement};
     use crate::semantic::SymbolId;
 
@@ -392,7 +393,7 @@ mod assignment_tests {
 
         let assignment = Statement::assignment(Assignment::new(
             "score".to_string(),
-            ExpressionKind::I32(100),
+            Expression::new(ExpressionKind::I32(100), 0),
         ));
         let assignment_id = assignment.id();
 
@@ -411,7 +412,7 @@ mod assignment_tests {
 
         let assignment = Statement::assignment(Assignment::new(
             "score".to_string(),
-            ExpressionKind::I32(100),
+            Expression::new(ExpressionKind::I32(100), 0),
         ));
 
         let result = assignment.accept(&mut visitor);
@@ -433,8 +434,10 @@ mod assignment_tests {
         let expression_kind = ExpressionKind::identifier("bonus".to_string());
         let bonus_node_id = expression_kind.node_id().unwrap();
 
-        let assignment =
-            Statement::assignment(Assignment::new("score".to_string(), expression_kind));
+        let assignment = Statement::assignment(Assignment::new(
+            "score".to_string(),
+            Expression::new(expression_kind, 0),
+        ));
         let assignment_id = assignment.id();
 
         let result = assignment.accept(&mut visitor);
@@ -455,8 +458,10 @@ mod assignment_tests {
         visitor.scopes.define("score".to_string(), SymbolId(10));
 
         let expression_kind = ExpressionKind::identifier("bonus".to_string());
-        let assignment =
-            Statement::assignment(Assignment::new("score".to_string(), expression_kind));
+        let assignment = Statement::assignment(Assignment::new(
+            "score".to_string(),
+            Expression::new(expression_kind, 0),
+        ));
 
         let result = assignment.accept(&mut visitor);
         assert_eq!(
@@ -469,7 +474,7 @@ mod assignment_tests {
 #[cfg(test)]
 mod if_tests {
     use super::*;
-    use crate::ast::expr::ExpressionKind;
+    use crate::ast::expr::{Expression, ExpressionKind};
     use crate::ast::statement::{Assignment, Block, If, Statement, VariableDeclaration};
     use crate::semantic::SymbolId;
 
@@ -491,7 +496,7 @@ mod if_tests {
 
         let assignment = Statement::assignment(Assignment::new(
             "then_var".to_string(),
-            ExpressionKind::I32(10),
+            Expression::new(ExpressionKind::I32(10), 0),
         ));
         let result = assignment.accept(&mut visitor);
         assert_eq!(
@@ -518,7 +523,7 @@ mod if_tests {
 
         let assignment = Statement::assignment(Assignment::new(
             "else_var".to_string(),
-            ExpressionKind::I32(10),
+            Expression::new(ExpressionKind::I32(10), 0),
         ));
         let result = assignment.accept(&mut visitor);
         assert_eq!(
@@ -539,7 +544,7 @@ mod if_tests {
 
         let else_assign = Statement::assignment(Assignment::new(
             "first_name".to_string(),
-            ExpressionKind::I32(10),
+            Expression::new(ExpressionKind::I32(10), 0),
         ));
 
         let if_statement = Statement::conditional(If::new(
@@ -566,13 +571,13 @@ mod if_tests {
 
         let then_assign = Statement::assignment(Assignment::new(
             "outer_var".to_string(),
-            ExpressionKind::I32(10),
+            Expression::new(ExpressionKind::I32(10), 0),
         ));
         let then_assign_id = then_assign.id();
 
         let else_assign = Statement::assignment(Assignment::new(
             "outer_var".to_string(),
-            ExpressionKind::I32(20),
+            Expression::new(ExpressionKind::I32(20), 0),
         ));
         let else_assign_id = else_assign.id();
 
@@ -634,7 +639,7 @@ mod if_tests {
 #[cfg(test)]
 mod loop_tests {
     use super::*;
-    use crate::ast::expr::ExpressionKind;
+    use crate::ast::expr::{Expression, ExpressionKind};
     use crate::ast::statement::{Assignment, Block, Break, Loop, Statement, VariableDeclaration};
 
     #[test]
@@ -678,7 +683,7 @@ mod loop_tests {
 
         let assignment = Statement::assignment(Assignment::new(
             "name".to_string(),
-            ExpressionKind::String("John".to_string()),
+            Expression::new(ExpressionKind::String("John".to_string()), 0),
         ));
         let result = assignment.accept(&mut visitor);
         assert_eq!(
@@ -691,7 +696,7 @@ mod loop_tests {
 #[cfg(test)]
 mod block_tests {
     use super::*;
-    use crate::ast::expr::ExpressionKind;
+    use crate::ast::expr::{Expression, ExpressionKind};
     use crate::ast::statement::{Assignment, Block, Statement, VariableDeclaration};
     use crate::semantic::SymbolId;
 
@@ -726,8 +731,11 @@ mod block_tests {
         assert!(block.accept(&mut visitor).is_ok());
 
         // Assign to "temp" outside the block.
-        let assignment =
-            Statement::assignment(Assignment::new("temp".to_string(), ExpressionKind::I32(42)));
+        let assignment = Statement::assignment(Assignment::new(
+            "temp".to_string(),
+            Expression::new(ExpressionKind::I32(42), 0),
+        ));
+
         let result = assignment.accept(&mut visitor);
 
         assert_eq!(
@@ -747,7 +755,7 @@ mod block_tests {
 
         let inner_assignment = Statement::assignment(Assignment::new(
             "score".to_string(),
-            ExpressionKind::I32(50),
+            Expression::new(ExpressionKind::I32(50), 0),
         ));
         let assignment_id = inner_assignment.id();
         let block = Statement::block(Block::new(vec![inner_assignment]));
@@ -763,7 +771,7 @@ mod block_tests {
 #[cfg(test)]
 mod function_definition_tests {
     use super::*;
-    use crate::ast::expr::ExpressionKind;
+    use crate::ast::expr::{Expression, ExpressionKind};
     use crate::ast::statement::{
         Assignment, Block, FunctionDefinition, FunctionParameter, Statement,
     };
@@ -844,7 +852,7 @@ mod function_definition_tests {
             FunctionParameter::new("score".to_string(), Some("int".to_string()));
         let inner_assignment = Statement::assignment(Assignment::new(
             "score".to_string(),
-            ExpressionKind::I32(100),
+            Expression::new(ExpressionKind::I32(100), 0),
         ));
         let assignment_id = inner_assignment.id();
 
