@@ -98,13 +98,13 @@ impl StatementVisitor for SymbolResolutionVisitor {
         assignment: &Assignment,
         node_id: NodeId,
     ) -> Result<(), SemanticError> {
-        //TODO: traverse and validate the right-hand side expression using ExpressionVisitor
         let symbol_id = self.scopes.get(assignment.variable());
         if symbol_id.is_none() {
             return Err(SemanticError::UndefinedVariable(
                 assignment.variable().to_string(),
             ));
         }
+        assignment.expression().accept(self)?;
         //SAFETY: symbol_id has been checked for non-none.
         self.resolution_table.resolve(node_id, symbol_id.unwrap());
         Ok(())
@@ -400,6 +400,48 @@ mod assignment_tests {
         assert_eq!(
             result,
             Err(SemanticError::UndefinedVariable("score".to_string()))
+        );
+    }
+
+    #[test]
+    fn assignment_resolves_identifiers_in_expression() {
+        let mut visitor = SymbolResolutionVisitor::new();
+        let score_symbol_id = SymbolId(10);
+        visitor.scopes.define("score".to_string(), score_symbol_id);
+
+        let bonus_symbol_id = SymbolId(20);
+        visitor.scopes.define("bonus".to_string(), bonus_symbol_id);
+
+        let expression = Expression::identifier("bonus".to_string());
+        let bonus_node_id = expression.node_id().unwrap();
+
+        let assignment = Statement::assignment(Assignment::new("score".to_string(), expression));
+        let assignment_id = assignment.id();
+
+        let result = assignment.accept(&mut visitor);
+        assert!(result.is_ok());
+        assert_eq!(
+            visitor.resolution_table.get(&assignment_id),
+            Some(score_symbol_id)
+        );
+        assert_eq!(
+            visitor.resolution_table.get(&bonus_node_id),
+            Some(bonus_symbol_id)
+        );
+    }
+
+    #[test]
+    fn assignment_fails_if_expression_has_undefined_variable() {
+        let mut visitor = SymbolResolutionVisitor::new();
+        visitor.scopes.define("score".to_string(), SymbolId(10));
+
+        let expression = Expression::identifier("bonus".to_string());
+        let assignment = Statement::assignment(Assignment::new("score".to_string(), expression));
+
+        let result = assignment.accept(&mut visitor);
+        assert_eq!(
+            result,
+            Err(SemanticError::UndefinedVariable("bonus".to_string()))
         );
     }
 }
