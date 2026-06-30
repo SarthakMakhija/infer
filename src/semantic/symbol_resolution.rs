@@ -111,7 +111,7 @@ impl StatementVisitor for SymbolResolutionVisitor {
     }
 
     fn visit_if(&mut self, if_statement: &If) -> Result<(), SemanticError> {
-        //TODO: traverse and validate the condition expression using ExpressionVisitor
+        if_statement.condition.accept(self)?;
         self.visit_block(&if_statement.body)?;
         if let Some(body) = if_statement.else_body.as_ref() {
             self.visit_block(body)?;
@@ -566,6 +566,41 @@ mod if_tests {
         assert_eq!(
             visitor.resolution_table.get(&else_assign_id),
             Some(expected_symbol_id)
+        );
+    }
+
+    #[test]
+    fn if_condition_resolves_identifiers() {
+        let mut visitor = SymbolResolutionVisitor::new();
+        let expected_symbol_id = SymbolId(1);
+        visitor
+            .scopes
+            .define("score".to_string(), expected_symbol_id);
+
+        let condition = Expression::identifier("score".to_string());
+        let score_node_id = condition.node_id().unwrap();
+
+        let if_statement = Statement::conditional(If::new(condition, Block::new(vec![]), None));
+
+        let result = if_statement.accept(&mut visitor);
+        assert!(result.is_ok());
+        assert_eq!(
+            visitor.resolution_table.get(&score_node_id),
+            Some(expected_symbol_id)
+        );
+    }
+
+    #[test]
+    fn if_condition_fails_given_undefined_variable() {
+        let mut visitor = SymbolResolutionVisitor::new();
+
+        let condition = Expression::identifier("score".to_string());
+        let if_statement = Statement::conditional(If::new(condition, Block::new(vec![]), None));
+
+        let result = if_statement.accept(&mut visitor);
+        assert_eq!(
+            result,
+            Err(SemanticError::UndefinedVariable("score".to_string()))
         );
     }
 }
