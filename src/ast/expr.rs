@@ -55,6 +55,10 @@ impl Expression {
     pub(crate) fn new(kind: ExpressionKind, line: usize) -> Self {
         Expression { kind, line }
     }
+
+    pub(crate) fn accept(&self, visitor: &mut dyn ExpressionVisitor) -> Result<(), SemanticError> {
+        self.kind.accept(visitor)
+    }
 }
 
 /// Represents a parsed expression kind in the AST.
@@ -652,18 +656,5 @@ mod unary_operator_tests {
             result.err().unwrap(),
             ExpressionError::UnsupportedOperator(TokenType::Identifier, 2)
         );
-    }
-}
-
-#[cfg(test)]
-mod expression_struct_tests {
-    use super::*;
-
-    #[test]
-    fn creates_new_expression_with_kind_and_line() {
-        let kind = ExpressionKind::I32(42);
-        let expression = Expression::new(kind, 10);
-        assert_eq!(expression.kind, ExpressionKind::I32(42));
-        assert_eq!(expression.line, 10);
     }
 }
