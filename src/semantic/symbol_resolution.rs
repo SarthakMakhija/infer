@@ -1,4 +1,4 @@
-use crate::ast::expr::{BinaryOperator, Expression};
+use crate::ast::expr::Expression;
 use crate::ast::statement::{
     Assignment, Block, FunctionDefinition, If, Loop, NodeId, Return, Statement, VariableDeclaration,
 };
@@ -250,6 +250,10 @@ impl ExpressionVisitor for SymbolResolutionVisitor {
         left.accept(self)?;
         right.accept(self)?;
         Ok(())
+    }
+
+    fn visit_grouped(&mut self, expr: &Expression) -> Result<(), SemanticError> {
+        expr.accept(self)
     }
 }
 
@@ -1354,6 +1358,53 @@ mod binary_expression_tests {
         assert_eq!(
             result,
             Err(SemanticError::UndefinedVariable("bonus".to_string()))
+        );
+    }
+}
+
+#[cfg(test)]
+mod grouped_expression_tests {
+    use super::*;
+    use crate::ast::expr::Expression;
+    use crate::semantic::SymbolId;
+
+    #[test]
+    fn visitor_resolves_identifier_inside_grouped_expression() {
+        let mut visitor = SymbolResolutionVisitor::new();
+
+        let expected_symbol_id = SymbolId(1);
+        visitor
+            .scopes
+            .define("score".to_string(), expected_symbol_id);
+
+        let operand = Expression::identifier("score".to_string());
+        let score_node_id = match &operand {
+            Expression::Identifier(_, node_id) => *node_id,
+            _ => unreachable!(),
+        };
+
+        let grouped_expression = Expression::Grouped(Box::new(operand));
+
+        let result = grouped_expression.accept(&mut visitor);
+        assert!(result.is_ok());
+
+        assert_eq!(
+            visitor.resolution_table.get(&score_node_id),
+            Some(expected_symbol_id)
+        );
+    }
+
+    #[test]
+    fn visitor_fails_if_operand_has_undefined_variable() {
+        let mut visitor = SymbolResolutionVisitor::new();
+
+        let operand = Expression::identifier("score".to_string());
+        let grouped_expression = Expression::Grouped(Box::new(operand));
+
+        let result = grouped_expression.accept(&mut visitor);
+        assert_eq!(
+            result,
+            Err(SemanticError::UndefinedVariable("score".to_string()))
         );
     }
 }

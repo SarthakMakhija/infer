@@ -115,6 +115,7 @@ impl Expression {
                 visitor.visit_function_call(callee, arguments)
             }
             Expression::Unary(ref expr, _) => visitor.visit_unary(expr),
+            Expression::Grouped(ref expr) => visitor.visit_grouped(expr),
             Expression::Binary(ref left, _, ref right) => visitor.visit_binary(left, right),
             _ => Ok(()),
         }
@@ -428,6 +429,7 @@ mod expression_tests {
         visited_identifier: Option<(String, NodeId)>,
         visited_function_call: bool,
         visited_unary: bool,
+        visited_grouped: bool,
         visited_binary: bool,
     }
 
@@ -448,6 +450,11 @@ mod expression_tests {
 
         fn visit_unary(&mut self, _expr: &Expression) -> Result<(), SemanticError> {
             self.visited_unary = true;
+            Ok(())
+        }
+
+        fn visit_grouped(&mut self, _expr: &Expression) -> Result<(), SemanticError> {
+            self.visited_grouped = true;
             Ok(())
         }
 
@@ -472,6 +479,7 @@ mod expression_tests {
             visited_identifier: None,
             visited_function_call: false,
             visited_unary: false,
+            visited_grouped: false,
             visited_binary: false,
         };
 
@@ -492,6 +500,7 @@ mod expression_tests {
             visited_identifier: None,
             visited_function_call: false,
             visited_unary: false,
+            visited_grouped: false,
             visited_binary: false,
         };
 
@@ -509,12 +518,31 @@ mod expression_tests {
             visited_identifier: None,
             visited_function_call: false,
             visited_unary: false,
+            visited_grouped: false,
             visited_binary: false,
         };
 
         let result = unary_expression.accept(&mut visitor);
         assert!(result.is_ok());
         assert!(visitor.visited_unary);
+    }
+
+    #[test]
+    fn accept_dispatches_grouped_to_visitor() {
+        let operand = Expression::I32(10);
+        let grouped_expression = Expression::Grouped(Box::new(operand));
+
+        let mut visitor = TestExpressionVisitor {
+            visited_identifier: None,
+            visited_function_call: false,
+            visited_unary: false,
+            visited_grouped: false,
+            visited_binary: false,
+        };
+
+        let result = grouped_expression.accept(&mut visitor);
+        assert!(result.is_ok());
+        assert!(visitor.visited_grouped);
     }
 
     #[test]
@@ -528,6 +556,7 @@ mod expression_tests {
             visited_identifier: None,
             visited_function_call: false,
             visited_unary: false,
+            visited_grouped: false,
             visited_binary: false,
         };
 
