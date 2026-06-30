@@ -242,6 +242,10 @@ impl ExpressionVisitor for SymbolResolutionVisitor {
         Ok(())
     }
 
+    fn visit_unary(&mut self, expr: &Expression) -> Result<(), SemanticError> {
+        expr.accept(self)
+    }
+
     fn visit_binary(&mut self, left: &Expression, right: &Expression) -> Result<(), SemanticError> {
         left.accept(self)?;
         right.accept(self)?;
@@ -1220,6 +1224,53 @@ mod identifier_expression_tests {
         let identifier_expression = Expression::identifier("score".to_string());
         let result = identifier_expression.accept(&mut visitor);
 
+        assert_eq!(
+            result,
+            Err(SemanticError::UndefinedVariable("score".to_string()))
+        );
+    }
+}
+
+#[cfg(test)]
+mod unary_expression_tests {
+    use super::*;
+    use crate::ast::expr::{Expression, UnaryOperator};
+    use crate::semantic::SymbolId;
+
+    #[test]
+    fn visitor_resolves_identifier_inside_unary_expression() {
+        let mut visitor = SymbolResolutionVisitor::new();
+
+        let expected_symbol_id = SymbolId(1);
+        visitor
+            .scopes
+            .define("score".to_string(), expected_symbol_id);
+
+        let operand = Expression::identifier("score".to_string());
+        let score_node_id = match &operand {
+            Expression::Identifier(_, node_id) => *node_id,
+            _ => unreachable!(),
+        };
+
+        let unary_expression = Expression::Unary(Box::new(operand), UnaryOperator::Minus);
+
+        let result = unary_expression.accept(&mut visitor);
+        assert!(result.is_ok());
+
+        assert_eq!(
+            visitor.resolution_table.get(&score_node_id),
+            Some(expected_symbol_id)
+        );
+    }
+
+    #[test]
+    fn visitor_fails_if_operand_has_undefined_variable() {
+        let mut visitor = SymbolResolutionVisitor::new();
+
+        let operand = Expression::identifier("score".to_string());
+        let unary_expression = Expression::Unary(Box::new(operand), UnaryOperator::Minus);
+
+        let result = unary_expression.accept(&mut visitor);
         assert_eq!(
             result,
             Err(SemanticError::UndefinedVariable("score".to_string()))

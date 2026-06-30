@@ -114,6 +114,7 @@ impl Expression {
             Expression::FunctionCall(ref callee, ref arguments, _) => {
                 visitor.visit_function_call(callee, arguments)
             }
+            Expression::Unary(ref expr, _) => visitor.visit_unary(expr),
             Expression::Binary(ref left, _, ref right) => visitor.visit_binary(left, right),
             _ => Ok(()),
         }
@@ -426,6 +427,7 @@ mod expression_tests {
     struct TestExpressionVisitor {
         visited_identifier: Option<(String, NodeId)>,
         visited_function_call: bool,
+        visited_unary: bool,
         visited_binary: bool,
     }
 
@@ -441,6 +443,11 @@ mod expression_tests {
             _arguments: &[Expression],
         ) -> Result<(), SemanticError> {
             self.visited_function_call = true;
+            Ok(())
+        }
+
+        fn visit_unary(&mut self, _expr: &Expression) -> Result<(), SemanticError> {
+            self.visited_unary = true;
             Ok(())
         }
 
@@ -464,6 +471,7 @@ mod expression_tests {
         let mut visitor = TestExpressionVisitor {
             visited_identifier: None,
             visited_function_call: false,
+            visited_unary: false,
             visited_binary: false,
         };
 
@@ -483,12 +491,30 @@ mod expression_tests {
         let mut visitor = TestExpressionVisitor {
             visited_identifier: None,
             visited_function_call: false,
+            visited_unary: false,
             visited_binary: false,
         };
 
         let result = call_expression.accept(&mut visitor);
         assert!(result.is_ok());
         assert!(visitor.visited_function_call);
+    }
+
+    #[test]
+    fn accept_dispatches_unary_to_visitor() {
+        let operand = Expression::I32(10);
+        let unary_expression = Expression::Unary(Box::new(operand), UnaryOperator::Minus);
+
+        let mut visitor = TestExpressionVisitor {
+            visited_identifier: None,
+            visited_function_call: false,
+            visited_unary: false,
+            visited_binary: false,
+        };
+
+        let result = unary_expression.accept(&mut visitor);
+        assert!(result.is_ok());
+        assert!(visitor.visited_unary);
     }
 
     #[test]
@@ -501,6 +527,7 @@ mod expression_tests {
         let mut visitor = TestExpressionVisitor {
             visited_identifier: None,
             visited_function_call: false,
+            visited_unary: false,
             visited_binary: false,
         };
 
