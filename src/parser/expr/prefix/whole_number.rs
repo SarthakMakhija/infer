@@ -1,24 +1,24 @@
-use crate::ast::expr::{Expression, ExpressionError};
+use crate::ast::expr::{ExpressionError, ExpressionKind};
 use crate::lexer::token::Token;
 use crate::parser::error::ParseError;
 use crate::parser::expr::PrefixParser;
 use std::str::FromStr;
 
-/// A prefix parser that converts a `WholeNumber` token into an [`Expression::I32`].
+/// A prefix parser that converts a `WholeNumber` token into an [`ExpressionKind::I32`].
 ///
 /// Returns `ParseError::ExpressionError(ExpressionError::ParseIntError)` if the
 /// token's text cannot be parsed as an `i32` (e.g., due to overflow).
 pub(crate) struct WholeNumberParser;
 
 impl<'src> PrefixParser<'src> for WholeNumberParser {
-    fn parse(&mut self, token: &Token<'src>) -> Result<Expression, ParseError> {
+    fn parse(&mut self, token: &Token<'src>) -> Result<ExpressionKind, ParseError> {
         let value = i32::from_str(token.value()).map_err(|_| {
             ParseError::ExpressionError(ExpressionError::ParseIntError(
                 token.value().to_string(),
                 token.line,
             ))
         })?;
-        Ok(Expression::I32(value))
+        Ok(ExpressionKind::I32(value))
     }
 }
 
@@ -33,7 +33,7 @@ mod tests {
         let mut parser = WholeNumberParser;
 
         let expression = parser.parse(&token).unwrap();
-        assert_eq!(expression, Expression::I32(123));
+        assert_eq!(expression, ExpressionKind::I32(123));
     }
 
     #[test]

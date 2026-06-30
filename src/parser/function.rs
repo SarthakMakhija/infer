@@ -104,7 +104,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> FnParser<'src, 'stream,
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::{BinaryOperator, Expression};
+    use crate::ast::expr::{BinaryOperator, ExpressionKind};
     use crate::ast::statement::{Assignment, Block, If, VariableDeclaration};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
@@ -186,11 +186,11 @@ mod tests {
                 Block::new(vec![
                     Statement::assignment(Assignment::new(
                         "height".to_string(),
-                        Expression::I32(200)
+                        ExpressionKind::I32(200)
                     )),
                     Statement::assignment(Assignment::new(
                         "weight".to_string(),
-                        Expression::I32(300)
+                        ExpressionKind::I32(300)
                     )),
                 ])
             ))
@@ -215,9 +215,9 @@ mod tests {
                 Statement::variable_declaration(VariableDeclaration::new(
                     "id".to_string(),
                     None,
-                    Some(Expression::I32(100)),
+                    Some(ExpressionKind::I32(100)),
                 )),
-                Statement::assignment(Assignment::new("id".to_string(), Expression::I32(200))),
+                Statement::assignment(Assignment::new("id".to_string(), ExpressionKind::I32(200))),
             ]),
         ));
         assert_eq!(statement, expected);
@@ -238,17 +238,17 @@ mod tests {
             vec![],
             None,
             Block::new(vec![Statement::conditional(If::new(
-                Expression::Binary(
-                    Box::new(Expression::identifier("discount_rate".to_string())),
+                ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("discount_rate".to_string())),
                     BinaryOperator::GreaterThan,
-                    Box::new(Expression::I32(0)),
+                    Box::new(ExpressionKind::I32(0)),
                 ),
                 Block::new(vec![Statement::assignment(Assignment::new(
                     "final_price".to_string(),
-                    Expression::Binary(
-                        Box::new(Expression::identifier("regular_price".to_string())),
+                    ExpressionKind::Binary(
+                        Box::new(ExpressionKind::identifier("regular_price".to_string())),
                         BinaryOperator::Minus,
-                        Box::new(Expression::identifier("savings".to_string())),
+                        Box::new(ExpressionKind::identifier("savings".to_string())),
                     ),
                 ))]),
                 None,
@@ -273,13 +273,13 @@ mod tests {
             None,
             Block::new(vec![Statement::assignment(Assignment::new(
                 "total_price".to_string(),
-                Expression::Binary(
-                    Box::new(Expression::identifier("base_price".to_string())),
+                ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("base_price".to_string())),
                     BinaryOperator::Plus,
-                    Box::new(Expression::Binary(
-                        Box::new(Expression::identifier("tax_rate".to_string())),
+                    Box::new(ExpressionKind::Binary(
+                        Box::new(ExpressionKind::identifier("tax_rate".to_string())),
                         BinaryOperator::Multiply,
-                        Box::new(Expression::identifier("quantity".to_string())),
+                        Box::new(ExpressionKind::identifier("quantity".to_string())),
                     )),
                 ),
             ))]),
@@ -303,14 +303,14 @@ mod tests {
             None,
             Block::new(vec![Statement::assignment(Assignment::new(
                 "adjusted_score".to_string(),
-                Expression::Binary(
-                    Box::new(Expression::Grouped(Box::new(Expression::Binary(
-                        Box::new(Expression::identifier("base_points".to_string())),
+                ExpressionKind::Binary(
+                    Box::new(ExpressionKind::Grouped(Box::new(ExpressionKind::Binary(
+                        Box::new(ExpressionKind::identifier("base_points".to_string())),
                         BinaryOperator::Plus,
-                        Box::new(Expression::identifier("bonus_points".to_string())),
+                        Box::new(ExpressionKind::identifier("bonus_points".to_string())),
                     )))),
                     BinaryOperator::Multiply,
-                    Box::new(Expression::identifier("multiplier".to_string())),
+                    Box::new(ExpressionKind::identifier("multiplier".to_string())),
                 ),
             ))]),
         ));
@@ -335,13 +335,13 @@ mod tests {
                 VariableDeclaration::new(
                     "total_cost".to_string(),
                     None,
-                    Some(Expression::Binary(
-                        Box::new(Expression::identifier("fixed_cost".to_string())),
+                    Some(ExpressionKind::Binary(
+                        Box::new(ExpressionKind::identifier("fixed_cost".to_string())),
                         BinaryOperator::Plus,
-                        Box::new(Expression::Binary(
-                            Box::new(Expression::identifier("variable_unit_cost".to_string())),
+                        Box::new(ExpressionKind::Binary(
+                            Box::new(ExpressionKind::identifier("variable_unit_cost".to_string())),
                             BinaryOperator::Multiply,
-                            Box::new(Expression::identifier("quantity".to_string())),
+                            Box::new(ExpressionKind::identifier("quantity".to_string())),
                         )),
                     )),
                 ),
@@ -368,18 +368,18 @@ mod tests {
                 Statement::variable_declaration(VariableDeclaration::new(
                     "net_salary".to_string(),
                     None,
-                    Some(Expression::Binary(
-                        Box::new(Expression::identifier("gross_salary".to_string())),
+                    Some(ExpressionKind::Binary(
+                        Box::new(ExpressionKind::identifier("gross_salary".to_string())),
                         BinaryOperator::Minus,
-                        Box::new(Expression::identifier("deductions".to_string())),
+                        Box::new(ExpressionKind::identifier("deductions".to_string())),
                     )),
                 )),
                 Statement::assignment(Assignment::new(
                     "net_salary".to_string(),
-                    Expression::Binary(
-                        Box::new(Expression::identifier("net_salary".to_string())),
+                    ExpressionKind::Binary(
+                        Box::new(ExpressionKind::identifier("net_salary".to_string())),
                         BinaryOperator::Plus,
-                        Box::new(Expression::identifier("yearly_bonus".to_string())),
+                        Box::new(ExpressionKind::identifier("yearly_bonus".to_string())),
                     ),
                 )),
             ]),

@@ -66,7 +66,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> Parser<'src, 'stream, I
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::Expression;
+    use crate::ast::expr::ExpressionKind;
     use crate::ast::statement::{
         Block, FunctionDefinition, FunctionParameter, Statement, VariableDeclaration,
     };
@@ -94,7 +94,7 @@ mod tests {
             .add(Statement::variable_declaration(VariableDeclaration::new(
                 "greeting".to_string(),
                 None,
-                Some(Expression::String("hello".to_string())),
+                Some(ExpressionKind::String("hello".to_string())),
             )))
             .build();
         assert_eq!(program, expected);
@@ -111,12 +111,12 @@ mod tests {
             .add(Statement::variable_declaration(VariableDeclaration::new(
                 "x".to_string(),
                 None,
-                Some(Expression::I32(100)),
+                Some(ExpressionKind::I32(100)),
             )))
             .add(Statement::variable_declaration(VariableDeclaration::new(
                 "flag".to_string(),
                 None,
-                Some(Expression::Boolean(true)),
+                Some(ExpressionKind::Boolean(true)),
             )))
             .build();
         assert_eq!(program, expected);
@@ -194,7 +194,7 @@ mod tests {
                     VariableDeclaration::new(
                         "risk_level".to_string(),
                         None,
-                        Some(Expression::identifier("score".to_string())),
+                        Some(ExpressionKind::identifier("score".to_string())),
                     ),
                 )]),
             )))

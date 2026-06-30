@@ -1,4 +1,4 @@
-use crate::ast::expr::Expression;
+use crate::ast::expr::ExpressionKind;
 use crate::ast::statement::{Block, If, Statement};
 use crate::lexer::token::TokenType;
 use crate::lexer::LexResult;
@@ -29,7 +29,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ConditionalParser<'src,
         Ok(Statement::conditional(If::new(condition, body, else_body)))
     }
 
-    fn parse_if(&mut self) -> Result<(Expression, Block), ParseError> {
+    fn parse_if(&mut self) -> Result<(ExpressionKind, Block), ParseError> {
         self.stream.expect(TokenType::If)?;
         let condition = ExpressionParser::new(self.stream).parse()?;
         let body = self.parse_body()?;
@@ -61,7 +61,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ConditionalParser<'src,
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::{BinaryOperator, Expression};
+    use crate::ast::expr::{BinaryOperator, ExpressionKind};
     use crate::ast::statement::{Assignment, Block, Statement};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
@@ -80,14 +80,14 @@ mod tests {
         assert_eq!(
             statement,
             Statement::conditional(If::new(
-                Expression::Binary(
-                    Box::new(Expression::identifier("score".to_string())),
+                ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("score".to_string())),
                     BinaryOperator::GreaterThanEquals,
-                    Box::new(Expression::identifier("minimum_score".to_string())),
+                    Box::new(ExpressionKind::identifier("minimum_score".to_string())),
                 ),
                 Block::new(vec![Statement::assignment(Assignment::new(
                     "is_eligible".to_string(),
-                    Expression::Boolean(true),
+                    ExpressionKind::Boolean(true),
                 ))]),
                 None
             ))
@@ -107,22 +107,22 @@ mod tests {
         assert_eq!(
             statement,
             Statement::conditional(If::new(
-                Expression::Binary(
-                    Box::new(Expression::identifier("total_price".to_string())),
+                ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("total_price".to_string())),
                     BinaryOperator::GreaterThan,
-                    Box::new(Expression::identifier("budget".to_string())),
+                    Box::new(ExpressionKind::identifier("budget".to_string())),
                 ),
                 Block::new(vec![
                     Statement::assignment(Assignment::new(
                         "status".to_string(),
-                        Expression::String("over_budget".to_string()),
+                        ExpressionKind::String("over_budget".to_string()),
                     )),
                     Statement::assignment(Assignment::new(
                         "charge".to_string(),
-                        Expression::Binary(
-                            Box::new(Expression::identifier("base_price".to_string())),
+                        ExpressionKind::Binary(
+                            Box::new(ExpressionKind::identifier("base_price".to_string())),
                             BinaryOperator::Plus,
-                            Box::new(Expression::identifier("excess_fee".to_string())),
+                            Box::new(ExpressionKind::identifier("excess_fee".to_string())),
                         ),
                     )),
                 ]),
@@ -141,10 +141,10 @@ mod tests {
         assert_eq!(
             statement,
             Statement::conditional(If::new(
-                Expression::Binary(
-                    Box::new(Expression::identifier("debug_mode_enabled".to_string())),
+                ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("debug_mode_enabled".to_string())),
                     BinaryOperator::EqualsEquals,
-                    Box::new(Expression::Boolean(true)),
+                    Box::new(ExpressionKind::Boolean(true)),
                 ),
                 Block::new(vec![]),
                 None
@@ -165,18 +165,18 @@ mod tests {
         assert_eq!(
             statement,
             Statement::conditional(If::new(
-                Expression::Binary(
-                    Box::new(Expression::identifier("total_price".to_string())),
+                ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("total_price".to_string())),
                     BinaryOperator::GreaterThan,
-                    Box::new(Expression::identifier("budget".to_string())),
+                    Box::new(ExpressionKind::identifier("budget".to_string())),
                 ),
                 Block::new(vec![Statement::assignment(Assignment::new(
                     "status".to_string(),
-                    Expression::String("over_budget".to_string()),
+                    ExpressionKind::String("over_budget".to_string()),
                 ))]),
                 Some(Block::new(vec![Statement::assignment(Assignment::new(
                     "status".to_string(),
-                    Expression::String("within_budget".to_string()),
+                    ExpressionKind::String("within_budget".to_string()),
                 ))]))
             ))
         );
@@ -202,7 +202,7 @@ mod tests {
 #[cfg(test)]
 mod else_if_tests {
     use super::*;
-    use crate::ast::expr::{BinaryOperator, Expression};
+    use crate::ast::expr::{BinaryOperator, ExpressionKind};
     use crate::ast::statement::{Assignment, Block, Statement};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
@@ -221,28 +221,28 @@ mod else_if_tests {
         assert_eq!(
             statement,
             Statement::conditional(If::new(
-                Expression::Binary(
-                    Box::new(Expression::identifier("score".to_string())),
+                ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("score".to_string())),
                     BinaryOperator::GreaterThanEquals,
-                    Box::new(Expression::I32(90)),
+                    Box::new(ExpressionKind::I32(90)),
                 ),
                 Block::new(vec![Statement::assignment(Assignment::new(
                     "grade".to_string(),
-                    Expression::String("A".to_string()),
+                    ExpressionKind::String("A".to_string()),
                 ))]),
                 Some(Block::new(vec![Statement::conditional(If::new(
-                    Expression::Binary(
-                        Box::new(Expression::identifier("score".to_string())),
+                    ExpressionKind::Binary(
+                        Box::new(ExpressionKind::identifier("score".to_string())),
                         BinaryOperator::GreaterThanEquals,
-                        Box::new(Expression::I32(80)),
+                        Box::new(ExpressionKind::I32(80)),
                     ),
                     Block::new(vec![Statement::assignment(Assignment::new(
                         "grade".to_string(),
-                        Expression::String("B".to_string()),
+                        ExpressionKind::String("B".to_string()),
                     ))]),
                     Some(Block::new(vec![Statement::assignment(Assignment::new(
                         "grade".to_string(),
-                        Expression::String("C".to_string()),
+                        ExpressionKind::String("C".to_string()),
                     ))]))
                 ))]))
             ))
@@ -262,24 +262,24 @@ mod else_if_tests {
         assert_eq!(
             statement,
             Statement::conditional(If::new(
-                Expression::Binary(
-                    Box::new(Expression::identifier("risk_level".to_string())),
+                ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("risk_level".to_string())),
                     BinaryOperator::GreaterThan,
-                    Box::new(Expression::I32(8)),
+                    Box::new(ExpressionKind::I32(8)),
                 ),
                 Block::new(vec![Statement::assignment(Assignment::new(
                     "status".to_string(),
-                    Expression::String("high".to_string()),
+                    ExpressionKind::String("high".to_string()),
                 ))]),
                 Some(Block::new(vec![Statement::conditional(If::new(
-                    Expression::Binary(
-                        Box::new(Expression::identifier("risk_level".to_string())),
+                    ExpressionKind::Binary(
+                        Box::new(ExpressionKind::identifier("risk_level".to_string())),
                         BinaryOperator::GreaterThan,
-                        Box::new(Expression::I32(4)),
+                        Box::new(ExpressionKind::I32(4)),
                     ),
                     Block::new(vec![Statement::assignment(Assignment::new(
                         "status".to_string(),
-                        Expression::String("medium".to_string()),
+                        ExpressionKind::String("medium".to_string()),
                     ))]),
                     None
                 ))]))
@@ -300,38 +300,38 @@ mod else_if_tests {
         assert_eq!(
             statement,
             Statement::conditional(If::new(
-                Expression::Binary(
-                    Box::new(Expression::identifier("income".to_string())),
+                ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("income".to_string())),
                     BinaryOperator::GreaterThan,
-                    Box::new(Expression::I32(100000)),
+                    Box::new(ExpressionKind::I32(100000)),
                 ),
                 Block::new(vec![Statement::assignment(Assignment::new(
                     "rate".to_string(),
-                    Expression::I32(30),
+                    ExpressionKind::I32(30),
                 ))]),
                 Some(Block::new(vec![Statement::conditional(If::new(
-                    Expression::Binary(
-                        Box::new(Expression::identifier("income".to_string())),
+                    ExpressionKind::Binary(
+                        Box::new(ExpressionKind::identifier("income".to_string())),
                         BinaryOperator::GreaterThan,
-                        Box::new(Expression::I32(50000)),
+                        Box::new(ExpressionKind::I32(50000)),
                     ),
                     Block::new(vec![Statement::assignment(Assignment::new(
                         "rate".to_string(),
-                        Expression::I32(20),
+                        ExpressionKind::I32(20),
                     ))]),
                     Some(Block::new(vec![Statement::conditional(If::new(
-                        Expression::Binary(
-                            Box::new(Expression::identifier("income".to_string())),
+                        ExpressionKind::Binary(
+                            Box::new(ExpressionKind::identifier("income".to_string())),
                             BinaryOperator::GreaterThan,
-                            Box::new(Expression::I32(20000)),
+                            Box::new(ExpressionKind::I32(20000)),
                         ),
                         Block::new(vec![Statement::assignment(Assignment::new(
                             "rate".to_string(),
-                            Expression::I32(10),
+                            ExpressionKind::I32(10),
                         ))]),
                         Some(Block::new(vec![Statement::assignment(Assignment::new(
                             "rate".to_string(),
-                            Expression::I32(5),
+                            ExpressionKind::I32(5),
                         ))]))
                     ))]))
                 ))]))

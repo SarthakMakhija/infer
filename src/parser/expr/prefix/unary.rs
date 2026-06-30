@@ -1,4 +1,4 @@
-use crate::ast::expr::Expression;
+use crate::ast::expr::ExpressionKind;
 use crate::lexer::token::Token;
 use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
@@ -25,12 +25,12 @@ impl<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>>
 impl<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>> PrefixParser<'src>
     for UnaryExpressionParser<'expr, 'src, 'stream, I>
 {
-    fn parse(&mut self, token: &Token<'src>) -> Result<Expression, ParseError> {
+    fn parse(&mut self, token: &Token<'src>) -> Result<ExpressionKind, ParseError> {
         let expression = self
             .expression_parser
             .parse_with_precedence(Precedence::Unary)?;
         let operator = token.try_into()?;
-        Ok(Expression::Unary(Box::new(expression), operator))
+        Ok(ExpressionKind::Unary(Box::new(expression), operator))
     }
 }
 
@@ -54,8 +54,8 @@ mod tests {
 
         assert_eq!(
             expression,
-            Expression::Unary(
-                Box::new(Expression::I32(10)),
+            ExpressionKind::Unary(
+                Box::new(ExpressionKind::I32(10)),
                 crate::ast::expr::UnaryOperator::Minus
             )
         );
@@ -73,8 +73,8 @@ mod tests {
 
         assert_eq!(
             expression,
-            Expression::Unary(
-                Box::new(Expression::Boolean(true)),
+            ExpressionKind::Unary(
+                Box::new(ExpressionKind::Boolean(true)),
                 crate::ast::expr::UnaryOperator::Negation
             )
         );

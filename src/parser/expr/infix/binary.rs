@@ -1,4 +1,4 @@
-use crate::ast::expr::{BinaryOperator, Expression};
+use crate::ast::expr::{BinaryOperator, ExpressionKind};
 use crate::lexer::token::Token;
 use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
@@ -35,10 +35,14 @@ impl<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>>
 impl<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>> InfixParser<'src>
     for BinaryExpressionParser<'expr, 'src, 'stream, I>
 {
-    fn parse(&mut self, left: Expression, token: &Token<'src>) -> Result<Expression, ParseError> {
+    fn parse(
+        &mut self,
+        left: ExpressionKind,
+        token: &Token<'src>,
+    ) -> Result<ExpressionKind, ParseError> {
         let operator: BinaryOperator = token.try_into()?;
         if operator.is_comparison() {
-            if let Expression::Binary(_, ref left_operator, _) = left.unwrap_grouped() {
+            if let ExpressionKind::Binary(_, ref left_operator, _) = left.unwrap_grouped() {
                 if left_operator.is_comparison() {
                     return Err(ParseError::ChainedComparison(token.line));
                 }
@@ -48,7 +52,7 @@ impl<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>> InfixParser<'src
             .expression_parser
             .parse_with_precedence(self.precedence)?;
 
-        Ok(Expression::Binary(
+        Ok(ExpressionKind::Binary(
             Box::new(left),
             operator,
             Box::new(right),
@@ -72,16 +76,16 @@ mod tests {
         let mut parser = ExpressionParser::new(&mut stream);
         let mut binary_operator = BinaryExpressionParser::new(&mut parser, Precedence::Plus);
 
-        let left = Expression::I32(1);
+        let left = ExpressionKind::I32(1);
         let token = Token::new(TokenType::Plus, 0..1, 1, "+");
         let expression = binary_operator.parse(left, &token).unwrap();
 
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::I32(1)),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::I32(1)),
                 BinaryOperator::Plus,
-                Box::new(Expression::I32(2))
+                Box::new(ExpressionKind::I32(2))
             )
         );
     }
@@ -93,16 +97,16 @@ mod tests {
         let mut parser = ExpressionParser::new(&mut stream);
         let mut binary_operator = BinaryExpressionParser::new(&mut parser, Precedence::Plus);
 
-        let left = Expression::I32(10);
+        let left = ExpressionKind::I32(10);
         let token = Token::new(TokenType::Minus, 0..1, 1, "-");
         let expression = binary_operator.parse(left, &token).unwrap();
 
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::I32(10)),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::I32(10)),
                 BinaryOperator::Minus,
-                Box::new(Expression::I32(5))
+                Box::new(ExpressionKind::I32(5))
             )
         );
     }
@@ -114,16 +118,16 @@ mod tests {
         let mut parser = ExpressionParser::new(&mut stream);
         let mut binary_operator = BinaryExpressionParser::new(&mut parser, Precedence::Star);
 
-        let left = Expression::I32(3);
+        let left = ExpressionKind::I32(3);
         let token = Token::new(TokenType::Star, 0..1, 1, "*");
         let expression = binary_operator.parse(left, &token).unwrap();
 
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::I32(3)),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::I32(3)),
                 BinaryOperator::Multiply,
-                Box::new(Expression::I32(4))
+                Box::new(ExpressionKind::I32(4))
             )
         );
     }
@@ -135,16 +139,16 @@ mod tests {
         let mut parser = ExpressionParser::new(&mut stream);
         let mut binary_operator = BinaryExpressionParser::new(&mut parser, Precedence::Star);
 
-        let left = Expression::I32(20);
+        let left = ExpressionKind::I32(20);
         let token = Token::new(TokenType::Slash, 0..1, 1, "/");
         let expression = binary_operator.parse(left, &token).unwrap();
 
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::I32(20)),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::I32(20)),
                 BinaryOperator::Divide,
-                Box::new(Expression::I32(4))
+                Box::new(ExpressionKind::I32(4))
             )
         );
     }
@@ -156,7 +160,7 @@ mod tests {
         let mut parser = ExpressionParser::new(&mut stream);
         let mut binary_operator = BinaryExpressionParser::new(&mut parser, Precedence::Plus);
 
-        let left = Expression::I32(1);
+        let left = ExpressionKind::I32(1);
         let token = Token::new(TokenType::Identifier, 0..4, 1, "name");
         let result = binary_operator.parse(left, &token);
 
@@ -215,16 +219,16 @@ mod tests {
         let mut parser = ExpressionParser::new(&mut stream);
         let mut binary_operator = BinaryExpressionParser::new(&mut parser, Precedence::Comparison);
 
-        let left = Expression::I32(1);
+        let left = ExpressionKind::I32(1);
         let token = Token::new(TokenType::LessThan, 0..1, 1, "<");
         let expression = binary_operator.parse(left, &token).unwrap();
 
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::I32(1)),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::I32(1)),
                 BinaryOperator::LessThan,
-                Box::new(Expression::I32(2))
+                Box::new(ExpressionKind::I32(2))
             )
         );
     }
@@ -236,7 +240,7 @@ mod tests {
         let mut parser = ExpressionParser::new(&mut stream);
         let mut binary_operator = BinaryExpressionParser::new(&mut parser, Precedence::Plus);
 
-        let left = Expression::I32(1);
+        let left = ExpressionKind::I32(1);
         let token = Token::new(TokenType::Plus, 0..1, 1, "+");
         let result = binary_operator.parse(left, &token);
 

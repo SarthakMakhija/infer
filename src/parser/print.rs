@@ -1,4 +1,4 @@
-use crate::ast::expr::Expression;
+use crate::ast::expr::ExpressionKind;
 use crate::ast::statement::{Print, Statement};
 use crate::lexer::token::TokenType;
 use crate::lexer::LexResult;
@@ -24,7 +24,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> PrintParser<'src, 'stre
         Ok(Statement::print(Print::new(arguments)))
     }
 
-    fn arguments(&mut self) -> Result<Vec<Expression>, ParseError> {
+    fn arguments(&mut self) -> Result<Vec<ExpressionKind>, ParseError> {
         let mut expression_parser = ExpressionParser::new(self.stream);
         let expression = expression_parser.parse()?;
 
@@ -60,9 +60,9 @@ mod tests {
         assert_eq!(
             statement,
             Statement::print(Print::new(vec![
-                Expression::identifier("name".to_string()),
-                Expression::I32(42),
-                Expression::Boolean(true),
+                ExpressionKind::identifier("name".to_string()),
+                ExpressionKind::I32(42),
+                ExpressionKind::Boolean(true),
             ]))
         );
     }
@@ -76,10 +76,10 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::print(Print::new(vec![Expression::Binary(
-                Box::new(Expression::identifier("age".to_string())),
+            Statement::print(Print::new(vec![ExpressionKind::Binary(
+                Box::new(ExpressionKind::identifier("age".to_string())),
                 crate::ast::expr::BinaryOperator::Plus,
-                Box::new(Expression::I32(10))
+                Box::new(ExpressionKind::I32(10))
             )]))
         );
     }

@@ -95,7 +95,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, '
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::{BinaryOperator, Expression};
+    use crate::ast::expr::{BinaryOperator, ExpressionKind};
     use crate::ast::statement::{
         Assignment, Block, Break, FunctionDefinition, FunctionParameter, Loop, Print, Return,
         VariableDeclaration,
@@ -115,7 +115,7 @@ mod tests {
             Statement::variable_declaration(VariableDeclaration::new(
                 "id".to_string(),
                 None,
-                Some(Expression::I32(10))
+                Some(ExpressionKind::I32(10))
             ))
         );
     }
@@ -129,7 +129,7 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::assignment(Assignment::new("id".to_string(), Expression::I32(20)))
+            Statement::assignment(Assignment::new("id".to_string(), ExpressionKind::I32(20)))
         );
     }
 
@@ -211,7 +211,7 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::return_(Return::new(Some(Expression::I32(100))))
+            Statement::return_(Return::new(Some(ExpressionKind::I32(100))))
         );
     }
 
@@ -263,7 +263,7 @@ mod tests {
                     VariableDeclaration::new(
                         "risk_level".to_string(),
                         None,
-                        Some(Expression::identifier("score".to_string()))
+                        Some(ExpressionKind::identifier("score".to_string()))
                     )
                 )])
             ))
@@ -279,9 +279,9 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::function_call(Expression::function_call(
-                Expression::identifier("adjust_risk".to_string()),
-                vec![Expression::I32(45)]
+            Statement::function_call(ExpressionKind::function_call(
+                ExpressionKind::identifier("adjust_risk".to_string()),
+                vec![ExpressionKind::I32(45)]
             ))
         );
     }
@@ -295,12 +295,12 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::function_call(Expression::function_call(
-                Expression::identifier("adjust_risk".to_string()),
-                vec![Expression::Binary(
-                    Box::new(Expression::identifier("base_score".to_string())),
+            Statement::function_call(ExpressionKind::function_call(
+                ExpressionKind::identifier("adjust_risk".to_string()),
+                vec![ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("base_score".to_string())),
                     BinaryOperator::Plus,
-                    Box::new(Expression::I32(10))
+                    Box::new(ExpressionKind::I32(10))
                 )]
             ))
         );
@@ -365,9 +365,9 @@ mod tests {
         assert_eq!(
             statement,
             Statement::print(Print::new(vec![
-                Expression::identifier("name".to_string()),
-                Expression::I32(42),
-                Expression::Boolean(true),
+                ExpressionKind::identifier("name".to_string()),
+                ExpressionKind::I32(42),
+                ExpressionKind::Boolean(true),
             ]))
         );
     }
@@ -381,10 +381,10 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::print(Print::new(vec![Expression::Binary(
-                Box::new(Expression::identifier("age".to_string())),
+            Statement::print(Print::new(vec![ExpressionKind::Binary(
+                Box::new(ExpressionKind::identifier("age".to_string())),
                 BinaryOperator::Plus,
-                Box::new(Expression::I32(10))
+                Box::new(ExpressionKind::I32(10))
             )]))
         );
     }

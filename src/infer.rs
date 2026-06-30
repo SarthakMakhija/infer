@@ -94,7 +94,7 @@ impl Infer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::Expression;
+    use crate::ast::expr::ExpressionKind;
 
     use crate::{
         assert_function_body_len, assert_function_definition, assert_function_name,
@@ -119,7 +119,7 @@ mod tests {
             &statements[0],
             "greeting",
             None,
-            Some(&Expression::String("hello".to_string()))
+            Some(&ExpressionKind::String("hello".to_string()))
         );
     }
 

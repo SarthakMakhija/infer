@@ -1,4 +1,4 @@
-use crate::ast::expr::Expression;
+use crate::ast::expr::ExpressionKind;
 use crate::ast::statement::{Statement, VariableDeclaration};
 use crate::lexer::token::TokenType;
 use crate::lexer::LexResult;
@@ -47,7 +47,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>>
         Ok(None)
     }
 
-    fn maybe_expression(&mut self) -> Result<Option<Expression>, ParseError> {
+    fn maybe_expression(&mut self) -> Result<Option<ExpressionKind>, ParseError> {
         if self.stream.maybe_matches(TokenType::Equals) {
             let mut expression_parser = ExpressionParser::new(self.stream);
             let expression = expression_parser.parse()?;
@@ -76,7 +76,7 @@ mod tests {
             Statement::variable_declaration(VariableDeclaration::new(
                 "id".to_string(),
                 Some("i32".to_string()),
-                Some(Expression::I32(100))
+                Some(ExpressionKind::I32(100))
             ))
         );
     }
@@ -93,7 +93,7 @@ mod tests {
             Statement::variable_declaration(VariableDeclaration::new(
                 "greeting".to_string(),
                 None,
-                Some(Expression::String("hello".to_string()))
+                Some(ExpressionKind::String("hello".to_string()))
             ))
         );
     }
@@ -168,10 +168,10 @@ mod tests {
             Statement::variable_declaration(VariableDeclaration::new(
                 "total".to_string(),
                 None,
-                Some(Expression::Binary(
-                    Box::new(Expression::identifier("amount".to_string())),
+                Some(ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("amount".to_string())),
                     crate::ast::expr::BinaryOperator::Plus,
-                    Box::new(Expression::identifier("interest".to_string()))
+                    Box::new(ExpressionKind::identifier("interest".to_string()))
                 ))
             ))
         );

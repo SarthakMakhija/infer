@@ -1,4 +1,4 @@
-use infer::ast::expr::{BinaryOperator, Expression};
+use infer::ast::expr::{BinaryOperator, ExpressionKind};
 use infer::ast::statement::Statement;
 use infer::{
     assert_assignment, assert_conditional, assert_function_body_len, assert_function_definition,
@@ -29,25 +29,25 @@ fn parse_factorial_example() {
     assert_function_body_len!(function, 1);
 
     let body = function.body();
-    let expected_condition = Expression::Binary(
-        Box::new(Expression::identifier("n".to_string())),
+    let expected_condition = ExpressionKind::Binary(
+        Box::new(ExpressionKind::identifier("n".to_string())),
         BinaryOperator::LessThanEquals,
-        Box::new(Expression::I32(1)),
+        Box::new(ExpressionKind::I32(1)),
     );
     let conditional = assert_conditional!(&body[0], &expected_condition, 1, Some(1));
 
-    assert_return!(&conditional.body()[0], Some(&Expression::I32(1)));
+    assert_return!(&conditional.body()[0], Some(&ExpressionKind::I32(1)));
 
     let else_body = conditional.else_body().unwrap();
-    let expected_else_expression = Expression::Binary(
-        Box::new(Expression::identifier("n".to_string())),
+    let expected_else_expression = ExpressionKind::Binary(
+        Box::new(ExpressionKind::identifier("n".to_string())),
         BinaryOperator::Multiply,
-        Box::new(Expression::function_call(
-            Expression::identifier("factorial".to_string()),
-            vec![Expression::Binary(
-                Box::new(Expression::identifier("n".to_string())),
+        Box::new(ExpressionKind::function_call(
+            ExpressionKind::identifier("factorial".to_string()),
+            vec![ExpressionKind::Binary(
+                Box::new(ExpressionKind::identifier("n".to_string())),
                 BinaryOperator::Minus,
-                Box::new(Expression::I32(1)),
+                Box::new(ExpressionKind::I32(1)),
             )],
         )),
     );
@@ -75,25 +75,25 @@ fn parse_loops_example() {
     assert_function_body_len!(function, 2);
 
     let body = function.body();
-    assert_variable_declaration!(&body[0], "count", None, Some(&Expression::I32(0)));
+    assert_variable_declaration!(&body[0], "count", None, Some(&ExpressionKind::I32(0)));
 
     let loop_statement = assert_loop!(&body[1], 2);
     let loop_body = loop_statement.body();
 
-    let expected_loop_cond = Expression::Binary(
-        Box::new(Expression::identifier("count".to_string())),
+    let expected_loop_cond = ExpressionKind::Binary(
+        Box::new(ExpressionKind::identifier("count".to_string())),
         BinaryOperator::GreaterThanEquals,
-        Box::new(Expression::I32(10)),
+        Box::new(ExpressionKind::I32(10)),
     );
     let loop_conditional = assert_conditional!(&loop_body[0], &expected_loop_cond, 1, None);
     let Statement::Break(_, _) = &loop_conditional.body()[0] else {
         panic!("Expected Break statement");
     };
 
-    let expected_assignment_expression = Expression::Binary(
-        Box::new(Expression::identifier("count".to_string())),
+    let expected_assignment_expression = ExpressionKind::Binary(
+        Box::new(ExpressionKind::identifier("count".to_string())),
         BinaryOperator::Plus,
-        Box::new(Expression::I32(1)),
+        Box::new(ExpressionKind::I32(1)),
     );
     assert_assignment!(&loop_body[1], "count", &expected_assignment_expression);
 }
@@ -113,12 +113,12 @@ fn parse_variables_example() {
     let statements = program.statements();
 
     assert_eq!(statements.len(), 4);
-    assert_variable_declaration!(&statements[0], "x", None, Some(&Expression::I32(42)));
+    assert_variable_declaration!(&statements[0], "x", None, Some(&ExpressionKind::I32(42)));
 
-    let expected_expression = Expression::Binary(
-        Box::new(Expression::identifier("x".to_string())),
+    let expected_expression = ExpressionKind::Binary(
+        Box::new(ExpressionKind::identifier("x".to_string())),
         BinaryOperator::Multiply,
-        Box::new(Expression::I32(2)),
+        Box::new(ExpressionKind::I32(2)),
     );
 
     assert_variable_declaration!(&statements[1], "y", Some("i32"), Some(&expected_expression));
@@ -126,13 +126,13 @@ fn parse_variables_example() {
         &statements[2],
         "active",
         Some("bool"),
-        Some(&Expression::Boolean(true))
+        Some(&ExpressionKind::Boolean(true))
     );
     assert_variable_declaration!(
         &statements[3],
         "message",
         Some("string"),
-        Some(&Expression::String("hello world".to_string()))
+        Some(&ExpressionKind::String("hello world".to_string()))
     );
 }
 
@@ -159,10 +159,10 @@ fn parse_functions_example() {
     assert_function_body_len!(calculate_function, 2);
 
     let calculate_body = calculate_function.body();
-    let expected_total_expression = Expression::Binary(
-        Box::new(Expression::identifier("a".to_string())),
+    let expected_total_expression = ExpressionKind::Binary(
+        Box::new(ExpressionKind::identifier("a".to_string())),
         BinaryOperator::Plus,
-        Box::new(Expression::identifier("b".to_string())),
+        Box::new(ExpressionKind::identifier("b".to_string())),
     );
     assert_variable_declaration!(
         &calculate_body[0],
@@ -172,7 +172,7 @@ fn parse_functions_example() {
     );
     assert_return!(
         &calculate_body[1],
-        Some(&Expression::identifier("total".to_string()))
+        Some(&ExpressionKind::identifier("total".to_string()))
     );
 
     // 2. Validate "execute" function: calls "calculate" as initializer
@@ -183,9 +183,9 @@ fn parse_functions_example() {
     assert_function_body_len!(execute_function, 1);
 
     let execute_body = execute_function.body();
-    let expected_result_expression = Expression::function_call(
-        Expression::identifier("calculate".to_string()),
-        vec![Expression::I32(10), Expression::I32(20)],
+    let expected_result_expression = ExpressionKind::function_call(
+        ExpressionKind::identifier("calculate".to_string()),
+        vec![ExpressionKind::I32(10), ExpressionKind::I32(20)],
     );
     assert_variable_declaration!(
         &execute_body[0],
@@ -217,7 +217,7 @@ fn parse_nested_blocks_example() {
     assert_function_body_len!(function, 2);
 
     let body = function.body();
-    assert_variable_declaration!(&body[0], "outer_val", None, Some(&Expression::I32(10)));
+    assert_variable_declaration!(&body[0], "outer_val", None, Some(&ExpressionKind::I32(10)));
 
     let Statement::Block(ref block, _) = body[1] else {
         panic!("Expected Block statement, found {:?}", body[1]);
@@ -230,16 +230,16 @@ fn parse_nested_blocks_example() {
         &outer_block_statements[0],
         "inner_val",
         None,
-        Some(&Expression::I32(20))
+        Some(&ExpressionKind::I32(20))
     );
 
     assert_assignment!(
         &outer_block_statements[1],
         "outer_val",
-        &Expression::Binary(
-            Box::new(Expression::identifier("outer_val".to_string())),
+        &ExpressionKind::Binary(
+            Box::new(ExpressionKind::identifier("outer_val".to_string())),
             BinaryOperator::Plus,
-            Box::new(Expression::identifier("inner_val".to_string()))
+            Box::new(ExpressionKind::identifier("inner_val".to_string()))
         )
     );
 
@@ -256,16 +256,16 @@ fn parse_nested_blocks_example() {
         &inner_block_statements[0],
         "deep_val",
         None,
-        Some(&Expression::I32(30))
+        Some(&ExpressionKind::I32(30))
     );
 
     assert_assignment!(
         &inner_block_statements[1],
         "outer_val",
-        &Expression::Binary(
-            Box::new(Expression::identifier("outer_val".to_string())),
+        &ExpressionKind::Binary(
+            Box::new(ExpressionKind::identifier("outer_val".to_string())),
             BinaryOperator::Plus,
-            Box::new(Expression::identifier("deep_val".to_string()))
+            Box::new(ExpressionKind::identifier("deep_val".to_string()))
         )
     );
 }

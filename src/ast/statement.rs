@@ -1,4 +1,4 @@
-use crate::ast::expr::Expression;
+use crate::ast::expr::ExpressionKind;
 use crate::semantic::error::SemanticError;
 use crate::semantic::visitor::StatementVisitor;
 use std::cell::Cell;
@@ -47,7 +47,7 @@ pub enum Statement {
     /// A function definition statement.
     FunctionDefinition(FunctionDefinition, NodeId),
     /// A standalone expression evaluated as a statement (typically a function call).
-    FunctionCall(Expression, NodeId),
+    FunctionCall(ExpressionKind, NodeId),
     /// A break control flow statement.
     Break(Break, NodeId),
     /// A return statement.
@@ -109,10 +109,10 @@ impl Statement {
         Statement::FunctionDefinition(statement, Self::statement_id())
     }
 
-    /// Wraps a function call [`Expression`] into a [`Statement::FunctionCall`].
+    /// Wraps a function call [`ExpressionKind`] into a [`Statement::FunctionCall`].
     ///
-    /// The caller is expected to pass a [`Expression::FunctionCall`] variant.
-    pub(crate) fn function_call(expression: Expression) -> Self {
+    /// The caller is expected to pass a [`ExpressionKind::FunctionCall`] variant.
+    pub(crate) fn function_call(expression: ExpressionKind) -> Self {
         Statement::FunctionCall(expression, Self::statement_id())
     }
 
@@ -178,14 +178,14 @@ impl Statement {
 pub struct VariableDeclaration {
     pub(crate) variable: String,
     pub(crate) data_type: Option<String>,
-    pub(crate) expression: Option<Expression>,
+    pub(crate) expression: Option<ExpressionKind>,
 }
 
 impl VariableDeclaration {
     pub(crate) fn new(
         variable: String,
         data_type: Option<String>,
-        expression: Option<Expression>,
+        expression: Option<ExpressionKind>,
     ) -> Self {
         Self {
             variable,
@@ -205,7 +205,7 @@ impl VariableDeclaration {
     }
 
     /// Returns the initialization expression of the variable, if provided.
-    pub fn expression(&self) -> Option<&Expression> {
+    pub fn expression(&self) -> Option<&ExpressionKind> {
         self.expression.as_ref()
     }
 }
@@ -216,11 +216,11 @@ impl VariableDeclaration {
 #[derive(Debug, PartialEq)]
 pub struct Assignment {
     pub(crate) variable: String,
-    pub(crate) expression: Expression,
+    pub(crate) expression: ExpressionKind,
 }
 
 impl Assignment {
-    pub(crate) fn new(variable: String, expression: Expression) -> Self {
+    pub(crate) fn new(variable: String, expression: ExpressionKind) -> Self {
         Self {
             variable,
             expression,
@@ -233,7 +233,7 @@ impl Assignment {
     }
 
     /// Returns the expression being assigned to the variable.
-    pub fn expression(&self) -> &Expression {
+    pub fn expression(&self) -> &ExpressionKind {
         &self.expression
     }
 }
@@ -243,13 +243,13 @@ impl Assignment {
 /// Example: `if x == 10 { var y = 1; } else { var y = 2; }`
 #[derive(Debug, PartialEq)]
 pub struct If {
-    pub(crate) condition: Expression,
+    pub(crate) condition: ExpressionKind,
     pub(crate) body: Block,
     pub(crate) else_body: Option<Block>,
 }
 
 impl If {
-    pub(crate) fn new(condition: Expression, body: Block, else_body: Option<Block>) -> Self {
+    pub(crate) fn new(condition: ExpressionKind, body: Block, else_body: Option<Block>) -> Self {
         Self {
             condition,
             body,
@@ -258,7 +258,7 @@ impl If {
     }
 
     /// Returns the condition expression governing the conditional execution.
-    pub fn condition(&self) -> &Expression {
+    pub fn condition(&self) -> &ExpressionKind {
         &self.condition
     }
 
@@ -401,16 +401,16 @@ impl Break {
 /// Example: `return expression;` or `return;`
 #[derive(Debug, PartialEq)]
 pub struct Return {
-    pub(crate) expression: Option<Expression>,
+    pub(crate) expression: Option<ExpressionKind>,
 }
 
 impl Return {
-    pub(crate) fn new(expression: Option<Expression>) -> Self {
+    pub(crate) fn new(expression: Option<ExpressionKind>) -> Self {
         Self { expression }
     }
 
     /// Returns the expression being returned, if any.
-    pub fn expression(&self) -> Option<&Expression> {
+    pub fn expression(&self) -> Option<&ExpressionKind> {
         self.expression.as_ref()
     }
 }
@@ -420,16 +420,16 @@ impl Return {
 /// Example: `print name, age;`
 #[derive(Debug, PartialEq)]
 pub struct Print {
-    pub(crate) arguments: Vec<Expression>,
+    pub(crate) arguments: Vec<ExpressionKind>,
 }
 
 impl Print {
-    pub(crate) fn new(arguments: Vec<Expression>) -> Self {
+    pub(crate) fn new(arguments: Vec<ExpressionKind>) -> Self {
         Self { arguments }
     }
 
     /// Returns the arguments of the print statement.
-    pub fn arguments(&self) -> &[Expression] {
+    pub fn arguments(&self) -> &[ExpressionKind] {
         &self.arguments
     }
 }
@@ -464,7 +464,7 @@ mod tests {
     fn assignment_id() {
         let statement = Statement::assignment(Assignment::new(
             "user_score".to_string(),
-            Expression::I32(100),
+            ExpressionKind::I32(100),
         ));
 
         assert!(*statement.id() > 0);
@@ -472,8 +472,11 @@ mod tests {
 
     #[test]
     fn if_id() {
-        let statement =
-            Statement::conditional(If::new(Expression::Boolean(true), Block::new(vec![]), None));
+        let statement = Statement::conditional(If::new(
+            ExpressionKind::Boolean(true),
+            Block::new(vec![]),
+            None,
+        ));
         assert!(*statement.id() > 0);
     }
 
@@ -502,7 +505,7 @@ mod tests {
 
     #[test]
     fn function_call_id() {
-        let statement = Statement::function_call(Expression::I32(42));
+        let statement = Statement::function_call(ExpressionKind::I32(42));
         assert!(*statement.id() > 0);
     }
 
@@ -514,13 +517,13 @@ mod tests {
 
     #[test]
     fn return_id() {
-        let statement = Statement::return_(Return::new(Some(Expression::I32(1))));
+        let statement = Statement::return_(Return::new(Some(ExpressionKind::I32(1))));
         assert!(*statement.id() > 0);
     }
 
     #[test]
     fn print_id() {
-        let statement = Statement::print(Print::new(vec![Expression::I32(1)]));
+        let statement = Statement::print(Print::new(vec![ExpressionKind::I32(1)]));
         assert!(*statement.id() > 0);
     }
 
@@ -606,7 +609,7 @@ mod accept_tests {
 
         fn visit_function_call(
             &mut self,
-            _call: &crate::ast::expr::Expression,
+            _call: &crate::ast::expr::ExpressionKind,
         ) -> Result<(), SemanticError> {
             Ok(())
         }
@@ -653,9 +656,11 @@ mod accept_tests {
 
     #[test]
     fn statement_accept_dispatches_assignment_to_visitor() {
-        use crate::ast::expr::Expression;
-        let statement =
-            Statement::assignment(Assignment::new("score".to_string(), Expression::I32(10)));
+        use crate::ast::expr::ExpressionKind;
+        let statement = Statement::assignment(Assignment::new(
+            "score".to_string(),
+            ExpressionKind::I32(10),
+        ));
 
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
@@ -676,9 +681,12 @@ mod accept_tests {
 
     #[test]
     fn statement_accept_dispatches_if_to_visitor() {
-        use crate::ast::expr::Expression;
-        let statement =
-            Statement::conditional(If::new(Expression::Boolean(true), Block::new(vec![]), None));
+        use crate::ast::expr::ExpressionKind;
+        let statement = Statement::conditional(If::new(
+            ExpressionKind::Boolean(true),
+            Block::new(vec![]),
+            None,
+        ));
 
         let mut visitor = TestVisitor {
             visited_var_declaration: false,

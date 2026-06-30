@@ -37,7 +37,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> LoopParser<'src, 'strea
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::{BinaryOperator, Expression};
+    use crate::ast::expr::{BinaryOperator, ExpressionKind};
     use crate::ast::statement::{Assignment, Block, Loop, Statement};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
@@ -71,18 +71,18 @@ mod tests {
             Statement::iteration(Loop::new(Block::new(vec![
                 Statement::assignment(Assignment::new(
                     "counter".to_string(),
-                    Expression::Binary(
-                        Box::new(Expression::identifier("counter".to_string())),
+                    ExpressionKind::Binary(
+                        Box::new(ExpressionKind::identifier("counter".to_string())),
                         BinaryOperator::Plus,
-                        Box::new(Expression::I32(1))
+                        Box::new(ExpressionKind::I32(1))
                     )
                 )),
                 Statement::assignment(Assignment::new(
                     "total".to_string(),
-                    Expression::Binary(
-                        Box::new(Expression::identifier("total".to_string())),
+                    ExpressionKind::Binary(
+                        Box::new(ExpressionKind::identifier("total".to_string())),
                         BinaryOperator::Plus,
-                        Box::new(Expression::identifier("counter".to_string()))
+                        Box::new(ExpressionKind::identifier("counter".to_string()))
                     )
                 ))
             ])))

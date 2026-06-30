@@ -42,7 +42,7 @@ mod var_declaration_tests {
 #[cfg(test)]
 mod assignment_tests {
     use super::*;
-    use crate::ast::expr::Expression;
+    use crate::ast::expr::ExpressionKind;
     use crate::ast::statement::{Assignment, Statement, VariableDeclaration};
 
     #[test]
@@ -53,8 +53,10 @@ mod assignment_tests {
             None,
             None,
         ));
-        let assignment =
-            Statement::assignment(Assignment::new("score".to_string(), Expression::I32(100)));
+        let assignment = Statement::assignment(Assignment::new(
+            "score".to_string(),
+            ExpressionKind::I32(100),
+        ));
         let program = Program::new(vec![declaration, assignment]);
 
         let result = analyzer.analyze(&program);
@@ -65,14 +67,17 @@ mod assignment_tests {
 #[cfg(test)]
 mod if_tests {
     use super::*;
-    use crate::ast::expr::Expression;
+    use crate::ast::expr::ExpressionKind;
     use crate::ast::statement::{Block, If, Statement};
 
     #[test]
     fn analyze_valid_if_statement() {
         let mut analyzer = Analyzer::new();
-        let if_statement =
-            Statement::conditional(If::new(Expression::Boolean(true), Block::new(vec![]), None));
+        let if_statement = Statement::conditional(If::new(
+            ExpressionKind::Boolean(true),
+            Block::new(vec![]),
+            None,
+        ));
         let program = Program::new(vec![if_statement]);
 
         let result = analyzer.analyze(&program);
@@ -136,7 +141,7 @@ mod function_definition_tests {
 #[cfg(test)]
 mod pending_call_tests {
     use super::*;
-    use crate::ast::expr::Expression;
+    use crate::ast::expr::ExpressionKind;
     use crate::ast::program::Program;
     use crate::ast::statement::{Block, FunctionDefinition, Statement, VariableDeclaration};
 
@@ -144,8 +149,8 @@ mod pending_call_tests {
     fn detects_shadowed_deferred_call_on_variable() {
         let mut analyzer = Analyzer::new();
 
-        let callee = Expression::identifier("calculate_total".to_string());
-        let call_expression = Expression::function_call(callee, vec![]);
+        let callee = ExpressionKind::identifier("calculate_total".to_string());
+        let call_expression = ExpressionKind::function_call(callee, vec![]);
         let call_statement = Statement::function_call(call_expression);
 
         let variable_declaration = Statement::variable_declaration(VariableDeclaration::new(
@@ -167,8 +172,8 @@ mod pending_call_tests {
     fn successfully_resolves_valid_pending_call() {
         let mut analyzer = Analyzer::new();
 
-        let callee = Expression::identifier("calculate_total".to_string());
-        let call_expression = Expression::function_call(callee, vec![]);
+        let callee = ExpressionKind::identifier("calculate_total".to_string());
+        let call_expression = ExpressionKind::function_call(callee, vec![]);
         let call_statement = Statement::function_call(call_expression);
 
         let function_definition = Statement::function_definition(FunctionDefinition::new(
@@ -188,8 +193,8 @@ mod pending_call_tests {
     fn detects_arity_mismatch_on_deferred_call() {
         let mut analyzer = Analyzer::new();
 
-        let callee = Expression::identifier("calculate_total".to_string());
-        let call_expression = Expression::function_call(callee, vec![Expression::I32(10)]);
+        let callee = ExpressionKind::identifier("calculate_total".to_string());
+        let call_expression = ExpressionKind::function_call(callee, vec![ExpressionKind::I32(10)]);
         let call_statement = Statement::function_call(call_expression);
 
         let function_definition = Statement::function_definition(FunctionDefinition::new(
@@ -216,8 +221,8 @@ mod pending_call_tests {
     fn detects_undefined_deferred_call() {
         let mut analyzer = Analyzer::new();
 
-        let callee = Expression::identifier("calculate_total".to_string());
-        let call_expression = Expression::function_call(callee, vec![]);
+        let callee = ExpressionKind::identifier("calculate_total".to_string());
+        let call_expression = ExpressionKind::function_call(callee, vec![]);
         let call_statement = Statement::function_call(call_expression);
 
         let program = Program::new(vec![call_statement]);

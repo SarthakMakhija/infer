@@ -1,4 +1,4 @@
-use crate::ast::expr::Expression;
+use crate::ast::expr::ExpressionKind;
 use crate::lexer::token::{Token, TokenType};
 use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
@@ -24,12 +24,12 @@ impl<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>>
 impl<'expr, 'src, 'stream, I: Iterator<Item = LexResult<'src>>> PrefixParser<'src>
     for GroupParser<'expr, 'src, 'stream, I>
 {
-    fn parse(&mut self, _token: &Token<'src>) -> Result<Expression, ParseError> {
+    fn parse(&mut self, _token: &Token<'src>) -> Result<ExpressionKind, ParseError> {
         let expression = self.expression_parser.parse()?;
         self.expression_parser
             .stream
             .expect(TokenType::RightParentheses)?;
-        Ok(Expression::Grouped(Box::new(expression)))
+        Ok(ExpressionKind::Grouped(Box::new(expression)))
     }
 }
 
@@ -52,7 +52,7 @@ mod tests {
 
         assert_eq!(
             expression,
-            Expression::Grouped(Box::new(Expression::I32(123)))
+            ExpressionKind::Grouped(Box::new(ExpressionKind::I32(123)))
         );
     }
 

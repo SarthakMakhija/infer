@@ -1,15 +1,15 @@
-use crate::ast::expr::Expression;
+use crate::ast::expr::ExpressionKind;
 use crate::lexer::token::{Token, TokenType};
 use crate::parser::error::ParseError;
 use crate::parser::expr::PrefixParser;
 
-/// A prefix parser that converts a `BooleanLiteral` token into an [`Expression::Boolean`].
+/// A prefix parser that converts a `BooleanLiteral` token into an [`ExpressionKind::Boolean`].
 pub(crate) struct BooleanParser;
 
 impl<'src> PrefixParser<'src> for BooleanParser {
-    fn parse(&mut self, token: &Token<'src>) -> Result<Expression, ParseError> {
+    fn parse(&mut self, token: &Token<'src>) -> Result<ExpressionKind, ParseError> {
         if let TokenType::BooleanLiteral(val) = token.token_type {
-            Ok(Expression::Boolean(val))
+            Ok(ExpressionKind::Boolean(val))
         } else {
             unreachable!("Boolean parser only handles BooleanLiteral tokens")
         }
@@ -26,7 +26,7 @@ mod tests {
         let mut parser = BooleanParser;
 
         let expression = parser.parse(&token).unwrap();
-        assert_eq!(expression, Expression::Boolean(true));
+        assert_eq!(expression, ExpressionKind::Boolean(true));
     }
 
     #[test]
@@ -35,6 +35,6 @@ mod tests {
         let mut parser = BooleanParser;
 
         let expression = parser.parse(&token).unwrap();
-        assert_eq!(expression, Expression::Boolean(false));
+        assert_eq!(expression, ExpressionKind::Boolean(false));
     }
 }

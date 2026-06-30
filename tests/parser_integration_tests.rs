@@ -1,4 +1,4 @@
-use infer::ast::expr::{BinaryOperator, Expression};
+use infer::ast::expr::{BinaryOperator, ExpressionKind};
 use infer::ast::statement::Statement;
 use infer::{
     assert_assignment, assert_conditional, assert_function_body_len, assert_function_definition,
@@ -37,9 +37,9 @@ fn parse_function_with_assignments() {
     assert_function_body_len!(function, 2);
 
     let body = function.body();
-    assert_variable_declaration!(&body[0], "attempts", None, Some(&Expression::I32(1)));
+    assert_variable_declaration!(&body[0], "attempts", None, Some(&ExpressionKind::I32(1)));
 
-    assert_assignment!(&body[1], "attempts", &Expression::I32(2));
+    assert_assignment!(&body[1], "attempts", &ExpressionKind::I32(2));
 }
 
 #[test]
@@ -56,10 +56,10 @@ fn parse_function_with_conditional() {
     assert_function_body_len!(function, 1);
 
     let body = function.body();
-    let expected_condition = Expression::Binary(
-        Box::new(Expression::identifier("code".to_string())),
+    let expected_condition = ExpressionKind::Binary(
+        Box::new(ExpressionKind::identifier("code".to_string())),
         BinaryOperator::EqualsEquals,
-        Box::new(Expression::I32(200)),
+        Box::new(ExpressionKind::I32(200)),
     );
     let conditional_statement = assert_conditional!(&body[0], &expected_condition, 1, Some(1));
 
@@ -67,13 +67,13 @@ fn parse_function_with_conditional() {
         &conditional_statement.body()[0],
         "success",
         None,
-        Some(&Expression::I32(1))
+        Some(&ExpressionKind::I32(1))
     );
     assert_variable_declaration!(
         &conditional_statement.else_body().unwrap()[0],
         "success",
         None,
-        Some(&Expression::I32(0))
+        Some(&ExpressionKind::I32(0))
     );
 }
 

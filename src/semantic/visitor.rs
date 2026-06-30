@@ -1,4 +1,4 @@
-use crate::ast::expr::Expression;
+use crate::ast::expr::ExpressionKind;
 use crate::ast::statement::{
     Assignment, Block, FunctionDefinition, If, Loop, NodeId, Print, Return, VariableDeclaration,
 };
@@ -27,7 +27,7 @@ pub(crate) trait StatementVisitor {
         definition: &FunctionDefinition,
     ) -> Result<(), SemanticError>;
 
-    fn visit_function_call(&mut self, call: &Expression) -> Result<(), SemanticError>;
+    fn visit_function_call(&mut self, call: &ExpressionKind) -> Result<(), SemanticError>;
 
     fn visit_break(&mut self) -> Result<(), SemanticError>;
 
@@ -41,13 +41,17 @@ pub(crate) trait ExpressionVisitor {
 
     fn visit_function_call(
         &mut self,
-        callee: &Expression,
-        arguments: &[Expression],
+        callee: &ExpressionKind,
+        arguments: &[ExpressionKind],
     ) -> Result<(), SemanticError>;
 
-    fn visit_unary(&mut self, expr: &Expression) -> Result<(), SemanticError>;
+    fn visit_unary(&mut self, expr: &ExpressionKind) -> Result<(), SemanticError>;
 
-    fn visit_binary(&mut self, left: &Expression, right: &Expression) -> Result<(), SemanticError>;
+    fn visit_binary(
+        &mut self,
+        left: &ExpressionKind,
+        right: &ExpressionKind,
+    ) -> Result<(), SemanticError>;
 
-    fn visit_grouped(&mut self, expr: &Expression) -> Result<(), SemanticError>;
+    fn visit_grouped(&mut self, expr: &ExpressionKind) -> Result<(), SemanticError>;
 }

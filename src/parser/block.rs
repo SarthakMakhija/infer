@@ -71,11 +71,11 @@ mod tests {
                 Statement::variable_declaration(VariableDeclaration::new(
                     "score".to_string(),
                     None,
-                    Some(crate::ast::expr::Expression::I32(10))
+                    Some(crate::ast::expr::ExpressionKind::I32(10))
                 )),
                 Statement::assignment(Assignment::new(
                     "score".to_string(),
-                    crate::ast::expr::Expression::I32(20)
+                    crate::ast::expr::ExpressionKind::I32(20)
                 ))
             ])
         );
@@ -97,19 +97,19 @@ mod tests {
                 Statement::variable_declaration(VariableDeclaration::new(
                     "score".to_string(),
                     None,
-                    Some(crate::ast::expr::Expression::I32(10))
+                    Some(crate::ast::expr::ExpressionKind::I32(10))
                 )),
                 Statement::block(Block::new(vec![Statement::variable_declaration(
                     VariableDeclaration::new(
                         "risk_level".to_string(),
                         None,
-                        Some(crate::ast::expr::Expression::I32(20))
+                        Some(crate::ast::expr::ExpressionKind::I32(20))
                     )
                 )])),
                 Statement::variable_declaration(VariableDeclaration::new(
                     "threshold".to_string(),
                     None,
-                    Some(crate::ast::expr::Expression::I32(30))
+                    Some(crate::ast::expr::ExpressionKind::I32(30))
                 ))
             ])
         );
@@ -132,14 +132,14 @@ mod tests {
                     VariableDeclaration::new(
                         "score".to_string(),
                         None,
-                        Some(crate::ast::expr::Expression::I32(10))
+                        Some(crate::ast::expr::ExpressionKind::I32(10))
                     )
                 )])),
                 Statement::block(Block::new(vec![Statement::variable_declaration(
                     VariableDeclaration::new(
                         "risk_level".to_string(),
                         None,
-                        Some(crate::ast::expr::Expression::I32(20))
+                        Some(crate::ast::expr::ExpressionKind::I32(20))
                     )
                 )]))
             ])

@@ -2,7 +2,7 @@ pub(crate) mod infix;
 pub(crate) mod precedence;
 pub(crate) mod prefix;
 
-use crate::ast::expr::Expression;
+use crate::ast::expr::ExpressionKind;
 use crate::lexer::token::{Token, TokenType};
 use crate::lexer::LexResult;
 use crate::parser::error::ParseError;
@@ -31,7 +31,7 @@ pub(crate) struct ExpressionParser<'src, 'stream, I: Iterator<Item = LexResult<'
 /// A `PrefixParser` receives the leading token that triggered it and produces an expression.
 pub(crate) trait PrefixParser<'src> {
     /// Parse an expression starting at the given `token`.
-    fn parse(&mut self, token: &Token<'src>) -> Result<Expression, ParseError>;
+    fn parse(&mut self, token: &Token<'src>) -> Result<ExpressionKind, ParseError>;
 }
 
 /// Trait implemented by parsers that handle infix positions (i.e., between two expressions).
@@ -40,7 +40,11 @@ pub(crate) trait PrefixParser<'src> {
 /// then consumes the right-hand side from the stream.
 pub(crate) trait InfixParser<'src> {
     /// Parse an infix expression given the `left` sub-expression and the operator `token`.
-    fn parse(&mut self, left: Expression, token: &Token<'src>) -> Result<Expression, ParseError>;
+    fn parse(
+        &mut self,
+        left: ExpressionKind,
+        token: &Token<'src>,
+    ) -> Result<ExpressionKind, ParseError>;
 }
 
 impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 'stream, I> {
@@ -50,7 +54,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 
     }
 
     /// Parses a complete expression using the lowest precedence binding power.
-    pub(crate) fn parse(&mut self) -> Result<Expression, ParseError> {
+    pub(crate) fn parse(&mut self) -> Result<ExpressionKind, ParseError> {
         self.parse_with_precedence(Precedence::None)
     }
 
@@ -61,7 +65,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 
     pub(crate) fn parse_with_precedence(
         &mut self,
         precedence: Precedence,
-    ) -> Result<Expression, ParseError> {
+    ) -> Result<ExpressionKind, ParseError> {
         let token = self.stream.expect_token()?;
         let mut left = self.parse_prefix(&token)?;
 
@@ -73,7 +77,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 
         Ok(left)
     }
 
-    fn parse_prefix(&mut self, token: &Token<'src>) -> Result<Expression, ParseError> {
+    fn parse_prefix(&mut self, token: &Token<'src>) -> Result<ExpressionKind, ParseError> {
         match token.token_type {
             TokenType::Identifier => IdentifierParser.parse(token),
             TokenType::WholeNumber => WholeNumberParser.parse(token),
@@ -90,9 +94,9 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ExpressionParser<'src, 
 
     fn parse_infix(
         &mut self,
-        left: Expression,
+        left: ExpressionKind,
         token: &Token<'src>,
-    ) -> Result<Expression, ParseError> {
+    ) -> Result<ExpressionKind, ParseError> {
         match token.token_type {
             TokenType::Plus | TokenType::Minus => {
                 BinaryExpressionParser::new(self, Precedence::Plus).parse(left, token)
@@ -142,7 +146,7 @@ mod tests {
         let mut parser = ExpressionParser::new(&mut stream);
 
         let expression = parser.parse().unwrap();
-        assert_eq!(expression, Expression::I32(123));
+        assert_eq!(expression, ExpressionKind::I32(123));
     }
 
     #[test]
@@ -152,7 +156,7 @@ mod tests {
         let mut parser = ExpressionParser::new(&mut stream);
 
         let expression = parser.parse().unwrap();
-        assert_eq!(expression, Expression::String("infer".to_string()));
+        assert_eq!(expression, ExpressionKind::String("infer".to_string()));
     }
 
     #[test]
@@ -162,7 +166,7 @@ mod tests {
         let mut parser = ExpressionParser::new(&mut stream);
 
         let expression = parser.parse().unwrap();
-        assert_eq!(expression, Expression::identifier("my_var".to_string()));
+        assert_eq!(expression, ExpressionKind::identifier("my_var".to_string()));
     }
 
     #[test]
@@ -206,14 +210,14 @@ mod arithmetic_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::Binary(
-                    Box::new(Expression::I32(1)),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::Binary(
+                    Box::new(ExpressionKind::I32(1)),
                     BinaryOperator::Plus,
-                    Box::new(Expression::I32(3))
+                    Box::new(ExpressionKind::I32(3))
                 )),
                 BinaryOperator::Minus,
-                Box::new(Expression::I32(2))
+                Box::new(ExpressionKind::I32(2))
             )
         );
     }
@@ -227,13 +231,13 @@ mod arithmetic_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::I32(1)),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::I32(1)),
                 BinaryOperator::Plus,
-                Box::new(Expression::Binary(
-                    Box::new(Expression::I32(2)),
+                Box::new(ExpressionKind::Binary(
+                    Box::new(ExpressionKind::I32(2)),
                     BinaryOperator::Multiply,
-                    Box::new(Expression::I32(4))
+                    Box::new(ExpressionKind::I32(4))
                 ))
             )
         );
@@ -248,13 +252,13 @@ mod arithmetic_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::identifier("amount".to_string())),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::identifier("amount".to_string())),
                 BinaryOperator::Plus,
-                Box::new(Expression::Binary(
-                    Box::new(Expression::identifier("factor".to_string())),
+                Box::new(ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("factor".to_string())),
                     BinaryOperator::Multiply,
-                    Box::new(Expression::identifier("rate".to_string()))
+                    Box::new(ExpressionKind::identifier("rate".to_string()))
                 ))
             )
         );
@@ -269,14 +273,14 @@ mod arithmetic_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::Binary(
-                    Box::new(Expression::I32(10)),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::Binary(
+                    Box::new(ExpressionKind::I32(10)),
                     BinaryOperator::Divide,
-                    Box::new(Expression::I32(2))
+                    Box::new(ExpressionKind::I32(2))
                 )),
                 BinaryOperator::Minus,
-                Box::new(Expression::I32(3))
+                Box::new(ExpressionKind::I32(3))
             )
         );
     }
@@ -290,8 +294,8 @@ mod arithmetic_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Unary(
-                Box::new(Expression::I32(10)),
+            ExpressionKind::Unary(
+                Box::new(ExpressionKind::I32(10)),
                 crate::ast::expr::UnaryOperator::Minus
             )
         );
@@ -306,8 +310,8 @@ mod arithmetic_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Unary(
-                Box::new(Expression::Boolean(true)),
+            ExpressionKind::Unary(
+                Box::new(ExpressionKind::Boolean(true)),
                 crate::ast::expr::UnaryOperator::Negation
             )
         );
@@ -322,16 +326,16 @@ mod arithmetic_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::Unary(
-                    Box::new(Expression::identifier("amount".to_string())),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::Unary(
+                    Box::new(ExpressionKind::identifier("amount".to_string())),
                     crate::ast::expr::UnaryOperator::Minus
                 )),
                 BinaryOperator::Plus,
-                Box::new(Expression::Binary(
-                    Box::new(Expression::identifier("factor".to_string())),
+                Box::new(ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("factor".to_string())),
                     BinaryOperator::Multiply,
-                    Box::new(Expression::identifier("rate".to_string()))
+                    Box::new(ExpressionKind::identifier("rate".to_string()))
                 ))
             )
         );
@@ -346,14 +350,14 @@ mod arithmetic_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::Grouped(Box::new(Expression::Binary(
-                    Box::new(Expression::I32(1)),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::Grouped(Box::new(ExpressionKind::Binary(
+                    Box::new(ExpressionKind::I32(1)),
                     BinaryOperator::Plus,
-                    Box::new(Expression::I32(2))
+                    Box::new(ExpressionKind::I32(2))
                 )))),
                 BinaryOperator::Multiply,
-                Box::new(Expression::I32(3))
+                Box::new(ExpressionKind::I32(3))
             )
         );
     }
@@ -367,14 +371,14 @@ mod arithmetic_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Grouped(Box::new(Expression::Binary(
-                Box::new(Expression::Grouped(Box::new(Expression::Binary(
-                    Box::new(Expression::I32(1)),
+            ExpressionKind::Grouped(Box::new(ExpressionKind::Binary(
+                Box::new(ExpressionKind::Grouped(Box::new(ExpressionKind::Binary(
+                    Box::new(ExpressionKind::I32(1)),
                     BinaryOperator::Plus,
-                    Box::new(Expression::I32(2))
+                    Box::new(ExpressionKind::I32(2))
                 )))),
                 BinaryOperator::Multiply,
-                Box::new(Expression::I32(3))
+                Box::new(ExpressionKind::I32(3))
             )))
         );
     }
@@ -397,10 +401,10 @@ mod comparison_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::identifier("status".to_string())),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::identifier("status".to_string())),
                 BinaryOperator::EqualsEquals,
-                Box::new(Expression::identifier("active".to_string()))
+                Box::new(ExpressionKind::identifier("active".to_string()))
             )
         );
     }
@@ -414,10 +418,10 @@ mod comparison_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::identifier("status".to_string())),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::identifier("status".to_string())),
                 BinaryOperator::NotEquals,
-                Box::new(Expression::identifier("disabled".to_string()))
+                Box::new(ExpressionKind::identifier("disabled".to_string()))
             )
         );
     }
@@ -431,10 +435,10 @@ mod comparison_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::identifier("score".to_string())),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::identifier("score".to_string())),
                 BinaryOperator::GreaterThan,
-                Box::new(Expression::identifier("passing_score".to_string()))
+                Box::new(ExpressionKind::identifier("passing_score".to_string()))
             )
         );
     }
@@ -448,10 +452,10 @@ mod comparison_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::identifier("score".to_string())),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::identifier("score".to_string())),
                 BinaryOperator::GreaterThanEquals,
-                Box::new(Expression::identifier("target_score".to_string()))
+                Box::new(ExpressionKind::identifier("target_score".to_string()))
             )
         );
     }
@@ -465,10 +469,10 @@ mod comparison_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::identifier("weight".to_string())),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::identifier("weight".to_string())),
                 BinaryOperator::LessThan,
-                Box::new(Expression::identifier("limit".to_string()))
+                Box::new(ExpressionKind::identifier("limit".to_string()))
             )
         );
     }
@@ -482,10 +486,10 @@ mod comparison_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::identifier("weight".to_string())),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::identifier("weight".to_string())),
                 BinaryOperator::LessThanEquals,
-                Box::new(Expression::identifier("max_weight".to_string()))
+                Box::new(ExpressionKind::identifier("max_weight".to_string()))
             )
         );
     }
@@ -499,14 +503,14 @@ mod comparison_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::Binary(
-                    Box::new(Expression::identifier("base_price".to_string())),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("base_price".to_string())),
                     BinaryOperator::Plus,
-                    Box::new(Expression::identifier("tax_rate".to_string()))
+                    Box::new(ExpressionKind::identifier("tax_rate".to_string()))
                 )),
                 BinaryOperator::GreaterThan,
-                Box::new(Expression::identifier("budget".to_string()))
+                Box::new(ExpressionKind::identifier("budget".to_string()))
             )
         );
     }
@@ -523,13 +527,13 @@ mod comparison_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::identifier("adjusted_score".to_string())),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::identifier("adjusted_score".to_string())),
                 BinaryOperator::EqualsEquals,
-                Box::new(Expression::Binary(
-                    Box::new(Expression::identifier("threshold_score".to_string())),
+                Box::new(ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("threshold_score".to_string())),
                     BinaryOperator::GreaterThan,
-                    Box::new(Expression::identifier("base_score".to_string()))
+                    Box::new(ExpressionKind::identifier("base_score".to_string()))
                 ))
             )
         );
@@ -553,10 +557,10 @@ mod logical_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::identifier("active".to_string())),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::identifier("active".to_string())),
                 BinaryOperator::And,
-                Box::new(Expression::identifier("validated".to_string()))
+                Box::new(ExpressionKind::identifier("validated".to_string()))
             )
         );
     }
@@ -570,10 +574,10 @@ mod logical_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::identifier("cached".to_string())),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::identifier("cached".to_string())),
                 BinaryOperator::Or,
-                Box::new(Expression::identifier("retrieved".to_string()))
+                Box::new(ExpressionKind::identifier("retrieved".to_string()))
             )
         );
     }
@@ -588,14 +592,14 @@ mod logical_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::Binary(
-                    Box::new(Expression::identifier("a".to_string())),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("a".to_string())),
                     BinaryOperator::And,
-                    Box::new(Expression::identifier("b".to_string()))
+                    Box::new(ExpressionKind::identifier("b".to_string()))
                 )),
                 BinaryOperator::Or,
-                Box::new(Expression::identifier("c".to_string()))
+                Box::new(ExpressionKind::identifier("c".to_string()))
             )
         );
     }
@@ -610,17 +614,17 @@ mod logical_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::Binary(
-                    Box::new(Expression::identifier("a".to_string())),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("a".to_string())),
                     BinaryOperator::LessThan,
-                    Box::new(Expression::identifier("b".to_string()))
+                    Box::new(ExpressionKind::identifier("b".to_string()))
                 )),
                 BinaryOperator::And,
-                Box::new(Expression::Binary(
-                    Box::new(Expression::identifier("c".to_string())),
+                Box::new(ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("c".to_string())),
                     BinaryOperator::GreaterThan,
-                    Box::new(Expression::identifier("d".to_string()))
+                    Box::new(ExpressionKind::identifier("d".to_string()))
                 ))
             )
         );
@@ -636,17 +640,17 @@ mod logical_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::Binary(
-                    Box::new(Expression::identifier("a".to_string())),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("a".to_string())),
                     BinaryOperator::EqualsEquals,
-                    Box::new(Expression::identifier("b".to_string()))
+                    Box::new(ExpressionKind::identifier("b".to_string()))
                 )),
                 BinaryOperator::Or,
-                Box::new(Expression::Binary(
-                    Box::new(Expression::identifier("c".to_string())),
+                Box::new(ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("c".to_string())),
                     BinaryOperator::NotEquals,
-                    Box::new(Expression::identifier("d".to_string()))
+                    Box::new(ExpressionKind::identifier("d".to_string()))
                 ))
             )
         );
@@ -662,13 +666,13 @@ mod logical_expression_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::identifier("a".to_string())),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::identifier("a".to_string())),
                 BinaryOperator::And,
-                Box::new(Expression::Grouped(Box::new(Expression::Binary(
-                    Box::new(Expression::identifier("b".to_string())),
+                Box::new(ExpressionKind::Grouped(Box::new(ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("b".to_string())),
                     BinaryOperator::Or,
-                    Box::new(Expression::identifier("c".to_string()))
+                    Box::new(ExpressionKind::identifier("c".to_string()))
                 ))))
             )
         );
@@ -692,7 +696,10 @@ mod function_call_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::function_call(Expression::identifier("calculate_tax".to_string()), vec![])
+            ExpressionKind::function_call(
+                ExpressionKind::identifier("calculate_tax".to_string()),
+                vec![]
+            )
         );
     }
 
@@ -705,9 +712,9 @@ mod function_call_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::function_call(
-                Expression::identifier("compute_grade".to_string()),
-                vec![Expression::identifier("score".to_string())]
+            ExpressionKind::function_call(
+                ExpressionKind::identifier("compute_grade".to_string()),
+                vec![ExpressionKind::identifier("score".to_string())]
             )
         );
     }
@@ -721,11 +728,11 @@ mod function_call_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::function_call(
-                Expression::identifier("adjust_salary".to_string()),
+            ExpressionKind::function_call(
+                ExpressionKind::identifier("adjust_salary".to_string()),
                 vec![
-                    Expression::identifier("salary".to_string()),
-                    Expression::identifier("rating".to_string())
+                    ExpressionKind::identifier("salary".to_string()),
+                    ExpressionKind::identifier("rating".to_string())
                 ]
             )
         );
@@ -740,14 +747,14 @@ mod function_call_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::function_call(
-                Expression::identifier("greater_of".to_string()),
+            ExpressionKind::function_call(
+                ExpressionKind::identifier("greater_of".to_string()),
                 vec![
-                    Expression::I32(45),
-                    Expression::Binary(
-                        Box::new(Expression::identifier("base_price".to_string())),
+                    ExpressionKind::I32(45),
+                    ExpressionKind::Binary(
+                        Box::new(ExpressionKind::identifier("base_price".to_string())),
                         BinaryOperator::Plus,
-                        Box::new(Expression::identifier("tax_rate".to_string()))
+                        Box::new(ExpressionKind::identifier("tax_rate".to_string()))
                     )
                 ]
             )
@@ -763,11 +770,11 @@ mod function_call_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::function_call(
-                Expression::identifier("get_discount".to_string()),
-                vec![Expression::function_call(
-                    Expression::identifier("get_age".to_string()),
-                    vec![Expression::identifier("user_id".to_string())]
+            ExpressionKind::function_call(
+                ExpressionKind::identifier("get_discount".to_string()),
+                vec![ExpressionKind::function_call(
+                    ExpressionKind::identifier("get_age".to_string()),
+                    vec![ExpressionKind::identifier("user_id".to_string())]
                 )]
             )
         );
@@ -782,11 +789,11 @@ mod function_call_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::identifier("rating".to_string())),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::identifier("rating".to_string())),
                 BinaryOperator::Plus,
-                Box::new(Expression::function_call(
-                    Expression::identifier("increment".to_string()),
+                Box::new(ExpressionKind::function_call(
+                    ExpressionKind::identifier("increment".to_string()),
                     vec![]
                 ))
             )
@@ -802,11 +809,11 @@ mod function_call_tests {
         let expression = parser.parse().unwrap();
         assert_eq!(
             expression,
-            Expression::Binary(
-                Box::new(Expression::identifier("rating".to_string())),
+            ExpressionKind::Binary(
+                Box::new(ExpressionKind::identifier("rating".to_string())),
                 BinaryOperator::LessThan,
-                Box::new(Expression::function_call(
-                    Expression::identifier("expected".to_string()),
+                Box::new(ExpressionKind::function_call(
+                    ExpressionKind::identifier("expected".to_string()),
                     vec![]
                 ))
             )

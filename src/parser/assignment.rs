@@ -1,4 +1,4 @@
-use crate::ast::expr::Expression;
+use crate::ast::expr::ExpressionKind;
 use crate::ast::statement::{Assignment, Statement};
 use crate::lexer::token::TokenType;
 use crate::lexer::LexResult;
@@ -35,7 +35,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> AssignmentParser<'src, 
         )))
     }
 
-    fn expression(&mut self) -> Result<Expression, ParseError> {
+    fn expression(&mut self) -> Result<ExpressionKind, ParseError> {
         let mut expression_parser = ExpressionParser::new(self.stream);
         let expression = expression_parser.parse()?;
         Ok(expression)
@@ -57,7 +57,7 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::assignment(Assignment::new("id".to_string(), Expression::I32(20)))
+            Statement::assignment(Assignment::new("id".to_string(), ExpressionKind::I32(20)))
         );
     }
 
@@ -72,13 +72,13 @@ mod tests {
             statement,
             Statement::assignment(Assignment::new(
                 "total".to_string(),
-                Expression::Binary(
-                    Box::new(Expression::identifier("amount".to_string())),
+                ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("amount".to_string())),
                     crate::ast::expr::BinaryOperator::Plus,
-                    Box::new(Expression::Binary(
-                        Box::new(Expression::identifier("rate".to_string())),
+                    Box::new(ExpressionKind::Binary(
+                        Box::new(ExpressionKind::identifier("rate".to_string())),
                         crate::ast::expr::BinaryOperator::Multiply,
-                        Box::new(Expression::identifier("percentage".to_string()))
+                        Box::new(ExpressionKind::identifier("percentage".to_string()))
                     ))
                 )
             ))

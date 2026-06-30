@@ -46,7 +46,7 @@ impl std::error::Error for ExpressionError {}
 /// Expressions evaluate to values and can appear on the right-hand side
 /// of declarations, in conditions, as function arguments, and more.
 #[derive(Debug)]
-pub enum Expression {
+pub enum ExpressionKind {
     /// A 32-bit signed integer literal (e.g., `42`).
     I32(i32),
     /// A string literal (e.g., `"hello"`).
@@ -56,75 +56,77 @@ pub enum Expression {
     /// A reference to a named variable or function (e.g., `score`), along with unique identifier.
     Identifier(String, NodeId),
     /// A unary expression applying an operator to a single operand (e.g., `-x`, `!flag`).
-    Unary(Box<Expression>, UnaryOperator),
+    Unary(Box<ExpressionKind>, UnaryOperator),
     /// A binary expression applying an operator to a left and right operand (e.g., `a + b`).
-    Binary(Box<Expression>, BinaryOperator, Box<Expression>),
+    Binary(Box<ExpressionKind>, BinaryOperator, Box<ExpressionKind>),
     /// A parenthesised expression that controls evaluation order (e.g., `(a + b)`).
-    Grouped(Box<Expression>),
+    Grouped(Box<ExpressionKind>),
     /// A function call expression with a callee expression and a list of argument expressions, along with unique identifier.
-    FunctionCall(Box<Expression>, Vec<Expression>, NodeId),
+    FunctionCall(Box<ExpressionKind>, Vec<ExpressionKind>, NodeId),
 }
 
-impl PartialEq for Expression {
+impl PartialEq for ExpressionKind {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Expression::I32(this), Expression::I32(other)) => this == other,
-            (Expression::String(this), Expression::String(other)) => this == other,
-            (Expression::Boolean(this), Expression::Boolean(other)) => this == other,
-            (Expression::Identifier(this, _), Expression::Identifier(other, _)) => this == other,
-            (Expression::Unary(this, this_op), Expression::Unary(other, other_op)) => {
+            (ExpressionKind::I32(this), ExpressionKind::I32(other)) => this == other,
+            (ExpressionKind::String(this), ExpressionKind::String(other)) => this == other,
+            (ExpressionKind::Boolean(this), ExpressionKind::Boolean(other)) => this == other,
+            (ExpressionKind::Identifier(this, _), ExpressionKind::Identifier(other, _)) => {
+                this == other
+            }
+            (ExpressionKind::Unary(this, this_op), ExpressionKind::Unary(other, other_op)) => {
                 this == other && this_op == other_op
             }
             (
-                Expression::Binary(this_left, this_op, this_right),
-                Expression::Binary(other_left, other_op, other_right),
+                ExpressionKind::Binary(this_left, this_op, this_right),
+                ExpressionKind::Binary(other_left, other_op, other_right),
             ) => this_left == other_left && this_op == other_op && this_right == other_right,
-            (Expression::Grouped(this), Expression::Grouped(other)) => this == other,
+            (ExpressionKind::Grouped(this), ExpressionKind::Grouped(other)) => this == other,
             (
-                Expression::FunctionCall(this_callee, this_args, _),
-                Expression::FunctionCall(other_callee, other_args, _),
+                ExpressionKind::FunctionCall(this_callee, this_args, _),
+                ExpressionKind::FunctionCall(other_callee, other_args, _),
             ) => this_callee == other_callee && this_args == other_args,
             _ => false,
         }
     }
 }
 
-impl Expression {
+impl ExpressionKind {
     /// Recursively unwraps nested `Grouped` expressions, returning the innermost non-grouped expression.
-    pub(crate) fn unwrap_grouped(&self) -> &Expression {
+    pub(crate) fn unwrap_grouped(&self) -> &ExpressionKind {
         match self {
-            Expression::Grouped(inner) => inner.unwrap_grouped(),
+            ExpressionKind::Grouped(inner) => inner.unwrap_grouped(),
             _ => self,
         }
     }
 
     /// Factory method to construct an `Expression::Identifier`.
     pub fn identifier(name: String) -> Self {
-        Expression::Identifier(name, next_id())
+        ExpressionKind::Identifier(name, next_id())
     }
 
     /// Factory method to construct an `Expression::FunctionCall`.
-    pub fn function_call(callee: Expression, arguments: Vec<Expression>) -> Self {
-        Expression::FunctionCall(Box::new(callee), arguments, next_id())
+    pub fn function_call(callee: ExpressionKind, arguments: Vec<ExpressionKind>) -> Self {
+        ExpressionKind::FunctionCall(Box::new(callee), arguments, next_id())
     }
 
     pub(crate) fn accept(&self, visitor: &mut dyn ExpressionVisitor) -> Result<(), SemanticError> {
         match self {
-            Expression::Identifier(ref name, id) => visitor.visit_identifier(name, *id),
-            Expression::FunctionCall(ref callee, ref arguments, _) => {
+            ExpressionKind::Identifier(ref name, id) => visitor.visit_identifier(name, *id),
+            ExpressionKind::FunctionCall(ref callee, ref arguments, _) => {
                 visitor.visit_function_call(callee, arguments)
             }
-            Expression::Unary(ref expr, _) => visitor.visit_unary(expr),
-            Expression::Grouped(ref expr) => visitor.visit_grouped(expr),
-            Expression::Binary(ref left, _, ref right) => visitor.visit_binary(left, right),
+            ExpressionKind::Unary(ref expr, _) => visitor.visit_unary(expr),
+            ExpressionKind::Grouped(ref expr) => visitor.visit_grouped(expr),
+            ExpressionKind::Binary(ref left, _, ref right) => visitor.visit_binary(left, right),
             _ => Ok(()),
         }
     }
 
     pub(crate) fn node_id(&self) -> Option<NodeId> {
         match self {
-            Expression::Identifier(_, node_id) => Some(*node_id),
-            Expression::FunctionCall(_, _, node_id) => Some(*node_id),
+            ExpressionKind::Identifier(_, node_id) => Some(*node_id),
+            ExpressionKind::FunctionCall(_, _, node_id) => Some(*node_id),
             _ => None,
         }
     }
@@ -378,22 +380,22 @@ mod expression_tests {
 
     #[test]
     fn unwrap_grouped_returns_inner_expression() {
-        let inner = Expression::I32(42);
-        let grouped = Expression::Grouped(Box::new(inner));
-        assert_eq!(grouped.unwrap_grouped(), &Expression::I32(42));
+        let inner = ExpressionKind::I32(42);
+        let grouped = ExpressionKind::Grouped(Box::new(inner));
+        assert_eq!(grouped.unwrap_grouped(), &ExpressionKind::I32(42));
     }
 
     #[test]
     fn unwrap_grouped_returns_self_for_non_grouped() {
-        let expr = Expression::I32(42);
-        assert_eq!(expr.unwrap_grouped(), &Expression::I32(42));
+        let expr = ExpressionKind::I32(42);
+        assert_eq!(expr.unwrap_grouped(), &ExpressionKind::I32(42));
     }
 
     #[test]
     fn unwrap_grouped_unwraps_multiple_levels() {
-        let inner = Expression::I32(42);
-        let nested = Expression::Grouped(Box::new(Expression::Grouped(Box::new(inner))));
-        assert_eq!(nested.unwrap_grouped(), &Expression::I32(42));
+        let inner = ExpressionKind::I32(42);
+        let nested = ExpressionKind::Grouped(Box::new(ExpressionKind::Grouped(Box::new(inner))));
+        assert_eq!(nested.unwrap_grouped(), &ExpressionKind::I32(42));
     }
 
     struct TestExpressionVisitor {
@@ -412,28 +414,28 @@ mod expression_tests {
 
         fn visit_function_call(
             &mut self,
-            _callee: &Expression,
-            _arguments: &[Expression],
+            _callee: &ExpressionKind,
+            _arguments: &[ExpressionKind],
         ) -> Result<(), SemanticError> {
             self.visited_function_call = true;
             Ok(())
         }
 
-        fn visit_unary(&mut self, _expr: &Expression) -> Result<(), SemanticError> {
+        fn visit_unary(&mut self, _expr: &ExpressionKind) -> Result<(), SemanticError> {
             self.visited_unary = true;
             Ok(())
         }
 
         fn visit_binary(
             &mut self,
-            _left: &Expression,
-            _right: &Expression,
+            _left: &ExpressionKind,
+            _right: &ExpressionKind,
         ) -> Result<(), SemanticError> {
             self.visited_binary = true;
             Ok(())
         }
 
-        fn visit_grouped(&mut self, _expr: &Expression) -> Result<(), SemanticError> {
+        fn visit_grouped(&mut self, _expr: &ExpressionKind) -> Result<(), SemanticError> {
             self.visited_grouped = true;
             Ok(())
         }
@@ -441,7 +443,7 @@ mod expression_tests {
 
     #[test]
     fn accept_dispatches_identifier_to_visitor() {
-        let identifier_expression = Expression::identifier("score".to_string());
+        let identifier_expression = ExpressionKind::identifier("score".to_string());
         let expected_node_id = identifier_expression.node_id().unwrap();
 
         let mut visitor = TestExpressionVisitor {
@@ -462,8 +464,8 @@ mod expression_tests {
 
     #[test]
     fn accept_dispatches_function_call_to_visitor() {
-        let callee = Expression::identifier("calculate_total".to_string());
-        let call_expression = Expression::function_call(callee, vec![]);
+        let callee = ExpressionKind::identifier("calculate_total".to_string());
+        let call_expression = ExpressionKind::function_call(callee, vec![]);
 
         let mut visitor = TestExpressionVisitor {
             visited_identifier: None,
@@ -480,8 +482,8 @@ mod expression_tests {
 
     #[test]
     fn accept_dispatches_unary_to_visitor() {
-        let operand = Expression::I32(10);
-        let unary_expression = Expression::Unary(Box::new(operand), UnaryOperator::Minus);
+        let operand = ExpressionKind::I32(10);
+        let unary_expression = ExpressionKind::Unary(Box::new(operand), UnaryOperator::Minus);
 
         let mut visitor = TestExpressionVisitor {
             visited_identifier: None,
@@ -498,8 +500,8 @@ mod expression_tests {
 
     #[test]
     fn accept_dispatches_grouped_to_visitor() {
-        let operand = Expression::I32(10);
-        let grouped_expression = Expression::Grouped(Box::new(operand));
+        let operand = ExpressionKind::I32(10);
+        let grouped_expression = ExpressionKind::Grouped(Box::new(operand));
 
         let mut visitor = TestExpressionVisitor {
             visited_identifier: None,
@@ -516,10 +518,10 @@ mod expression_tests {
 
     #[test]
     fn accept_dispatches_binary_to_visitor() {
-        let left = Expression::I32(10);
-        let right = Expression::I32(20);
+        let left = ExpressionKind::I32(10);
+        let right = ExpressionKind::I32(20);
         let binary_expression =
-            Expression::Binary(Box::new(left), BinaryOperator::Plus, Box::new(right));
+            ExpressionKind::Binary(Box::new(left), BinaryOperator::Plus, Box::new(right));
 
         let mut visitor = TestExpressionVisitor {
             visited_identifier: None,
@@ -541,8 +543,8 @@ mod expression_node_id_tests {
 
     #[test]
     fn gets_node_id_from_identifier() {
-        let expression = Expression::identifier("first_name".to_string());
-        let Expression::Identifier(_, expected_id) = &expression else {
+        let expression = ExpressionKind::identifier("first_name".to_string());
+        let ExpressionKind::Identifier(_, expected_id) = &expression else {
             panic!("Expected Expression::Identifier");
         };
 
@@ -552,9 +554,9 @@ mod expression_node_id_tests {
 
     #[test]
     fn gets_node_id_from_function_call() {
-        let callee = Expression::identifier("greeting".to_string());
-        let expression = Expression::function_call(callee, vec![]);
-        let Expression::FunctionCall(_, _, expected_id) = &expression else {
+        let callee = ExpressionKind::identifier("greeting".to_string());
+        let expression = ExpressionKind::function_call(callee, vec![]);
+        let ExpressionKind::FunctionCall(_, _, expected_id) = &expression else {
             panic!("Expected Expression::FunctionCall");
         };
 
@@ -564,25 +566,25 @@ mod expression_node_id_tests {
 
     #[test]
     fn returns_none_for_expressions_without_node_id() {
-        assert_eq!(Expression::I32(42).node_id(), None);
-        assert_eq!(Expression::String("hello".to_string()).node_id(), None);
-        assert_eq!(Expression::Boolean(true).node_id(), None);
+        assert_eq!(ExpressionKind::I32(42).node_id(), None);
+        assert_eq!(ExpressionKind::String("hello".to_string()).node_id(), None);
+        assert_eq!(ExpressionKind::Boolean(true).node_id(), None);
     }
 
     #[test]
     fn generates_unique_node_ids_for_multiple_identifiers() {
-        let first_name = Expression::identifier("first_name".to_string());
-        let second_name = Expression::identifier("first_name".to_string());
+        let first_name = ExpressionKind::identifier("first_name".to_string());
+        let second_name = ExpressionKind::identifier("first_name".to_string());
         assert_ne!(first_name.node_id(), second_name.node_id());
     }
 
     #[test]
     fn generates_unique_node_ids_for_multiple_function_calls() {
-        let callee_one = Expression::identifier("greeting".to_string());
-        let call_one = Expression::function_call(callee_one, vec![]);
+        let callee_one = ExpressionKind::identifier("greeting".to_string());
+        let call_one = ExpressionKind::function_call(callee_one, vec![]);
 
-        let callee_two = Expression::identifier("greeting".to_string());
-        let call_two = Expression::function_call(callee_two, vec![]);
+        let callee_two = ExpressionKind::identifier("greeting".to_string());
+        let call_two = ExpressionKind::function_call(callee_two, vec![]);
 
         assert_ne!(call_one.node_id(), call_two.node_id());
     }
