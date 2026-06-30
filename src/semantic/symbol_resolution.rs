@@ -192,7 +192,9 @@ impl StatementVisitor for SymbolResolutionVisitor {
     }
 
     fn visit_return(&mut self, return_statement: &Return) -> Result<(), SemanticError> {
-        //TODO: traverse and validate the return expression using ExpressionVisitor
+        if let Some(expression) = return_statement.expression() {
+            expression.accept(self)?;
+        }
         match self.state.current_function() {
             None => Err(SemanticError::ReturnOutsideFunction),
             Some(function_metadata) => {
@@ -1099,6 +1101,7 @@ mod return_tests {
     use crate::ast::expr::Expression;
     use crate::ast::statement::Statement;
     use crate::semantic::state::FunctionMetadata;
+    use crate::semantic::SymbolId;
 
     #[test]
     fn return_statement_outside_any_function_is_invalid() {
@@ -1164,6 +1167,48 @@ mod return_tests {
         let result = return_statement.accept(&mut visitor);
 
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn return_resolves_identifiers_in_expression() {
+        let mut visitor = SymbolResolutionVisitor::new();
+        let expected_symbol_id = SymbolId(1);
+        visitor
+            .scopes
+            .define("score".to_string(), expected_symbol_id);
+        visitor.state.add_global_function(
+            SymbolId(0),
+            FunctionMetadata::new("calculate".to_string(), 0, true),
+        );
+
+        let expression = Expression::identifier("score".to_string());
+        let score_node_id = expression.node_id().unwrap();
+        let return_statement = Statement::return_(Return::new(Some(expression)));
+        let result = return_statement.accept(&mut visitor);
+
+        assert!(result.is_ok());
+        assert_eq!(
+            visitor.resolution_table.get(&score_node_id),
+            Some(expected_symbol_id)
+        );
+    }
+
+    #[test]
+    fn return_fails_if_expression_has_undefined_variable() {
+        let mut visitor = SymbolResolutionVisitor::new();
+        visitor.state.add_global_function(
+            SymbolId(0),
+            FunctionMetadata::new("calculate".to_string(), 0, true),
+        );
+
+        let expression = Expression::identifier("score".to_string());
+        let return_statement = Statement::return_(Return::new(Some(expression)));
+        let result = return_statement.accept(&mut visitor);
+
+        assert_eq!(
+            result,
+            Err(SemanticError::UndefinedVariable("score".to_string()))
+        );
     }
 }
 
