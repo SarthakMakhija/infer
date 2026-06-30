@@ -4,7 +4,7 @@ use crate::semantic::error::SemanticError;
 use crate::semantic::visitor::ExpressionVisitor;
 use std::fmt;
 
-/// Represents errors encountered while parsing tokens into AST expressions.
+/// Represents errors encountered while parsing tokens into AST expression kinds.
 #[derive(Debug, PartialEq)]
 pub(crate) enum ExpressionError {
     /// Failed to parse a numeric literal string slice into a concrete integer value.
@@ -41,9 +41,9 @@ impl fmt::Display for ExpressionError {
 
 impl std::error::Error for ExpressionError {}
 
-/// Represents a parsed expression in the AST.
+/// Represents a parsed expression kind in the AST.
 ///
-/// Expressions evaluate to values and can appear on the right-hand side
+/// Expression kinds evaluate to values and can appear on the right-hand side
 /// of declarations, in conditions, as function arguments, and more.
 #[derive(Debug)]
 pub enum ExpressionKind {
@@ -92,7 +92,7 @@ impl PartialEq for ExpressionKind {
 }
 
 impl ExpressionKind {
-    /// Recursively unwraps nested `Grouped` expressions, returning the innermost non-grouped expression.
+    /// Recursively unwraps nested `Grouped` expression kinds, returning the innermost non-grouped expression kind.
     pub(crate) fn unwrap_grouped(&self) -> &ExpressionKind {
         match self {
             ExpressionKind::Grouped(inner) => inner.unwrap_grouped(),
@@ -100,12 +100,12 @@ impl ExpressionKind {
         }
     }
 
-    /// Factory method to construct an `Expression::Identifier`.
+    /// Factory method to construct an `ExpressionKind::Identifier`.
     pub fn identifier(name: String) -> Self {
         ExpressionKind::Identifier(name, next_id())
     }
 
-    /// Factory method to construct an `Expression::FunctionCall`.
+    /// Factory method to construct an `ExpressionKind::FunctionCall`.
     pub fn function_call(callee: ExpressionKind, arguments: Vec<ExpressionKind>) -> Self {
         ExpressionKind::FunctionCall(Box::new(callee), arguments, next_id())
     }
@@ -132,7 +132,7 @@ impl ExpressionKind {
     }
 }
 
-/// Represents a binary operator used between two expressions.
+/// Represents a binary operator used between two expression kinds.
 ///
 /// Arithmetic operators follow standard mathematical precedence:
 /// multiplication and division bind tighter than addition and subtraction.
@@ -380,22 +380,30 @@ mod expression_tests {
 
     #[test]
     fn unwrap_grouped_returns_inner_expression() {
-        let inner = ExpressionKind::I32(42);
-        let grouped = ExpressionKind::Grouped(Box::new(inner));
-        assert_eq!(grouped.unwrap_grouped(), &ExpressionKind::I32(42));
+        let inner_expression_kind = ExpressionKind::I32(42);
+        let grouped_expression_kind = ExpressionKind::Grouped(Box::new(inner_expression_kind));
+        assert_eq!(
+            grouped_expression_kind.unwrap_grouped(),
+            &ExpressionKind::I32(42)
+        );
     }
 
     #[test]
     fn unwrap_grouped_returns_self_for_non_grouped() {
-        let expr = ExpressionKind::I32(42);
-        assert_eq!(expr.unwrap_grouped(), &ExpressionKind::I32(42));
+        let expression_kind = ExpressionKind::I32(42);
+        assert_eq!(expression_kind.unwrap_grouped(), &ExpressionKind::I32(42));
     }
 
     #[test]
     fn unwrap_grouped_unwraps_multiple_levels() {
-        let inner = ExpressionKind::I32(42);
-        let nested = ExpressionKind::Grouped(Box::new(ExpressionKind::Grouped(Box::new(inner))));
-        assert_eq!(nested.unwrap_grouped(), &ExpressionKind::I32(42));
+        let inner_expression_kind = ExpressionKind::I32(42);
+        let nested_expression_kind = ExpressionKind::Grouped(Box::new(ExpressionKind::Grouped(
+            Box::new(inner_expression_kind),
+        )));
+        assert_eq!(
+            nested_expression_kind.unwrap_grouped(),
+            &ExpressionKind::I32(42)
+        );
     }
 
     struct TestExpressionVisitor {
@@ -443,8 +451,8 @@ mod expression_tests {
 
     #[test]
     fn accept_dispatches_identifier_to_visitor() {
-        let identifier_expression = ExpressionKind::identifier("score".to_string());
-        let expected_node_id = identifier_expression.node_id().unwrap();
+        let identifier_expression_kind = ExpressionKind::identifier("score".to_string());
+        let expected_node_id = identifier_expression_kind.node_id().unwrap();
 
         let mut visitor = TestExpressionVisitor {
             visited_identifier: None,
@@ -454,7 +462,7 @@ mod expression_tests {
             visited_binary: false,
         };
 
-        let result = identifier_expression.accept(&mut visitor);
+        let result = identifier_expression_kind.accept(&mut visitor);
         assert!(result.is_ok());
         assert_eq!(
             visitor.visited_identifier,
@@ -464,8 +472,8 @@ mod expression_tests {
 
     #[test]
     fn accept_dispatches_function_call_to_visitor() {
-        let callee = ExpressionKind::identifier("calculate_total".to_string());
-        let call_expression = ExpressionKind::function_call(callee, vec![]);
+        let callee_expression_kind = ExpressionKind::identifier("calculate_total".to_string());
+        let call_expression_kind = ExpressionKind::function_call(callee_expression_kind, vec![]);
 
         let mut visitor = TestExpressionVisitor {
             visited_identifier: None,
@@ -475,15 +483,16 @@ mod expression_tests {
             visited_binary: false,
         };
 
-        let result = call_expression.accept(&mut visitor);
+        let result = call_expression_kind.accept(&mut visitor);
         assert!(result.is_ok());
         assert!(visitor.visited_function_call);
     }
 
     #[test]
     fn accept_dispatches_unary_to_visitor() {
-        let operand = ExpressionKind::I32(10);
-        let unary_expression = ExpressionKind::Unary(Box::new(operand), UnaryOperator::Minus);
+        let operand_expression_kind = ExpressionKind::I32(10);
+        let unary_expression_kind =
+            ExpressionKind::Unary(Box::new(operand_expression_kind), UnaryOperator::Minus);
 
         let mut visitor = TestExpressionVisitor {
             visited_identifier: None,
@@ -493,15 +502,15 @@ mod expression_tests {
             visited_binary: false,
         };
 
-        let result = unary_expression.accept(&mut visitor);
+        let result = unary_expression_kind.accept(&mut visitor);
         assert!(result.is_ok());
         assert!(visitor.visited_unary);
     }
 
     #[test]
     fn accept_dispatches_grouped_to_visitor() {
-        let operand = ExpressionKind::I32(10);
-        let grouped_expression = ExpressionKind::Grouped(Box::new(operand));
+        let operand_expression_kind = ExpressionKind::I32(10);
+        let grouped_expression_kind = ExpressionKind::Grouped(Box::new(operand_expression_kind));
 
         let mut visitor = TestExpressionVisitor {
             visited_identifier: None,
@@ -511,17 +520,20 @@ mod expression_tests {
             visited_binary: false,
         };
 
-        let result = grouped_expression.accept(&mut visitor);
+        let result = grouped_expression_kind.accept(&mut visitor);
         assert!(result.is_ok());
         assert!(visitor.visited_grouped);
     }
 
     #[test]
     fn accept_dispatches_binary_to_visitor() {
-        let left = ExpressionKind::I32(10);
-        let right = ExpressionKind::I32(20);
-        let binary_expression =
-            ExpressionKind::Binary(Box::new(left), BinaryOperator::Plus, Box::new(right));
+        let left_expression_kind = ExpressionKind::I32(10);
+        let right_expression_kind = ExpressionKind::I32(20);
+        let binary_expression_kind = ExpressionKind::Binary(
+            Box::new(left_expression_kind),
+            BinaryOperator::Plus,
+            Box::new(right_expression_kind),
+        );
 
         let mut visitor = TestExpressionVisitor {
             visited_identifier: None,
@@ -531,7 +543,7 @@ mod expression_tests {
             visited_binary: false,
         };
 
-        let result = binary_expression.accept(&mut visitor);
+        let result = binary_expression_kind.accept(&mut visitor);
         assert!(result.is_ok());
         assert!(visitor.visited_binary);
     }
@@ -543,24 +555,24 @@ mod expression_node_id_tests {
 
     #[test]
     fn gets_node_id_from_identifier() {
-        let expression = ExpressionKind::identifier("first_name".to_string());
-        let ExpressionKind::Identifier(_, expected_id) = &expression else {
-            panic!("Expected Expression::Identifier");
+        let expression_kind = ExpressionKind::identifier("first_name".to_string());
+        let ExpressionKind::Identifier(_, expected_id) = &expression_kind else {
+            panic!("Expected ExpressionKind::Identifier");
         };
 
-        assert_eq!(expression.node_id(), Some(*expected_id));
+        assert_eq!(expression_kind.node_id(), Some(*expected_id));
         assert!(*expected_id > NodeId(0));
     }
 
     #[test]
     fn gets_node_id_from_function_call() {
-        let callee = ExpressionKind::identifier("greeting".to_string());
-        let expression = ExpressionKind::function_call(callee, vec![]);
-        let ExpressionKind::FunctionCall(_, _, expected_id) = &expression else {
-            panic!("Expected Expression::FunctionCall");
+        let callee_expression_kind = ExpressionKind::identifier("greeting".to_string());
+        let expression_kind = ExpressionKind::function_call(callee_expression_kind, vec![]);
+        let ExpressionKind::FunctionCall(_, _, expected_id) = &expression_kind else {
+            panic!("Expected ExpressionKind::FunctionCall");
         };
 
-        assert_eq!(expression.node_id(), Some(*expected_id));
+        assert_eq!(expression_kind.node_id(), Some(*expected_id));
         assert!(*expected_id > NodeId(0));
     }
 
@@ -573,20 +585,28 @@ mod expression_node_id_tests {
 
     #[test]
     fn generates_unique_node_ids_for_multiple_identifiers() {
-        let first_name = ExpressionKind::identifier("first_name".to_string());
-        let second_name = ExpressionKind::identifier("first_name".to_string());
-        assert_ne!(first_name.node_id(), second_name.node_id());
+        let first_name_expression_kind = ExpressionKind::identifier("first_name".to_string());
+        let second_name_expression_kind = ExpressionKind::identifier("first_name".to_string());
+        assert_ne!(
+            first_name_expression_kind.node_id(),
+            second_name_expression_kind.node_id()
+        );
     }
 
     #[test]
     fn generates_unique_node_ids_for_multiple_function_calls() {
-        let callee_one = ExpressionKind::identifier("greeting".to_string());
-        let call_one = ExpressionKind::function_call(callee_one, vec![]);
+        let callee_one_expression_kind = ExpressionKind::identifier("greeting".to_string());
+        let call_one_expression_kind =
+            ExpressionKind::function_call(callee_one_expression_kind, vec![]);
 
-        let callee_two = ExpressionKind::identifier("greeting".to_string());
-        let call_two = ExpressionKind::function_call(callee_two, vec![]);
+        let callee_two_expression_kind = ExpressionKind::identifier("greeting".to_string());
+        let call_two_expression_kind =
+            ExpressionKind::function_call(callee_two_expression_kind, vec![]);
 
-        assert_ne!(call_one.node_id(), call_two.node_id());
+        assert_ne!(
+            call_one_expression_kind.node_id(),
+            call_two_expression_kind.node_id()
+        );
     }
 }
 

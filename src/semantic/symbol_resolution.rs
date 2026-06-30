@@ -87,8 +87,8 @@ impl StatementVisitor for SymbolResolutionVisitor {
         if self.scopes.contains_locally(name) {
             return Err(SemanticError::DuplicateVariable(name.to_string()));
         }
-        if let Some(expression) = variable_declaration.expression() {
-            expression.accept(self)?;
+        if let Some(expression_kind) = variable_declaration.expression() {
+            expression_kind.accept(self)?;
         }
         self.scopes.define(name.to_string(), next_symbol_id());
         Ok(())
@@ -179,7 +179,7 @@ impl StatementVisitor for SymbolResolutionVisitor {
 
     fn visit_function_call(&mut self, call: &ExpressionKind) -> Result<(), SemanticError> {
         let ExpressionKind::FunctionCall(..) = call else {
-            panic!("Expected Expression::FunctionCall variant");
+            panic!("Expected ExpressionKind::FunctionCall variant");
         };
         call.accept(self)
     }
@@ -193,8 +193,8 @@ impl StatementVisitor for SymbolResolutionVisitor {
     }
 
     fn visit_return(&mut self, return_statement: &Return) -> Result<(), SemanticError> {
-        if let Some(expression) = return_statement.expression() {
-            expression.accept(self)?;
+        if let Some(expression_kind) = return_statement.expression() {
+            expression_kind.accept(self)?;
         }
         match self.state.current_function() {
             None => Err(SemanticError::ReturnOutsideFunction),
@@ -212,8 +212,8 @@ impl StatementVisitor for SymbolResolutionVisitor {
     }
 
     fn visit_print(&mut self, print_statement: &Print) -> Result<(), SemanticError> {
-        for expression in print_statement.arguments() {
-            expression.accept(self)?;
+        for expression_kind in print_statement.arguments() {
+            expression_kind.accept(self)?;
         }
         Ok(())
     }
@@ -248,8 +248,8 @@ impl ExpressionVisitor for SymbolResolutionVisitor {
                 self.resolution_table.resolve(*callee_node_id, symbol_id);
             }
         }
-        for argument in arguments {
-            argument.accept(self)?
+        for argument_expression_kind in arguments {
+            argument_expression_kind.accept(self)?
         }
         Ok(())
     }
@@ -317,13 +317,13 @@ mod var_declaration_tests {
         let bonus_symbol_id = SymbolId(10);
         visitor.scopes.define("bonus".to_string(), bonus_symbol_id);
 
-        let initializer = ExpressionKind::identifier("bonus".to_string());
-        let bonus_node_id = initializer.node_id().unwrap();
+        let initializer_expression_kind = ExpressionKind::identifier("bonus".to_string());
+        let bonus_node_id = initializer_expression_kind.node_id().unwrap();
 
         let declaration = Statement::variable_declaration(VariableDeclaration::new(
             "score".to_string(),
             None,
-            Some(initializer),
+            Some(initializer_expression_kind),
         ));
 
         let result = declaration.accept(&mut visitor);
@@ -339,11 +339,11 @@ mod var_declaration_tests {
     fn var_declaration_fails_if_initializer_has_undefined_variable() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let initializer = ExpressionKind::identifier("bonus".to_string());
+        let initializer_expression_kind = ExpressionKind::identifier("bonus".to_string());
         let declaration = Statement::variable_declaration(VariableDeclaration::new(
             "score".to_string(),
             None,
-            Some(initializer),
+            Some(initializer_expression_kind),
         ));
 
         let result = declaration.accept(&mut visitor);
@@ -358,11 +358,11 @@ mod var_declaration_tests {
     fn var_declaration_initializer_cannot_self_reference() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let initializer = ExpressionKind::identifier("score".to_string());
+        let initializer_expression_kind = ExpressionKind::identifier("score".to_string());
         let declaration = Statement::variable_declaration(VariableDeclaration::new(
             "score".to_string(),
             None,
-            Some(initializer),
+            Some(initializer_expression_kind),
         ));
 
         let result = declaration.accept(&mut visitor);
@@ -430,10 +430,11 @@ mod assignment_tests {
         let bonus_symbol_id = SymbolId(20);
         visitor.scopes.define("bonus".to_string(), bonus_symbol_id);
 
-        let expression = ExpressionKind::identifier("bonus".to_string());
-        let bonus_node_id = expression.node_id().unwrap();
+        let expression_kind = ExpressionKind::identifier("bonus".to_string());
+        let bonus_node_id = expression_kind.node_id().unwrap();
 
-        let assignment = Statement::assignment(Assignment::new("score".to_string(), expression));
+        let assignment =
+            Statement::assignment(Assignment::new("score".to_string(), expression_kind));
         let assignment_id = assignment.id();
 
         let result = assignment.accept(&mut visitor);
@@ -453,8 +454,9 @@ mod assignment_tests {
         let mut visitor = SymbolResolutionVisitor::new();
         visitor.scopes.define("score".to_string(), SymbolId(10));
 
-        let expression = ExpressionKind::identifier("bonus".to_string());
-        let assignment = Statement::assignment(Assignment::new("score".to_string(), expression));
+        let expression_kind = ExpressionKind::identifier("bonus".to_string());
+        let assignment =
+            Statement::assignment(Assignment::new("score".to_string(), expression_kind));
 
         let result = assignment.accept(&mut visitor);
         assert_eq!(
@@ -599,10 +601,11 @@ mod if_tests {
             .scopes
             .define("score".to_string(), expected_symbol_id);
 
-        let condition = ExpressionKind::identifier("score".to_string());
-        let score_node_id = condition.node_id().unwrap();
+        let condition_expression_kind = ExpressionKind::identifier("score".to_string());
+        let score_node_id = condition_expression_kind.node_id().unwrap();
 
-        let if_statement = Statement::conditional(If::new(condition, Block::new(vec![]), None));
+        let if_statement =
+            Statement::conditional(If::new(condition_expression_kind, Block::new(vec![]), None));
 
         let result = if_statement.accept(&mut visitor);
         assert!(result.is_ok());
@@ -616,8 +619,9 @@ mod if_tests {
     fn if_condition_fails_given_undefined_variable() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let condition = ExpressionKind::identifier("score".to_string());
-        let if_statement = Statement::conditional(If::new(condition, Block::new(vec![]), None));
+        let condition_expression_kind = ExpressionKind::identifier("score".to_string());
+        let if_statement =
+            Statement::conditional(If::new(condition_expression_kind, Block::new(vec![]), None));
 
         let result = if_statement.accept(&mut visitor);
         assert_eq!(
@@ -898,9 +902,9 @@ mod function_call_tests {
             FunctionMetadata::new("calculate_total".to_string(), 0, false),
         );
 
-        let callee = ExpressionKind::identifier("calculate_total".to_string());
-        let call_expression = ExpressionKind::function_call(callee, vec![]);
-        let call_statement = Statement::function_call(call_expression);
+        let callee_expression_kind = ExpressionKind::identifier("calculate_total".to_string());
+        let call_expression_kind = ExpressionKind::function_call(callee_expression_kind, vec![]);
+        let call_statement = Statement::function_call(call_expression_kind);
 
         let result = call_statement.accept(&mut visitor);
         assert!(result.is_ok());
@@ -920,9 +924,9 @@ mod function_call_tests {
             FunctionMetadata::new("calculate_total".to_string(), 1, false),
         );
 
-        let callee = ExpressionKind::identifier("calculate_total".to_string());
-        let call_expression = ExpressionKind::function_call(callee, vec![]);
-        let call_statement = Statement::function_call(call_expression);
+        let callee_expression_kind = ExpressionKind::identifier("calculate_total".to_string());
+        let call_expression_kind = ExpressionKind::function_call(callee_expression_kind, vec![]);
+        let call_statement = Statement::function_call(call_expression_kind);
 
         let result = call_statement.accept(&mut visitor);
         assert_eq!(
@@ -944,9 +948,9 @@ mod function_call_tests {
             .scopes
             .define("calculate_total".to_string(), variable_symbol_id);
 
-        let callee = ExpressionKind::identifier("calculate_total".to_string());
-        let call_expression = ExpressionKind::function_call(callee, vec![]);
-        let call_statement = Statement::function_call(call_expression);
+        let callee_expression_kind = ExpressionKind::identifier("calculate_total".to_string());
+        let call_expression_kind = ExpressionKind::function_call(callee_expression_kind, vec![]);
+        let call_statement = Statement::function_call(call_expression_kind);
 
         let result = call_statement.accept(&mut visitor);
         assert_eq!(
@@ -959,10 +963,11 @@ mod function_call_tests {
     fn defers_unresolved_function_call_to_pending_calls() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let callee = ExpressionKind::identifier("calculate_total".to_string());
-        let expected_callee_node_id = callee.node_id().unwrap();
-        let call_expression = ExpressionKind::function_call(callee, vec![ExpressionKind::I32(42)]);
-        let call_statement = Statement::function_call(call_expression);
+        let callee_expression_kind = ExpressionKind::identifier("calculate_total".to_string());
+        let expected_callee_node_id = callee_expression_kind.node_id().unwrap();
+        let call_expression_kind =
+            ExpressionKind::function_call(callee_expression_kind, vec![ExpressionKind::I32(42)]);
+        let call_statement = Statement::function_call(call_expression_kind);
 
         let result = call_statement.accept(&mut visitor);
         assert!(result.is_ok());
@@ -981,20 +986,20 @@ mod function_call_tests {
     fn detects_non_identifier_callee_as_not_a_function() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let callee = ExpressionKind::I32(42);
-        let call_expression = ExpressionKind::function_call(callee, vec![]);
-        let call_statement = Statement::function_call(call_expression);
+        let callee_expression_kind = ExpressionKind::I32(42);
+        let call_expression_kind = ExpressionKind::function_call(callee_expression_kind, vec![]);
+        let call_statement = Statement::function_call(call_expression_kind);
 
         let result = call_statement.accept(&mut visitor);
         assert_eq!(result, Err(SemanticError::NotAFunction("".to_string())));
     }
 
     #[test]
-    #[should_panic(expected = "Expected Expression::FunctionCall variant")]
+    #[should_panic(expected = "Expected ExpressionKind::FunctionCall variant")]
     fn panics_on_non_function_call_expression_variant() {
         let mut visitor = SymbolResolutionVisitor::new();
-        let expression = ExpressionKind::I32(42);
-        let _ = StatementVisitor::visit_function_call(&mut visitor, &expression);
+        let expression_kind = ExpressionKind::I32(42);
+        let _ = StatementVisitor::visit_function_call(&mut visitor, &expression_kind);
     }
 
     #[test]
@@ -1010,11 +1015,11 @@ mod function_call_tests {
             FunctionMetadata::new("calculate_total".to_string(), 0, false),
         );
 
-        let callee = ExpressionKind::identifier("calculate_total".to_string());
-        let callee_node_id = callee.node_id().unwrap();
-        let call_expression = ExpressionKind::function_call(callee, vec![]);
+        let callee_expression_kind = ExpressionKind::identifier("calculate_total".to_string());
+        let callee_node_id = callee_expression_kind.node_id().unwrap();
+        let call_expression_kind = ExpressionKind::function_call(callee_expression_kind, vec![]);
 
-        let result = call_expression.accept(&mut visitor);
+        let result = call_expression_kind.accept(&mut visitor);
         assert!(result.is_ok());
         assert_eq!(
             visitor.resolution_table.get(&callee_node_id),
@@ -1026,12 +1031,12 @@ mod function_call_tests {
     fn visitor_resolves_deferred_function_call_in_resolution_table_on_pending_calls_resolve() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let callee = ExpressionKind::identifier("calculate_total".to_string());
-        let callee_node_id = callee.node_id().unwrap();
-        let call_expression = ExpressionKind::function_call(callee, vec![]);
+        let callee_expression_kind = ExpressionKind::identifier("calculate_total".to_string());
+        let callee_node_id = callee_expression_kind.node_id().unwrap();
+        let call_expression_kind = ExpressionKind::function_call(callee_expression_kind, vec![]);
 
         // Visit call, which defers it
-        let result = call_expression.accept(&mut visitor);
+        let result = call_expression_kind.accept(&mut visitor);
         assert!(result.is_ok());
         assert_eq!(visitor.resolution_table.get(&callee_node_id), None);
 
@@ -1073,14 +1078,15 @@ mod function_call_tests {
             .scopes
             .define("score".to_string(), variable_symbol_id);
 
-        let callee = ExpressionKind::identifier("calculate_total".to_string());
-        let callee_node_id = callee.node_id().unwrap();
+        let callee_expression_kind = ExpressionKind::identifier("calculate_total".to_string());
+        let callee_node_id = callee_expression_kind.node_id().unwrap();
 
-        let argument = ExpressionKind::identifier("score".to_string());
-        let argument_node_id = argument.node_id().unwrap();
-        let call_expression = ExpressionKind::function_call(callee, vec![argument]);
+        let argument_expression_kind = ExpressionKind::identifier("score".to_string());
+        let argument_node_id = argument_expression_kind.node_id().unwrap();
+        let call_expression_kind =
+            ExpressionKind::function_call(callee_expression_kind, vec![argument_expression_kind]);
 
-        let result = call_expression.accept(&mut visitor);
+        let result = call_expression_kind.accept(&mut visitor);
         assert!(result.is_ok());
         assert_eq!(
             visitor.resolution_table.get(&callee_node_id),
@@ -1205,9 +1211,9 @@ mod return_tests {
             FunctionMetadata::new("calculate".to_string(), 0, true),
         );
 
-        let expression = ExpressionKind::identifier("score".to_string());
-        let score_node_id = expression.node_id().unwrap();
-        let return_statement = Statement::return_(Return::new(Some(expression)));
+        let expression_kind = ExpressionKind::identifier("score".to_string());
+        let score_node_id = expression_kind.node_id().unwrap();
+        let return_statement = Statement::return_(Return::new(Some(expression_kind)));
         let result = return_statement.accept(&mut visitor);
 
         assert!(result.is_ok());
@@ -1225,8 +1231,8 @@ mod return_tests {
             FunctionMetadata::new("calculate".to_string(), 0, true),
         );
 
-        let expression = ExpressionKind::identifier("score".to_string());
-        let return_statement = Statement::return_(Return::new(Some(expression)));
+        let expression_kind = ExpressionKind::identifier("score".to_string());
+        let return_statement = Statement::return_(Return::new(Some(expression_kind)));
         let result = return_statement.accept(&mut visitor);
 
         assert_eq!(
@@ -1251,9 +1257,9 @@ mod print_tests {
             .scopes
             .define("score".to_string(), expected_symbol_id);
 
-        let argument = ExpressionKind::identifier("score".to_string());
-        let score_node_id = argument.node_id().unwrap();
-        let print_statement = Statement::print(Print::new(vec![argument]));
+        let argument_expression_kind = ExpressionKind::identifier("score".to_string());
+        let score_node_id = argument_expression_kind.node_id().unwrap();
+        let print_statement = Statement::print(Print::new(vec![argument_expression_kind]));
         let result = print_statement.accept(&mut visitor);
 
         assert!(result.is_ok());
@@ -1267,8 +1273,8 @@ mod print_tests {
     fn print_fails_if_argument_has_undefined_variable() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let argument = ExpressionKind::identifier("score".to_string());
-        let print_statement = Statement::print(Print::new(vec![argument]));
+        let argument_expression_kind = ExpressionKind::identifier("score".to_string());
+        let print_statement = Statement::print(Print::new(vec![argument_expression_kind]));
         let result = print_statement.accept(&mut visitor);
 
         assert_eq!(
@@ -1444,10 +1450,10 @@ mod identifier_expression_tests {
             .scopes
             .define("score".to_string(), expected_symbol_id);
 
-        let identifier_expression = ExpressionKind::identifier("score".to_string());
-        let node_id = identifier_expression.node_id().unwrap();
+        let identifier_expression_kind = ExpressionKind::identifier("score".to_string());
+        let node_id = identifier_expression_kind.node_id().unwrap();
 
-        let result = identifier_expression.accept(&mut visitor);
+        let result = identifier_expression_kind.accept(&mut visitor);
         assert!(result.is_ok());
         assert_eq!(
             visitor.resolution_table.get(&node_id),
@@ -1459,8 +1465,8 @@ mod identifier_expression_tests {
     fn visitor_fails_for_undefined_identifier_expression() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let identifier_expression = ExpressionKind::identifier("score".to_string());
-        let result = identifier_expression.accept(&mut visitor);
+        let identifier_expression_kind = ExpressionKind::identifier("score".to_string());
+        let result = identifier_expression_kind.accept(&mut visitor);
 
         assert_eq!(
             result,
@@ -1484,12 +1490,13 @@ mod unary_expression_tests {
             .scopes
             .define("score".to_string(), expected_symbol_id);
 
-        let operand = ExpressionKind::identifier("score".to_string());
-        let score_node_id = operand.node_id().unwrap();
+        let operand_expression_kind = ExpressionKind::identifier("score".to_string());
+        let score_node_id = operand_expression_kind.node_id().unwrap();
 
-        let unary_expression = ExpressionKind::Unary(Box::new(operand), UnaryOperator::Minus);
+        let unary_expression_kind =
+            ExpressionKind::Unary(Box::new(operand_expression_kind), UnaryOperator::Minus);
 
-        let result = unary_expression.accept(&mut visitor);
+        let result = unary_expression_kind.accept(&mut visitor);
         assert!(result.is_ok());
         assert_eq!(
             visitor.resolution_table.get(&score_node_id),
@@ -1501,10 +1508,11 @@ mod unary_expression_tests {
     fn visitor_fails_if_operand_has_undefined_variable() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let operand = ExpressionKind::identifier("score".to_string());
-        let unary_expression = ExpressionKind::Unary(Box::new(operand), UnaryOperator::Minus);
+        let operand_expression_kind = ExpressionKind::identifier("score".to_string());
+        let unary_expression_kind =
+            ExpressionKind::Unary(Box::new(operand_expression_kind), UnaryOperator::Minus);
 
-        let result = unary_expression.accept(&mut visitor);
+        let result = unary_expression_kind.accept(&mut visitor);
         assert_eq!(
             result,
             Err(SemanticError::UndefinedVariable("score".to_string()))
@@ -1528,16 +1536,19 @@ mod binary_expression_tests {
         let bonus_symbol_id = SymbolId(2);
         visitor.scopes.define("bonus".to_string(), bonus_symbol_id);
 
-        let left = ExpressionKind::identifier("score".to_string());
-        let score_node_id = left.node_id().unwrap();
+        let left_expression_kind = ExpressionKind::identifier("score".to_string());
+        let score_node_id = left_expression_kind.node_id().unwrap();
 
-        let right = ExpressionKind::identifier("bonus".to_string());
-        let bonus_node_id = right.node_id().unwrap();
+        let right_expression_kind = ExpressionKind::identifier("bonus".to_string());
+        let bonus_node_id = right_expression_kind.node_id().unwrap();
 
-        let binary_expression =
-            ExpressionKind::Binary(Box::new(left), BinaryOperator::Plus, Box::new(right));
+        let binary_expression_kind = ExpressionKind::Binary(
+            Box::new(left_expression_kind),
+            BinaryOperator::Plus,
+            Box::new(right_expression_kind),
+        );
 
-        let result = binary_expression.accept(&mut visitor);
+        let result = binary_expression_kind.accept(&mut visitor);
         assert!(result.is_ok());
         assert_eq!(
             visitor.resolution_table.get(&score_node_id),
@@ -1554,13 +1565,16 @@ mod binary_expression_tests {
         let mut visitor = SymbolResolutionVisitor::new();
         visitor.scopes.define("bonus".to_string(), SymbolId(1));
 
-        let left = ExpressionKind::identifier("score".to_string());
-        let right = ExpressionKind::identifier("bonus".to_string());
+        let left_expression_kind = ExpressionKind::identifier("score".to_string());
+        let right_expression_kind = ExpressionKind::identifier("bonus".to_string());
 
-        let binary_expression =
-            ExpressionKind::Binary(Box::new(left), BinaryOperator::Plus, Box::new(right));
+        let binary_expression_kind = ExpressionKind::Binary(
+            Box::new(left_expression_kind),
+            BinaryOperator::Plus,
+            Box::new(right_expression_kind),
+        );
 
-        let result = binary_expression.accept(&mut visitor);
+        let result = binary_expression_kind.accept(&mut visitor);
         assert_eq!(
             result,
             Err(SemanticError::UndefinedVariable("score".to_string()))
@@ -1572,13 +1586,16 @@ mod binary_expression_tests {
         let mut visitor = SymbolResolutionVisitor::new();
         visitor.scopes.define("score".to_string(), SymbolId(1));
 
-        let left = ExpressionKind::identifier("score".to_string());
-        let right = ExpressionKind::identifier("bonus".to_string());
+        let left_expression_kind = ExpressionKind::identifier("score".to_string());
+        let right_expression_kind = ExpressionKind::identifier("bonus".to_string());
 
-        let binary_expression =
-            ExpressionKind::Binary(Box::new(left), BinaryOperator::Plus, Box::new(right));
+        let binary_expression_kind = ExpressionKind::Binary(
+            Box::new(left_expression_kind),
+            BinaryOperator::Plus,
+            Box::new(right_expression_kind),
+        );
 
-        let result = binary_expression.accept(&mut visitor);
+        let result = binary_expression_kind.accept(&mut visitor);
         assert_eq!(
             result,
             Err(SemanticError::UndefinedVariable("bonus".to_string()))
@@ -1601,12 +1618,12 @@ mod grouped_expression_tests {
             .scopes
             .define("score".to_string(), expected_symbol_id);
 
-        let operand = ExpressionKind::identifier("score".to_string());
-        let score_node_id = operand.node_id().unwrap();
+        let operand_expression_kind = ExpressionKind::identifier("score".to_string());
+        let score_node_id = operand_expression_kind.node_id().unwrap();
 
-        let grouped_expression = ExpressionKind::Grouped(Box::new(operand));
+        let grouped_expression_kind = ExpressionKind::Grouped(Box::new(operand_expression_kind));
 
-        let result = grouped_expression.accept(&mut visitor);
+        let result = grouped_expression_kind.accept(&mut visitor);
         assert!(result.is_ok());
         assert_eq!(
             visitor.resolution_table.get(&score_node_id),
@@ -1618,10 +1635,10 @@ mod grouped_expression_tests {
     fn visitor_fails_if_operand_has_undefined_variable() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let operand = ExpressionKind::identifier("score".to_string());
-        let grouped_expression = ExpressionKind::Grouped(Box::new(operand));
+        let operand_expression_kind = ExpressionKind::identifier("score".to_string());
+        let grouped_expression_kind = ExpressionKind::Grouped(Box::new(operand_expression_kind));
 
-        let result = grouped_expression.accept(&mut visitor);
+        let result = grouped_expression_kind.accept(&mut visitor);
         assert_eq!(
             result,
             Err(SemanticError::UndefinedVariable("score".to_string()))
