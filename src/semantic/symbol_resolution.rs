@@ -82,10 +82,12 @@ impl StatementVisitor for SymbolResolutionVisitor {
         &mut self,
         variable_declaration: &VariableDeclaration,
     ) -> Result<(), SemanticError> {
-        //TODO: traverse and validate the initializer expression using ExpressionVisitor
         let name = variable_declaration.variable();
         if self.scopes.contains_locally(name) {
             return Err(SemanticError::DuplicateVariable(name.to_string()));
+        }
+        if let Some(expression) = variable_declaration.expression() {
+            expression.accept(self)?;
         }
         self.scopes.define(name.to_string(), next_symbol_id());
         Ok(())
@@ -293,6 +295,68 @@ mod var_declaration_tests {
             result,
             Err(SemanticError::DuplicateVariable(ref name)) if name == "username"
         ));
+    }
+
+    #[test]
+    fn var_declaration_resolves_identifiers_in_initializer() {
+        let mut visitor = SymbolResolutionVisitor::new();
+        let bonus_symbol_id = SymbolId(10);
+        visitor.scopes.define("bonus".to_string(), bonus_symbol_id);
+
+        let initializer = Expression::identifier("bonus".to_string());
+        let bonus_node_id = initializer.node_id().unwrap();
+
+        let declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "score".to_string(),
+            None,
+            Some(initializer),
+        ));
+
+        let result = declaration.accept(&mut visitor);
+        assert!(result.is_ok());
+        assert!(visitor.scopes.contains("score"));
+        assert_eq!(
+            visitor.resolution_table.get(&bonus_node_id),
+            Some(bonus_symbol_id)
+        );
+    }
+
+    #[test]
+    fn var_declaration_fails_if_initializer_has_undefined_variable() {
+        let mut visitor = SymbolResolutionVisitor::new();
+
+        let initializer = Expression::identifier("bonus".to_string());
+        let declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "score".to_string(),
+            None,
+            Some(initializer),
+        ));
+
+        let result = declaration.accept(&mut visitor);
+        assert_eq!(
+            result,
+            Err(SemanticError::UndefinedVariable("bonus".to_string()))
+        );
+        assert!(!visitor.scopes.contains("score"));
+    }
+
+    #[test]
+    fn var_declaration_initializer_cannot_self_reference() {
+        let mut visitor = SymbolResolutionVisitor::new();
+
+        let initializer = Expression::identifier("score".to_string());
+        let declaration = Statement::variable_declaration(VariableDeclaration::new(
+            "score".to_string(),
+            None,
+            Some(initializer),
+        ));
+
+        let result = declaration.accept(&mut visitor);
+        assert_eq!(
+            result,
+            Err(SemanticError::UndefinedVariable("score".to_string()))
+        );
+        assert!(!visitor.scopes.contains("score"));
     }
 }
 
