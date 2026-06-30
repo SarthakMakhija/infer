@@ -40,12 +40,12 @@ Source Code
 *   **Output:** An untyped Abstract Syntax Tree (AST).
 *   **Role:** Analyzes structural syntax using recursive descent parsing to construct a nested, hierarchical tree representation of the program (e.g., assignment nodes, conditional nodes, function definition nodes).
 
-### 3. Semantic Analysis: *Next Phase*
+### 3. Semantic Analysis - Scoping & Structural Analysis: *Complete*
 *   **Input:** An untyped AST.
 *   **Output:** A validated, semantically checked AST.
 *   **Role:** Performs name resolution, scope checking, and general structural validation (e.g., verifying `break` is only used inside loops, variables are not declared twice in the same scope) before type checking.
 
-### 4. Type Inference Engine: *Next Phase*
+### 4. Semantic Analysis - Type Inference: *Next Phase*
 *   **Input:** A validated, untyped AST.
 *   **Output:** A fully typed AST (or type errors).
 *   **Role:** Collects type equations/constraints by traversing the AST, and then unifies those equations (similar to Hindley-Milner unification) to determine the exact type of every expression without requiring the programmer to write explicit types!
