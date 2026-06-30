@@ -396,43 +396,6 @@ mod expression_tests {
         assert_eq!(nested.unwrap_grouped(), &Expression::I32(42));
     }
 
-    #[test]
-    fn identifier_with_unique_id() {
-        let expression = Expression::identifier("first_name".to_string());
-
-        let Expression::Identifier(_name, id) = &expression else {
-            panic!("Expected Expression::Identifier");
-        };
-        assert!(*id > NodeId(0));
-    }
-
-    #[test]
-    fn function_call_with_unique_id() {
-        let callee = Expression::identifier("greeting".to_string());
-        let expression = Expression::function_call(callee, vec![]);
-
-        let Expression::FunctionCall(_callee, _arguments, id) = &expression else {
-            panic!("Expected Expression::FunctionCall");
-        };
-        assert!(*id > NodeId(0));
-    }
-
-    #[test]
-    fn multiple_identifiers_each_with_unique_id() {
-        let first_name = Expression::identifier("first_name".to_string());
-        let second_name = Expression::identifier("first_name".to_string());
-
-        let Expression::Identifier(_name, first_name_id) = &first_name else {
-            panic!("Expected Expression::Identifier");
-        };
-        assert!(*first_name_id > NodeId(0));
-
-        let Expression::Identifier(_name, second_name_id) = &second_name else {
-            panic!("Expected Expression::Identifier");
-        };
-        assert!(*second_name_id > NodeId(0));
-    }
-
     struct TestExpressionVisitor {
         visited_identifier: Option<(String, NodeId)>,
         visited_function_call: bool,
@@ -461,11 +424,6 @@ mod expression_tests {
             Ok(())
         }
 
-        fn visit_grouped(&mut self, _expr: &Expression) -> Result<(), SemanticError> {
-            self.visited_grouped = true;
-            Ok(())
-        }
-
         fn visit_binary(
             &mut self,
             _left: &Expression,
@@ -474,14 +432,17 @@ mod expression_tests {
             self.visited_binary = true;
             Ok(())
         }
+
+        fn visit_grouped(&mut self, _expr: &Expression) -> Result<(), SemanticError> {
+            self.visited_grouped = true;
+            Ok(())
+        }
     }
 
     #[test]
     fn accept_dispatches_identifier_to_visitor() {
         let identifier_expression = Expression::identifier("score".to_string());
-        let Expression::Identifier(_, expected_node_id) = &identifier_expression else {
-            panic!("Expected Expression::Identifier");
-        };
+        let expected_node_id = identifier_expression.node_id().unwrap();
 
         let mut visitor = TestExpressionVisitor {
             visited_identifier: None,
@@ -495,7 +456,7 @@ mod expression_tests {
         assert!(result.is_ok());
         assert_eq!(
             visitor.visited_identifier,
-            Some(("score".to_string(), *expected_node_id))
+            Some(("score".to_string(), expected_node_id))
         );
     }
 
@@ -571,6 +532,59 @@ mod expression_tests {
         let result = binary_expression.accept(&mut visitor);
         assert!(result.is_ok());
         assert!(visitor.visited_binary);
+    }
+}
+
+#[cfg(test)]
+mod expression_node_id_tests {
+    use super::*;
+
+    #[test]
+    fn gets_node_id_from_identifier() {
+        let expression = Expression::identifier("first_name".to_string());
+        let Expression::Identifier(_, expected_id) = &expression else {
+            panic!("Expected Expression::Identifier");
+        };
+
+        assert_eq!(expression.node_id(), Some(*expected_id));
+        assert!(*expected_id > NodeId(0));
+    }
+
+    #[test]
+    fn gets_node_id_from_function_call() {
+        let callee = Expression::identifier("greeting".to_string());
+        let expression = Expression::function_call(callee, vec![]);
+        let Expression::FunctionCall(_, _, expected_id) = &expression else {
+            panic!("Expected Expression::FunctionCall");
+        };
+
+        assert_eq!(expression.node_id(), Some(*expected_id));
+        assert!(*expected_id > NodeId(0));
+    }
+
+    #[test]
+    fn returns_none_for_expressions_without_node_id() {
+        assert_eq!(Expression::I32(42).node_id(), None);
+        assert_eq!(Expression::String("hello".to_string()).node_id(), None);
+        assert_eq!(Expression::Boolean(true).node_id(), None);
+    }
+
+    #[test]
+    fn generates_unique_node_ids_for_multiple_identifiers() {
+        let first_name = Expression::identifier("first_name".to_string());
+        let second_name = Expression::identifier("first_name".to_string());
+        assert_ne!(first_name.node_id(), second_name.node_id());
+    }
+
+    #[test]
+    fn generates_unique_node_ids_for_multiple_function_calls() {
+        let callee_one = Expression::identifier("greeting".to_string());
+        let call_one = Expression::function_call(callee_one, vec![]);
+
+        let callee_two = Expression::identifier("greeting".to_string());
+        let call_two = Expression::function_call(callee_two, vec![]);
+
+        assert_ne!(call_one.node_id(), call_two.node_id());
     }
 }
 
