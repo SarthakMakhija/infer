@@ -391,12 +391,13 @@ mod tests {
         let mut parser = StatementParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        let line = 1;
         assert_eq!(
             statement,
             Statement::print(Print::new(vec![
-                ExpressionKind::identifier("name".to_string()),
-                ExpressionKind::I32(42),
-                ExpressionKind::Boolean(true),
+                Expression::new(ExpressionKind::identifier("name".to_string()), line),
+                Expression::new(ExpressionKind::I32(42), line),
+                Expression::new(ExpressionKind::Boolean(true), line),
             ]))
         );
     }
@@ -408,12 +409,16 @@ mod tests {
         let mut parser = StatementParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        let line = 1;
         assert_eq!(
             statement,
-            Statement::print(Print::new(vec![ExpressionKind::Binary(
-                Box::new(ExpressionKind::identifier("age".to_string())),
-                BinaryOperator::Plus,
-                Box::new(ExpressionKind::I32(10))
+            Statement::print(Print::new(vec![Expression::new(
+                ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("age".to_string())),
+                    BinaryOperator::Plus,
+                    Box::new(ExpressionKind::I32(10))
+                ),
+                line
             )]))
         );
     }

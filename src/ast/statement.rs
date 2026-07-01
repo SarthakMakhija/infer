@@ -1,4 +1,6 @@
-use crate::ast::expr::{Expression, ExpressionKind};
+use crate::ast::expr::Expression;
+#[cfg(test)]
+use crate::ast::expr::ExpressionKind;
 use crate::semantic::error::SemanticError;
 use crate::semantic::visitor::StatementVisitor;
 use std::cell::Cell;
@@ -420,16 +422,16 @@ impl Return {
 /// Example: `print name, age;`
 #[derive(Debug, PartialEq)]
 pub struct Print {
-    pub(crate) arguments: Vec<ExpressionKind>,
+    pub(crate) arguments: Vec<Expression>,
 }
 
 impl Print {
-    pub(crate) fn new(arguments: Vec<ExpressionKind>) -> Self {
+    pub(crate) fn new(arguments: Vec<Expression>) -> Self {
         Self { arguments }
     }
 
-    /// Returns the arguments of the print statement.
-    pub fn arguments(&self) -> &[ExpressionKind] {
+    /// Returns the slice of expressions to be printed.
+    pub fn arguments(&self) -> &[Expression] {
         &self.arguments
     }
 }
@@ -527,7 +529,8 @@ mod tests {
 
     #[test]
     fn print_id() {
-        let statement = Statement::print(Print::new(vec![ExpressionKind::I32(1)]));
+        let statement =
+            Statement::print(Print::new(vec![Expression::new(ExpressionKind::I32(1), 0)]));
         assert!(*statement.id() > 0);
     }
 

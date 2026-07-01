@@ -1268,7 +1268,7 @@ mod return_tests {
 #[cfg(test)]
 mod print_tests {
     use super::*;
-    use crate::ast::expr::ExpressionKind;
+    use crate::ast::expr::{Expression, ExpressionKind};
     use crate::ast::statement::{Print, Statement};
     use crate::semantic::SymbolId;
 
@@ -1282,7 +1282,10 @@ mod print_tests {
 
         let argument_expression_kind = ExpressionKind::identifier("score".to_string());
         let score_node_id = argument_expression_kind.node_id().unwrap();
-        let print_statement = Statement::print(Print::new(vec![argument_expression_kind]));
+        let print_statement = Statement::print(Print::new(vec![Expression::new(
+            argument_expression_kind,
+            0,
+        )]));
         let result = print_statement.accept(&mut visitor);
 
         assert!(result.is_ok());
@@ -1297,7 +1300,10 @@ mod print_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let argument_expression_kind = ExpressionKind::identifier("score".to_string());
-        let print_statement = Statement::print(Print::new(vec![argument_expression_kind]));
+        let print_statement = Statement::print(Print::new(vec![Expression::new(
+            argument_expression_kind,
+            0,
+        )]));
         let result = print_statement.accept(&mut visitor);
 
         assert_eq!(

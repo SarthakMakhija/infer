@@ -1,3 +1,5 @@
+use crate::ast::expr::Expression;
+#[cfg(test)]
 use crate::ast::expr::ExpressionKind;
 use crate::ast::statement::{Print, Statement};
 use crate::lexer::token::TokenType;
@@ -16,20 +18,20 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> PrintParser<'src, 'stre
     }
 
     pub(crate) fn parse(&mut self) -> Result<Statement, ParseError> {
-        self.stream.expect(TokenType::Print)?;
+        let print_token = self.stream.expect(TokenType::Print)?;
 
-        let arguments = self.arguments()?;
+        let arguments = self.arguments(print_token.line)?;
         self.stream.expect(TokenType::Semicolon)?;
 
         Ok(Statement::print(Print::new(arguments)))
     }
 
-    fn arguments(&mut self) -> Result<Vec<ExpressionKind>, ParseError> {
+    fn arguments(&mut self, line: usize) -> Result<Vec<Expression>, ParseError> {
         let mut expression_parser = ExpressionParser::new(self.stream);
-        let expression = expression_parser.parse()?;
+        let expression_kind = expression_parser.parse()?;
 
         let mut arguments = Vec::new();
-        arguments.push(expression);
+        arguments.push(Expression::new(expression_kind, line));
 
         while expression_parser.stream.maybe_matches(TokenType::Comma) {
             if let Some(next_token) = expression_parser.stream.peek()? {
@@ -37,8 +39,8 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> PrintParser<'src, 'stre
                     return Err(ParseError::TrailingComma(next_token.line));
                 }
             }
-            let expression = expression_parser.parse()?;
-            arguments.push(expression);
+            let expression_kind = expression_parser.parse()?;
+            arguments.push(Expression::new(expression_kind, line));
         }
         Ok(arguments)
     }
@@ -57,12 +59,13 @@ mod tests {
         let mut parser = PrintParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        let line = 1;
         assert_eq!(
             statement,
             Statement::print(Print::new(vec![
-                ExpressionKind::identifier("name".to_string()),
-                ExpressionKind::I32(42),
-                ExpressionKind::Boolean(true),
+                Expression::new(ExpressionKind::identifier("name".to_string()), line),
+                Expression::new(ExpressionKind::I32(42), line),
+                Expression::new(ExpressionKind::Boolean(true), line),
             ]))
         );
     }
@@ -74,12 +77,16 @@ mod tests {
         let mut parser = PrintParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        let line = 1;
         assert_eq!(
             statement,
-            Statement::print(Print::new(vec![ExpressionKind::Binary(
-                Box::new(ExpressionKind::identifier("age".to_string())),
-                crate::ast::expr::BinaryOperator::Plus,
-                Box::new(ExpressionKind::I32(10))
+            Statement::print(Print::new(vec![Expression::new(
+                ExpressionKind::Binary(
+                    Box::new(ExpressionKind::identifier("age".to_string())),
+                    crate::ast::expr::BinaryOperator::Plus,
+                    Box::new(ExpressionKind::I32(10))
+                ),
+                line
             )]))
         );
     }
