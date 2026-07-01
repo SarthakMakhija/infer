@@ -61,7 +61,6 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ReturnParser<'src, 'str
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::{Expression, ExpressionKind};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
     use crate::parser::stream::ParserStream;
@@ -119,10 +118,7 @@ mod tests {
         let line = 1;
         assert_eq!(
             statement,
-            Statement::return_(Return::new(Some(Expression::new(
-                ExpressionKind::I32(42),
-                line
-            ))))
+            Statement::return_(Return::new(Some(expression_i32!(42, line))))
         );
     }
 

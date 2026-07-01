@@ -66,10 +66,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> Parser<'src, 'stream, I
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::{Expression, ExpressionKind};
-    use crate::ast::statement::{
-        Block, FunctionDefinition, FunctionParameter, Statement, VariableDeclaration,
-    };
+    use crate::ast::statement::{Block, FunctionDefinition, FunctionParameter, Statement};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
 
@@ -92,14 +89,7 @@ mod tests {
         let program = parser.parse().unwrap();
         let line = 1;
         let expected = ProgramBuilder::new()
-            .add(Statement::variable_declaration(VariableDeclaration::new(
-                "greeting".to_string(),
-                None,
-                Some(Expression::new(
-                    ExpressionKind::String("hello".to_string()),
-                    line,
-                )),
-            )))
+            .add(variable_declaration!("greeting", value: expression_string!("hello", line)))
             .build();
         assert_eq!(program, expected);
     }
@@ -113,16 +103,8 @@ mod tests {
         let program = parser.parse().unwrap();
         let line = 1;
         let expected = ProgramBuilder::new()
-            .add(Statement::variable_declaration(VariableDeclaration::new(
-                "x".to_string(),
-                None,
-                Some(Expression::new(ExpressionKind::I32(100), line)),
-            )))
-            .add(Statement::variable_declaration(VariableDeclaration::new(
-                "flag".to_string(),
-                None,
-                Some(Expression::new(ExpressionKind::Boolean(true), line)),
-            )))
+            .add(variable_declaration!("x", value: expression_i32!(100, line)))
+            .add(variable_declaration!("flag", value: expression_boolean!(true, line)))
             .build();
         assert_eq!(program, expected);
     }
@@ -196,15 +178,9 @@ mod tests {
                     Some("i32".to_string()),
                 )],
                 Some("i32".to_string()),
-                Block::new(vec![Statement::variable_declaration(
-                    VariableDeclaration::new(
-                        "risk_level".to_string(),
-                        None,
-                        Some(Expression::new(
-                            ExpressionKind::identifier("score".to_string()),
-                            line,
-                        )),
-                    ),
+                Block::new(vec![variable_declaration!(
+                    "risk_level",
+                    value: expression_identifier!("score", line)
                 )]),
             )))
             .build();

@@ -277,17 +277,12 @@ impl ExpressionVisitor for SymbolResolutionVisitor {
 #[cfg(test)]
 mod var_declaration_tests {
     use super::*;
-    use crate::ast::statement::Statement;
     use crate::semantic::SymbolId;
 
     #[test]
     fn accepts_a_valid_variable_declaration() {
         let mut visitor = SymbolResolutionVisitor::new();
-        let declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "username".to_string(),
-            None,
-            None,
-        ));
+        let declaration = variable_declaration!("username");
 
         let result = declaration.accept(&mut visitor);
         assert!(result.is_ok());
@@ -299,11 +294,7 @@ mod var_declaration_tests {
         let mut visitor = SymbolResolutionVisitor::new();
         visitor.scopes.define("username".to_string(), SymbolId(1));
 
-        let second_declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "username".to_string(),
-            None,
-            None,
-        ));
+        let second_declaration = variable_declaration!("username");
         let result = second_declaration.accept(&mut visitor);
 
         assert!(matches!(
@@ -321,11 +312,8 @@ mod var_declaration_tests {
         let initializer_expression_kind = ExpressionKind::identifier("bonus".to_string());
         let bonus_node_id = initializer_expression_kind.node_id().unwrap();
 
-        let declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "score".to_string(),
-            None,
-            Some(Expression::new(initializer_expression_kind, 0)),
-        ));
+        let declaration =
+            variable_declaration!("score", value: Expression::new(initializer_expression_kind, 0));
 
         let result = declaration.accept(&mut visitor);
         assert!(result.is_ok());
@@ -341,11 +329,8 @@ mod var_declaration_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let initializer_expression_kind = ExpressionKind::identifier("bonus".to_string());
-        let declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "score".to_string(),
-            None,
-            Some(Expression::new(initializer_expression_kind, 0)),
-        ));
+        let declaration =
+            variable_declaration!("score", value: Expression::new(initializer_expression_kind, 0));
 
         let result = declaration.accept(&mut visitor);
         assert_eq!(
@@ -360,11 +345,8 @@ mod var_declaration_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let initializer_expression_kind = ExpressionKind::identifier("score".to_string());
-        let declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "score".to_string(),
-            None,
-            Some(Expression::new(initializer_expression_kind, 0)),
-        ));
+        let declaration =
+            variable_declaration!("score", value: Expression::new(initializer_expression_kind, 0));
 
         let result = declaration.accept(&mut visitor);
         assert_eq!(
@@ -475,18 +457,14 @@ mod assignment_tests {
 mod if_tests {
     use super::*;
     use crate::ast::expr::{Expression, ExpressionKind};
-    use crate::ast::statement::{Assignment, Block, If, Statement, VariableDeclaration};
+    use crate::ast::statement::{Assignment, Block, If, Statement};
     use crate::semantic::SymbolId;
 
     #[test]
     fn variables_declared_inside_then_block_are_inaccessible_after_if_statement_exits() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let then_declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "then_var".to_string(),
-            None,
-            None,
-        ));
+        let then_declaration = variable_declaration!("then_var");
         let if_statement = Statement::conditional(If::new(
             Expression::new(ExpressionKind::Boolean(true), 0),
             Block::new(vec![then_declaration]),
@@ -509,11 +487,7 @@ mod if_tests {
     fn variables_declared_inside_else_block_are_inaccessible_after_if_statement_exits() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let else_declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "else_var".to_string(),
-            None,
-            None,
-        ));
+        let else_declaration = variable_declaration!("else_var");
         let if_statement = Statement::conditional(If::new(
             Expression::new(ExpressionKind::Boolean(false), 0),
             Block::new(vec![]),
@@ -536,11 +510,7 @@ mod if_tests {
     fn variables_declared_inside_then_block_are_not_accessible_within_else_block() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let then_declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "first_name".to_string(),
-            None,
-            None,
-        ));
+        let then_declaration = variable_declaration!("first_name");
 
         let else_assign = Statement::assignment(Assignment::new(
             "first_name".to_string(),
@@ -646,7 +616,7 @@ mod if_tests {
 mod loop_tests {
     use super::*;
     use crate::ast::expr::{Expression, ExpressionKind};
-    use crate::ast::statement::{Assignment, Block, Break, Loop, Statement, VariableDeclaration};
+    use crate::ast::statement::{Assignment, Block, Break, Loop, Statement};
 
     #[test]
     fn entering_a_loop_updates_the_state_to_be_inside_a_loop() {
@@ -679,12 +649,9 @@ mod loop_tests {
     fn variables_declared_inside_loop_are_inaccessible_after_loop_exits() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let var_declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "name".to_string(),
-            None,
-            None,
-        ));
-        let loop_statement = Statement::iteration(Loop::new(Block::new(vec![var_declaration])));
+        let variable_declaration = variable_declaration!("name");
+        let loop_statement =
+            Statement::iteration(Loop::new(Block::new(vec![variable_declaration])));
         assert!(loop_statement.accept(&mut visitor).is_ok());
 
         let assignment = Statement::assignment(Assignment::new(
@@ -703,7 +670,7 @@ mod loop_tests {
 mod block_tests {
     use super::*;
     use crate::ast::expr::{Expression, ExpressionKind};
-    use crate::ast::statement::{Assignment, Block, Statement, VariableDeclaration};
+    use crate::ast::statement::{Assignment, Block, Statement};
     use crate::semantic::SymbolId;
 
     #[test]
@@ -713,11 +680,7 @@ mod block_tests {
         let outer_symbol_id = SymbolId(1);
         visitor.scopes.define("score".to_string(), outer_symbol_id);
 
-        let inner_declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "score".to_string(),
-            None,
-            None,
-        ));
+        let inner_declaration = variable_declaration!("score");
 
         let block = Statement::block(Block::new(vec![inner_declaration]));
         assert!(block.accept(&mut visitor).is_ok());
@@ -728,11 +691,7 @@ mod block_tests {
     fn variables_declared_inside_block_are_inaccessible_after_block_exits() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "temp".to_string(),
-            None,
-            None,
-        ));
+        let declaration = variable_declaration!("temp");
         let block = Statement::block(Block::new(vec![declaration]));
         assert!(block.accept(&mut visitor).is_ok());
 
@@ -1317,20 +1276,14 @@ mod print_tests {
 mod unreachable_code_tests {
     use super::*;
     use crate::ast::expr::{Expression, ExpressionKind};
-    use crate::ast::statement::{
-        Block, Break, FunctionDefinition, Return, Statement, VariableDeclaration,
-    };
+    use crate::ast::statement::{Block, Break, FunctionDefinition, Return, Statement};
 
     #[test]
     fn unreachable_statement_after_return_in_function_body_returns_error() {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let return_statement = Statement::return_(Return::new(None));
-        let variable_declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "score".to_string(),
-            None,
-            None,
-        ));
+        let variable_declaration = variable_declaration!("score");
 
         let function_definition = Statement::function_definition(FunctionDefinition::new(
             "calculate".to_string(),
@@ -1348,11 +1301,7 @@ mod unreachable_code_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let break_statement = Statement::control_flow(Break::new());
-        let variable_declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "score".to_string(),
-            None,
-            None,
-        ));
+        let variable_declaration = variable_declaration!("score");
 
         let loop_statement = Statement::iteration(Loop::new(Block::new(vec![
             break_statement,
@@ -1391,11 +1340,7 @@ mod unreachable_code_tests {
             None,
         ));
 
-        let variable_declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "score".to_string(),
-            None,
-            None,
-        ));
+        let variable_declaration = variable_declaration!("score");
 
         let function_definition = Statement::function_definition(FunctionDefinition::new(
             "calculate".to_string(),
@@ -1418,11 +1363,7 @@ mod unreachable_code_tests {
                 break_statement,
             ])));
 
-        let variable_declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "score".to_string(),
-            None,
-            None,
-        ));
+        let variable_declaration = variable_declaration!("score");
 
         let function_definition = Statement::function_definition(FunctionDefinition::new(
             "calculate".to_string(),
@@ -1447,11 +1388,7 @@ mod unreachable_code_tests {
             Block::new(vec![return_statement]),
         ));
 
-        let variable_declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "score".to_string(),
-            None,
-            None,
-        ));
+        let variable_declaration = variable_declaration!("score");
         let second_function = Statement::function_definition(FunctionDefinition::new(
             "second".to_string(),
             vec![],

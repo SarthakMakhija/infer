@@ -58,10 +58,7 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::assignment(Assignment::new(
-                "id".to_string(),
-                Expression::new(ExpressionKind::I32(20), 1)
-            ))
+            Statement::assignment(Assignment::new("id".to_string(), expression_i32!(20, 1)))
         );
     }
 
@@ -77,15 +74,13 @@ mod tests {
             statement,
             Statement::assignment(Assignment::new(
                 "total".to_string(),
-                Expression::new(
-                    ExpressionKind::Binary(
-                        Box::new(ExpressionKind::identifier("amount".to_string())),
-                        crate::ast::expr::BinaryOperator::Plus,
-                        Box::new(ExpressionKind::Binary(
-                            Box::new(ExpressionKind::identifier("rate".to_string())),
-                            crate::ast::expr::BinaryOperator::Multiply,
-                            Box::new(ExpressionKind::identifier("percentage".to_string()))
-                        ))
+                expression_binary!(
+                    expression_identifier!("amount"),
+                    Plus,
+                    expression_binary!(
+                        expression_identifier!("rate"),
+                        Multiply,
+                        expression_identifier!("percentage")
                     ),
                     line
                 )

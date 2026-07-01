@@ -105,7 +105,6 @@ mod tests {
     use crate::ast::expr::{BinaryOperator, Expression, ExpressionKind};
     use crate::ast::statement::{
         Assignment, Block, Break, FunctionDefinition, FunctionParameter, Loop, Print, Return,
-        VariableDeclaration,
     };
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
@@ -120,11 +119,7 @@ mod tests {
         let line = 1;
         assert_eq!(
             statement,
-            Statement::variable_declaration(VariableDeclaration::new(
-                "id".to_string(),
-                None,
-                Some(Expression::new(ExpressionKind::I32(10), line))
-            ))
+            variable_declaration!("id", value: expression_i32!(10, line))
         );
     }
 
@@ -277,15 +272,9 @@ mod tests {
                     Some("i32".to_string())
                 )],
                 Some("i32".to_string()),
-                Block::new(vec![Statement::variable_declaration(
-                    VariableDeclaration::new(
-                        "risk_level".to_string(),
-                        None,
-                        Some(Expression::new(
-                            ExpressionKind::identifier("score".to_string()),
-                            line
-                        ))
-                    )
+                Block::new(vec![variable_declaration!(
+                    "risk_level",
+                    value: expression_identifier!("score", line)
                 )])
             ))
         );

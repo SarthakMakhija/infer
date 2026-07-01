@@ -75,11 +75,7 @@ mod tests {
 
         assert_eq!(
             statement,
-            Statement::variable_declaration(VariableDeclaration::new(
-                "id".to_string(),
-                Some("i32".to_string()),
-                Some(Expression::new(ExpressionKind::I32(100), line))
-            ))
+            variable_declaration!("id", type: "i32", value: expression_i32!(100, line))
         );
     }
 
@@ -94,14 +90,7 @@ mod tests {
 
         assert_eq!(
             statement,
-            Statement::variable_declaration(VariableDeclaration::new(
-                "greeting".to_string(),
-                None,
-                Some(Expression::new(
-                    ExpressionKind::String("hello".to_string()),
-                    line
-                ))
-            ))
+            variable_declaration!("greeting", value: expression_string!("hello", line))
         );
     }
 
@@ -112,14 +101,7 @@ mod tests {
         let mut parser = VariableDeclarationParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
-        assert_eq!(
-            statement,
-            Statement::variable_declaration(VariableDeclaration::new(
-                "age".to_string(),
-                Some("i32".to_string()),
-                None
-            ))
-        );
+        assert_eq!(statement, variable_declaration!("age", type: "i32"));
     }
 
     #[test]
@@ -129,14 +111,7 @@ mod tests {
         let mut parser = VariableDeclarationParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
-        assert_eq!(
-            statement,
-            Statement::variable_declaration(VariableDeclaration::new(
-                "flag".to_string(),
-                None,
-                None
-            ))
-        );
+        assert_eq!(statement, variable_declaration!("flag"));
     }
 
     #[test]
@@ -173,18 +148,15 @@ mod tests {
 
         assert_eq!(
             statement,
-            Statement::variable_declaration(VariableDeclaration::new(
-                "total".to_string(),
-                None,
-                Some(Expression::new(
-                    ExpressionKind::Binary(
-                        Box::new(ExpressionKind::identifier("amount".to_string())),
-                        crate::ast::expr::BinaryOperator::Plus,
-                        Box::new(ExpressionKind::identifier("interest".to_string()))
-                    ),
+            variable_declaration!(
+                "total",
+                value: expression_binary!(
+                    expression_identifier!("amount"),
+                    Plus,
+                    expression_identifier!("interest"),
                     line
-                ))
-            ))
+                )
+            )
         );
     }
 

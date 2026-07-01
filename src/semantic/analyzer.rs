@@ -23,16 +23,11 @@ impl Analyzer {
 #[cfg(test)]
 mod var_declaration_tests {
     use super::*;
-    use crate::ast::statement::{Statement, VariableDeclaration};
 
     #[test]
     fn analyze_valid_variable_declaration() {
         let mut analyzer = Analyzer::new();
-        let declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "username".to_string(),
-            None,
-            None,
-        ));
+        let declaration = variable_declaration!("username");
         let program = Program::new(vec![declaration]);
         let result = analyzer.analyze(&program);
         assert!(result.is_ok());
@@ -43,16 +38,12 @@ mod var_declaration_tests {
 mod assignment_tests {
     use super::*;
     use crate::ast::expr::{Expression, ExpressionKind};
-    use crate::ast::statement::{Assignment, Statement, VariableDeclaration};
+    use crate::ast::statement::{Assignment, Statement};
 
     #[test]
     fn analyze_valid_assignment() {
         let mut analyzer = Analyzer::new();
-        let declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "score".to_string(),
-            None,
-            None,
-        ));
+        let declaration = variable_declaration!("score");
         let assignment = Statement::assignment(Assignment::new(
             "score".to_string(),
             Expression::new(ExpressionKind::I32(100), 0),
@@ -143,7 +134,7 @@ mod pending_call_tests {
     use super::*;
     use crate::ast::expr::{Expression, ExpressionKind};
     use crate::ast::program::Program;
-    use crate::ast::statement::{Block, FunctionDefinition, Statement, VariableDeclaration};
+    use crate::ast::statement::{Block, FunctionDefinition, Statement};
 
     #[test]
     fn detects_shadowed_deferred_call_on_variable() {
@@ -153,12 +144,7 @@ mod pending_call_tests {
         let call_expression = ExpressionKind::function_call(callee, vec![]);
         let call_statement = Statement::function_call(Expression::new(call_expression, 0));
 
-        let variable_declaration = Statement::variable_declaration(VariableDeclaration::new(
-            "calculate_total".to_string(),
-            None,
-            None,
-        ));
-
+        let variable_declaration = variable_declaration!("calculate_total");
         let program = Program::new(vec![call_statement, variable_declaration]);
 
         let result = analyzer.analyze(&program);

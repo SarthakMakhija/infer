@@ -437,28 +437,13 @@ impl Print {
 }
 
 #[cfg(test)]
-impl VariableDeclaration {
-    pub(crate) fn new_with_variable(variable: String) -> Self {
-        Self::new(variable, None, None)
-    }
-
-    pub(crate) fn new_with_variable_and_type(variable: String, data_type: String) -> Self {
-        Self::new(variable, Some(data_type), None)
-    }
-}
-
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::ast::expr::Expression;
 
     #[test]
     fn variable_declaration_id() {
-        let statement = Statement::variable_declaration(VariableDeclaration::new(
-            "user_score".to_string(),
-            None,
-            None,
-        ));
+        let statement = variable_declaration!("user_score");
 
         assert!(*statement.id() > 0);
     }
@@ -536,19 +521,11 @@ mod tests {
 
     #[test]
     fn variable_declaration_id_for_two_statements() {
-        let first = Statement::variable_declaration(VariableDeclaration::new(
-            "user_score".to_string(),
-            None,
-            None,
-        ));
-        let second = Statement::variable_declaration(VariableDeclaration::new(
-            "user_score".to_string(),
-            None,
-            None,
-        ));
+        let first_statement = variable_declaration!("user_score");
+        let second_statement = variable_declaration!("user_score");
 
-        assert_eq!(first.id(), NodeId(1));
-        assert_eq!(second.id(), NodeId(2));
+        assert_eq!(first_statement.id(), NodeId(1));
+        assert_eq!(second_statement.id(), NodeId(2));
     }
 }
 
@@ -640,11 +617,7 @@ mod accept_tests {
 
     #[test]
     fn statement_accept_dispatches_variable_declaration_to_visitor() {
-        let statement = Statement::variable_declaration(VariableDeclaration::new(
-            "username".to_string(),
-            None,
-            None,
-        ));
+        let statement = variable_declaration!("username");
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
             visited_assignment: false,

@@ -105,7 +105,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> FnParser<'src, 'stream,
 mod tests {
     use super::*;
     use crate::ast::expr::{BinaryOperator, Expression, ExpressionKind};
-    use crate::ast::statement::{Assignment, Block, If, VariableDeclaration};
+    use crate::ast::statement::{Assignment, Block, If};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
     use crate::parser::stream::ParserStream;
@@ -216,14 +216,10 @@ mod tests {
             vec![],
             None,
             Block::new(vec![
-                Statement::variable_declaration(VariableDeclaration::new(
-                    "id".to_string(),
-                    None,
-                    Some(Expression::new(ExpressionKind::I32(100), line)),
-                )),
+                variable_declaration!("id", value: expression_i32!(100, line)),
                 Statement::assignment(Assignment::new(
                     "id".to_string(),
-                    Expression::new(ExpressionKind::I32(200), line),
+                    expression_i32!(200, line),
                 )),
             ]),
         ));
@@ -357,25 +353,18 @@ mod tests {
             "test_func".to_string(),
             vec![],
             None,
-            Block::new(vec![Statement::variable_declaration(
-                VariableDeclaration::new(
-                    "total_cost".to_string(),
-                    None,
-                    Some(Expression::new(
-                        ExpressionKind::Binary(
-                            Box::new(ExpressionKind::identifier("fixed_cost".to_string())),
-                            BinaryOperator::Plus,
-                            Box::new(ExpressionKind::Binary(
-                                Box::new(ExpressionKind::identifier(
-                                    "variable_unit_cost".to_string(),
-                                )),
-                                BinaryOperator::Multiply,
-                                Box::new(ExpressionKind::identifier("quantity".to_string())),
-                            )),
-                        ),
-                        line,
-                    )),
-                ),
+            Block::new(vec![variable_declaration!(
+                "total_cost",
+                value: expression_binary!(
+                    expression_identifier!("fixed_cost"),
+                    Plus,
+                    expression_binary!(
+                        expression_identifier!("variable_unit_cost"),
+                        Multiply,
+                        expression_identifier!("quantity")
+                    ),
+                    line
+                )
             )]),
         ));
         assert_eq!(statement, expected);
@@ -398,27 +387,22 @@ mod tests {
             vec![],
             None,
             Block::new(vec![
-                Statement::variable_declaration(VariableDeclaration::new(
-                    "net_salary".to_string(),
-                    None,
-                    Some(Expression::new(
-                        ExpressionKind::Binary(
-                            Box::new(ExpressionKind::identifier("gross_salary".to_string())),
-                            BinaryOperator::Minus,
-                            Box::new(ExpressionKind::identifier("deductions".to_string())),
-                        ),
-                        line,
-                    )),
-                )),
+                variable_declaration!(
+                    "net_salary",
+                    value: expression_binary!(
+                        expression_identifier!("gross_salary"),
+                        Minus,
+                        expression_identifier!("deductions"),
+                        line
+                    )
+                ),
                 Statement::assignment(Assignment::new(
                     "net_salary".to_string(),
-                    Expression::new(
-                        ExpressionKind::Binary(
-                            Box::new(ExpressionKind::identifier("net_salary".to_string())),
-                            BinaryOperator::Plus,
-                            Box::new(ExpressionKind::identifier("yearly_bonus".to_string())),
-                        ),
-                        line,
+                    expression_binary!(
+                        expression_identifier!("net_salary"),
+                        Plus,
+                        expression_identifier!("yearly_bonus"),
+                        line
                     ),
                 )),
             ]),

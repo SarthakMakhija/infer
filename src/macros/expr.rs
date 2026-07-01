@@ -4,6 +4,9 @@ macro_rules! expression_i32 {
     ($val:expr) => {
         $crate::ast::expr::ExpressionKind::I32($val)
     };
+    ($val:expr, $line:expr) => {
+        $crate::ast::expr::Expression::new($crate::ast::expr::ExpressionKind::I32($val), $line)
+    };
 }
 
 /// Constructs an `ExpressionKind::String` literal expression.
@@ -11,6 +14,12 @@ macro_rules! expression_i32 {
 macro_rules! expression_string {
     ($val:expr) => {
         $crate::ast::expr::ExpressionKind::String($val.to_string())
+    };
+    ($val:expr, $line:expr) => {
+        $crate::ast::expr::Expression::new(
+            $crate::ast::expr::ExpressionKind::String($val.to_string()),
+            $line,
+        )
     };
 }
 
@@ -20,6 +29,9 @@ macro_rules! expression_boolean {
     ($val:expr) => {
         $crate::ast::expr::ExpressionKind::Boolean($val)
     };
+    ($val:expr, $line:expr) => {
+        $crate::ast::expr::Expression::new($crate::ast::expr::ExpressionKind::Boolean($val), $line)
+    };
 }
 
 /// Constructs an `ExpressionKind::Identifier` expression.
@@ -27,6 +39,12 @@ macro_rules! expression_boolean {
 macro_rules! expression_identifier {
     ($name:expr) => {
         $crate::ast::expr::ExpressionKind::identifier($name.to_string())
+    };
+    ($name:expr, $line:expr) => {
+        $crate::ast::expr::Expression::new(
+            $crate::ast::expr::ExpressionKind::identifier($name.to_string()),
+            $line,
+        )
     };
 }
 
@@ -37,6 +55,15 @@ macro_rules! expression_unary {
         $crate::ast::expr::ExpressionKind::Unary(
             Box::new($operand),
             $crate::ast::expr::UnaryOperator::$op,
+        )
+    };
+    ($op:ident, $operand:expr, $line:expr) => {
+        $crate::ast::expr::Expression::new(
+            $crate::ast::expr::ExpressionKind::Unary(
+                Box::new($operand),
+                $crate::ast::expr::UnaryOperator::$op,
+            ),
+            $line,
         )
     };
 }
@@ -51,6 +78,16 @@ macro_rules! expression_binary {
             Box::new($right),
         )
     };
+    ($left:expr, $op:ident, $right:expr, $line:expr) => {
+        $crate::ast::expr::Expression::new(
+            $crate::ast::expr::ExpressionKind::Binary(
+                Box::new($left),
+                $crate::ast::expr::BinaryOperator::$op,
+                Box::new($right),
+            ),
+            $line,
+        )
+    };
 }
 
 /// Constructs an `ExpressionKind::Grouped` expression.
@@ -59,6 +96,12 @@ macro_rules! expression_grouped {
     ($inner:expr) => {
         $crate::ast::expr::ExpressionKind::Grouped(Box::new($inner))
     };
+    ($inner:expr, $line:expr) => {
+        $crate::ast::expr::Expression::new(
+            $crate::ast::expr::ExpressionKind::Grouped(Box::new($inner)),
+            $line,
+        )
+    };
 }
 
 /// Constructs an `ExpressionKind::FunctionCall` expression.
@@ -66,6 +109,12 @@ macro_rules! expression_grouped {
 macro_rules! expression_function_call {
     ($callee:expr, $args:expr) => {
         $crate::ast::expr::ExpressionKind::function_call($callee, $args)
+    };
+    ($callee:expr, $args:expr, $line:expr) => {
+        $crate::ast::expr::Expression::new(
+            $crate::ast::expr::ExpressionKind::function_call($callee, $args),
+            $line,
+        )
     };
 }
 
@@ -155,5 +204,12 @@ mod tests {
             panic!("Expected callee to be Identifier");
         };
         assert_eq!(name, "greet");
+    }
+
+    #[test]
+    fn expression_with_line() {
+        let expr = expression_i32!(10, 42);
+        assert_eq!(expr.kind, ExpressionKind::I32(10));
+        assert_eq!(expr.line, 42);
     }
 }

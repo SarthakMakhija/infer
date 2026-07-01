@@ -44,7 +44,6 @@ impl ProgramBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::statement::VariableDeclaration;
 
     #[test]
     fn create_a_program_with_no_statements() {
@@ -54,31 +53,23 @@ mod tests {
 
     #[test]
     fn create_a_program_with_a_single_variable_declaration_statement() {
-        let statement = Statement::variable_declaration(VariableDeclaration::new_with_variable(
-            "id".to_string(),
-        ));
+        let statement = variable_declaration!("id");
         let program = ProgramBuilder::new().add(statement).build();
         assert_eq!(program.statements.len(), 1);
 
         let actual_statement = program.statements.first().unwrap();
-        let expected_statement = Statement::variable_declaration(
-            VariableDeclaration::new_with_variable("id".to_string()),
-        );
+        let expected_statement = variable_declaration!("id");
         assert_eq!(actual_statement, &expected_statement);
     }
 
     #[test]
     fn create_a_program_with_a_single_variable_declaration_statement_with_name_and_type() {
-        let statement = Statement::variable_declaration(
-            VariableDeclaration::new_with_variable_and_type("id".to_string(), "i32".to_string()),
-        );
+        let statement = variable_declaration!("id", type: "i32");
         let program = ProgramBuilder::new().add(statement).build();
         assert_eq!(program.statements.len(), 1);
 
         let actual_statement = program.statements.first().unwrap();
-        let expected_statement = Statement::variable_declaration(
-            VariableDeclaration::new_with_variable_and_type("id".to_string(), "i32".to_string()),
-        );
+        let expected_statement = variable_declaration!("id", type: "i32");
         assert_eq!(actual_statement, &expected_statement);
     }
 }

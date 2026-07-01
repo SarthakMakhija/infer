@@ -1,5 +1,8 @@
 #![allow(dead_code)]
 
+#[macro_use]
+pub(crate) mod macros;
+
 pub mod ast;
 pub mod infer;
 
@@ -9,6 +12,3 @@ pub use infer::{Infer, InferenceError};
 pub(crate) mod lexer;
 pub(crate) mod parser;
 pub(crate) mod semantic;
-
-#[macro_use]
-pub(crate) mod macros;

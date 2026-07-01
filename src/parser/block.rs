@@ -44,8 +44,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> BlockParser<'src, 'stre
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::{Expression, ExpressionKind};
-    use crate::ast::statement::{Assignment, VariableDeclaration};
+    use crate::ast::statement::Assignment;
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
 
@@ -71,14 +70,10 @@ mod tests {
         assert_eq!(
             block,
             Block::new(vec![
-                Statement::variable_declaration(VariableDeclaration::new(
-                    "score".to_string(),
-                    None,
-                    Some(Expression::new(ExpressionKind::I32(10), line))
-                )),
+                variable_declaration!("score", value: expression_i32!(10, line)),
                 Statement::assignment(Assignment::new(
                     "score".to_string(),
-                    Expression::new(ExpressionKind::I32(20), line)
+                    expression_i32!(20, line)
                 ))
             ])
         );
@@ -98,23 +93,11 @@ mod tests {
         assert_eq!(
             block,
             Block::new(vec![
-                Statement::variable_declaration(VariableDeclaration::new(
-                    "score".to_string(),
-                    None,
-                    Some(Expression::new(ExpressionKind::I32(10), line))
-                )),
-                Statement::block(Block::new(vec![Statement::variable_declaration(
-                    VariableDeclaration::new(
-                        "risk_level".to_string(),
-                        None,
-                        Some(Expression::new(ExpressionKind::I32(20), line))
-                    )
-                )])),
-                Statement::variable_declaration(VariableDeclaration::new(
-                    "threshold".to_string(),
-                    None,
-                    Some(Expression::new(ExpressionKind::I32(30), line))
-                ))
+                variable_declaration!("score", value: expression_i32!(10, line)),
+                Statement::block(Block::new(vec![
+                    variable_declaration!("risk_level", value: expression_i32!(20, line))
+                ])),
+                variable_declaration!("threshold", value: expression_i32!(30, line))
             ])
         );
     }
@@ -133,20 +116,12 @@ mod tests {
         assert_eq!(
             block,
             Block::new(vec![
-                Statement::block(Block::new(vec![Statement::variable_declaration(
-                    VariableDeclaration::new(
-                        "score".to_string(),
-                        None,
-                        Some(Expression::new(ExpressionKind::I32(10), line))
-                    )
-                )])),
-                Statement::block(Block::new(vec![Statement::variable_declaration(
-                    VariableDeclaration::new(
-                        "risk_level".to_string(),
-                        None,
-                        Some(Expression::new(ExpressionKind::I32(20), line))
-                    )
-                )]))
+                Statement::block(Block::new(vec![
+                    variable_declaration!("score", value: expression_i32!(10, line))
+                ])),
+                Statement::block(Block::new(vec![
+                    variable_declaration!("risk_level", value: expression_i32!(20, line))
+                ]))
             ])
         );
     }
