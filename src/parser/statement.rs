@@ -103,7 +103,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, '
 mod tests {
     use super::*;
     use crate::ast::expr::{BinaryOperator, Expression, ExpressionKind};
-    use crate::ast::statement::{Block, FunctionDefinition, FunctionParameter, Loop};
+    use crate::ast::statement::{Block, FunctionDefinition, FunctionParameter};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
 
@@ -186,10 +186,7 @@ mod tests {
         let mut parser = StatementParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
-        assert_eq!(
-            statement,
-            Statement::iteration(Loop::new(Block::new(vec![])))
-        );
+        assert_eq!(statement, iteration!(Block::new(vec![])));
     }
 
     #[test]
@@ -230,10 +227,7 @@ mod tests {
         let mut parser = StatementParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
-        assert_eq!(
-            statement,
-            Statement::iteration(Loop::new(Block::new(vec![break_statement!()])))
-        );
+        assert_eq!(statement, iteration!(Block::new(vec![break_statement!()])));
     }
 
     #[test]

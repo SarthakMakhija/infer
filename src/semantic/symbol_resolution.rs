@@ -576,14 +576,14 @@ mod if_tests {
 #[cfg(test)]
 mod loop_tests {
     use super::*;
-    use crate::ast::statement::{Block, Loop, Statement};
+    use crate::ast::statement::Block;
 
     #[test]
     fn entering_a_loop_updates_the_state_to_be_inside_a_loop() {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let break_statement = break_statement!();
-        let loop_statement = Statement::iteration(Loop::new(Block::new(vec![break_statement])));
+        let loop_statement = iteration!(Block::new(vec![break_statement]));
 
         let result = loop_statement.accept(&mut visitor);
         assert!(result.is_ok());
@@ -595,10 +595,10 @@ mod loop_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let inner_break = break_statement!();
-        let inner_loop = Statement::iteration(Loop::new(Block::new(vec![inner_break])));
+        let inner_loop = iteration!(Block::new(vec![inner_break]));
 
         let outer_break = break_statement!();
-        let outer_loop = Statement::iteration(Loop::new(Block::new(vec![inner_loop, outer_break])));
+        let outer_loop = iteration!(Block::new(vec![inner_loop, outer_break]));
 
         let result = outer_loop.accept(&mut visitor);
         assert!(result.is_ok());
@@ -610,8 +610,7 @@ mod loop_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let variable_declaration = variable_declaration!("name");
-        let loop_statement =
-            Statement::iteration(Loop::new(Block::new(vec![variable_declaration])));
+        let loop_statement = iteration!(Block::new(vec![variable_declaration]));
         assert!(loop_statement.accept(&mut visitor).is_ok());
 
         let assignment = assignment!("name", expression_string!("John", 0));
@@ -1227,10 +1226,7 @@ mod unreachable_code_tests {
         let break_statement = break_statement!();
         let variable_declaration = variable_declaration!("score");
 
-        let loop_statement = Statement::iteration(Loop::new(Block::new(vec![
-            break_statement,
-            variable_declaration,
-        ])));
+        let loop_statement = iteration!(Block::new(vec![break_statement, variable_declaration,]));
         let result = loop_statement.accept(&mut visitor);
         assert_eq!(result, Err(SemanticError::UnreachableCode));
     }
@@ -1281,10 +1277,7 @@ mod unreachable_code_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let break_statement = break_statement!();
-        let loop_statement =
-            Statement::iteration(crate::ast::statement::Loop::new(Block::new(vec![
-                break_statement,
-            ])));
+        let loop_statement = iteration!(Block::new(vec![break_statement]));
 
         let variable_declaration = variable_declaration!("score");
 

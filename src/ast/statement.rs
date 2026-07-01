@@ -460,7 +460,7 @@ mod tests {
 
     #[test]
     fn loop_id() {
-        let statement = Statement::iteration(Loop::new(Block::new(vec![])));
+        let statement = iteration!(Block::new(vec![]));
         assert!(*statement.id() > 0);
     }
 
@@ -664,7 +664,7 @@ mod accept_tests {
 
     #[test]
     fn statement_accept_dispatches_loop_to_visitor() {
-        let statement = Statement::iteration(Loop::new(Block::new(vec![])));
+        let statement = iteration!(Block::new(vec![]));
 
         let mut visitor = TestVisitor {
             visited_var_declaration: false,

@@ -73,6 +73,14 @@ macro_rules! conditional {
     };
 }
 
+/// Constructs a `Statement::Loop` (iteration) statement.
+#[macro_export]
+macro_rules! iteration {
+    ($body:expr) => {
+        $crate::ast::statement::Statement::iteration($crate::ast::statement::Loop::new($body))
+    };
+}
+
 /// Constructs a `Statement::Break` statement.
 #[macro_export]
 macro_rules! break_statement {
@@ -105,7 +113,7 @@ macro_rules! print_statement {
 #[cfg(test)]
 mod tests {
     use crate::ast::expr::{Expression, ExpressionKind};
-    use crate::ast::statement::Statement;
+    use crate::ast::statement::{Block, Statement};
 
     #[test]
     fn variable_declaration_name_only() {
@@ -212,8 +220,6 @@ mod tests {
 
     #[test]
     fn conditional_statement_without_else() {
-        use crate::ast::statement::{Block, Statement};
-
         let statement = conditional!(expression_boolean!(true, 0), Block::new(vec![]));
         let Statement::If(if_statement, _node_id) = statement else {
             panic!("Expected If variant");
@@ -225,8 +231,6 @@ mod tests {
 
     #[test]
     fn conditional_statement_with_else() {
-        use crate::ast::statement::{Block, Statement};
-
         let then_statement = variable_declaration!("then_var");
         let else_statement = variable_declaration!("else_var");
 
@@ -243,5 +247,26 @@ mod tests {
         assert_eq!(if_statement.body().len(), 1);
         assert!(if_statement.else_body().is_some());
         assert_eq!(if_statement.else_body().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn iteration_with_body() {
+        let body_statement = variable_declaration!("counter");
+        let statement = iteration!(Block::new(vec![body_statement]));
+        let Statement::Loop(loop_statement, _node_id) = statement else {
+            panic!("Expected Loop variant");
+        };
+
+        assert_eq!(loop_statement.body().len(), 1);
+    }
+
+    #[test]
+    fn iteration_empty_body() {
+        let statement = iteration!(Block::new(vec![]));
+        let Statement::Loop(loop_statement, _node_id) = statement else {
+            panic!("Expected Loop variant");
+        };
+
+        assert_eq!(loop_statement.body().len(), 0);
     }
 }

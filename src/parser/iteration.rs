@@ -37,7 +37,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> LoopParser<'src, 'strea
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::statement::{Block, Loop, Statement};
+    use crate::ast::statement::Block;
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
     use crate::parser::stream::ParserStream;
@@ -49,10 +49,7 @@ mod tests {
         let mut parser = LoopParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
-        assert_eq!(
-            statement,
-            Statement::iteration(Loop::new(Block::new(vec![])))
-        );
+        assert_eq!(statement, iteration!(Block::new(vec![])));
     }
 
     #[test]
@@ -69,7 +66,7 @@ mod tests {
 
         assert_eq!(
             statement,
-            Statement::iteration(Loop::new(Block::new(vec![
+            iteration!(Block::new(vec![
                 assignment!(
                     "counter",
                     expression_binary!(
@@ -88,7 +85,7 @@ mod tests {
                         line
                     )
                 )
-            ])))
+            ]))
         );
     }
 

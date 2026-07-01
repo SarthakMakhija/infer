@@ -69,12 +69,12 @@ mod if_tests {
 #[cfg(test)]
 mod loop_tests {
     use super::*;
-    use crate::ast::statement::{Block, Loop, Statement};
+    use crate::ast::statement::Block;
 
     #[test]
     fn analyze_valid_loop() {
         let mut analyzer = Analyzer::new();
-        let loop_statement = Statement::iteration(Loop::new(Block::new(vec![])));
+        let loop_statement = iteration!(Block::new(vec![]));
         let program = Program::new(vec![loop_statement]);
 
         let result = analyzer.analyze(&program);
@@ -216,13 +216,13 @@ mod pending_call_tests {
 #[cfg(test)]
 mod break_tests {
     use super::*;
-    use crate::ast::statement::{Block, Loop, Statement};
+    use crate::ast::statement::Block;
 
     #[test]
     fn analyze_valid_break_inside_loop() {
         let mut analyzer = Analyzer::new();
         let break_statement = break_statement!();
-        let loop_statement = Statement::iteration(Loop::new(Block::new(vec![break_statement])));
+        let loop_statement = iteration!(Block::new(vec![break_statement]));
         let program = Program::new(vec![loop_statement]);
 
         let result = analyzer.analyze(&program);
