@@ -105,7 +105,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> FnParser<'src, 'stream,
 mod tests {
     use super::*;
     use crate::ast::expr::{BinaryOperator, Expression, ExpressionKind};
-    use crate::ast::statement::{Assignment, Block, If};
+    use crate::ast::statement::{Block, If};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
     use crate::parser::stream::ParserStream;
@@ -186,14 +186,8 @@ mod tests {
                 vec![],
                 None,
                 Block::new(vec![
-                    Statement::assignment(Assignment::new(
-                        "height".to_string(),
-                        Expression::new(ExpressionKind::I32(200), line),
-                    )),
-                    Statement::assignment(Assignment::new(
-                        "weight".to_string(),
-                        Expression::new(ExpressionKind::I32(300), line),
-                    )),
+                    assignment!("height", expression_i32!(200, line)),
+                    assignment!("weight", expression_i32!(300, line)),
                 ])
             ))
         );
@@ -217,10 +211,7 @@ mod tests {
             None,
             Block::new(vec![
                 variable_declaration!("id", value: expression_i32!(100, line)),
-                Statement::assignment(Assignment::new(
-                    "id".to_string(),
-                    expression_i32!(200, line),
-                )),
+                assignment!("id", expression_i32!(200, line)),
             ]),
         ));
         assert_eq!(statement, expected);
@@ -251,17 +242,15 @@ mod tests {
                     ),
                     line,
                 ),
-                Block::new(vec![Statement::assignment(Assignment::new(
-                    "final_price".to_string(),
-                    Expression::new(
-                        ExpressionKind::Binary(
-                            Box::new(ExpressionKind::identifier("regular_price".to_string())),
-                            BinaryOperator::Minus,
-                            Box::new(ExpressionKind::identifier("savings".to_string())),
-                        ),
-                        line,
-                    ),
-                ))]),
+                Block::new(vec![assignment!(
+                    "final_price",
+                    expression_binary!(
+                        expression_identifier!("regular_price"),
+                        Minus,
+                        expression_identifier!("savings"),
+                        line
+                    )
+                )]),
                 None,
             ))]),
         ));
@@ -284,21 +273,19 @@ mod tests {
             "test_func".to_string(),
             vec![],
             None,
-            Block::new(vec![Statement::assignment(Assignment::new(
-                "total_price".to_string(),
-                Expression::new(
-                    ExpressionKind::Binary(
-                        Box::new(ExpressionKind::identifier("base_price".to_string())),
-                        BinaryOperator::Plus,
-                        Box::new(ExpressionKind::Binary(
-                            Box::new(ExpressionKind::identifier("tax_rate".to_string())),
-                            BinaryOperator::Multiply,
-                            Box::new(ExpressionKind::identifier("quantity".to_string())),
-                        )),
+            Block::new(vec![assignment!(
+                "total_price",
+                expression_binary!(
+                    expression_identifier!("base_price"),
+                    Plus,
+                    expression_binary!(
+                        expression_identifier!("tax_rate"),
+                        Multiply,
+                        expression_identifier!("quantity")
                     ),
-                    line,
-                ),
-            ))]),
+                    line
+                )
+            )]),
         ));
         assert_eq!(statement, expected);
     }
@@ -319,21 +306,19 @@ mod tests {
             "test_func".to_string(),
             vec![],
             None,
-            Block::new(vec![Statement::assignment(Assignment::new(
-                "adjusted_score".to_string(),
-                Expression::new(
-                    ExpressionKind::Binary(
-                        Box::new(ExpressionKind::Grouped(Box::new(ExpressionKind::Binary(
-                            Box::new(ExpressionKind::identifier("base_points".to_string())),
-                            BinaryOperator::Plus,
-                            Box::new(ExpressionKind::identifier("bonus_points".to_string())),
-                        )))),
-                        BinaryOperator::Multiply,
-                        Box::new(ExpressionKind::identifier("multiplier".to_string())),
-                    ),
-                    line,
-                ),
-            ))]),
+            Block::new(vec![assignment!(
+                "adjusted_score",
+                expression_binary!(
+                    expression_grouped!(expression_binary!(
+                        expression_identifier!("base_points"),
+                        Plus,
+                        expression_identifier!("bonus_points")
+                    )),
+                    Multiply,
+                    expression_identifier!("multiplier"),
+                    line
+                )
+            )]),
         ));
         assert_eq!(statement, expected);
     }
@@ -396,15 +381,15 @@ mod tests {
                         line
                     )
                 ),
-                Statement::assignment(Assignment::new(
-                    "net_salary".to_string(),
+                assignment!(
+                    "net_salary",
                     expression_binary!(
                         expression_identifier!("net_salary"),
                         Plus,
                         expression_identifier!("yearly_bonus"),
                         line
-                    ),
-                )),
+                    )
+                ),
             ]),
         ));
         assert_eq!(statement, expected);

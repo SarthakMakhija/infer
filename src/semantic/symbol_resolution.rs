@@ -360,8 +360,7 @@ mod var_declaration_tests {
 #[cfg(test)]
 mod assignment_tests {
     use super::*;
-    use crate::ast::expr::{Expression, ExpressionKind};
-    use crate::ast::statement::{Assignment, Statement};
+    use crate::ast::expr::Expression;
     use crate::semantic::SymbolId;
 
     #[test]
@@ -373,10 +372,7 @@ mod assignment_tests {
             .scopes
             .define("score".to_string(), expected_symbol_id);
 
-        let assignment = Statement::assignment(Assignment::new(
-            "score".to_string(),
-            Expression::new(ExpressionKind::I32(100), 0),
-        ));
+        let assignment = assignment!("score", expression_i32!(100, 0));
         let assignment_id = assignment.id();
 
         let result = assignment.accept(&mut visitor);
@@ -392,10 +388,7 @@ mod assignment_tests {
     fn assignment_to_an_undefined_variable_fails_with_semantic_error() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let assignment = Statement::assignment(Assignment::new(
-            "score".to_string(),
-            Expression::new(ExpressionKind::I32(100), 0),
-        ));
+        let assignment = assignment!("score", expression_i32!(100, 0));
 
         let result = assignment.accept(&mut visitor);
         assert_eq!(
@@ -413,13 +406,10 @@ mod assignment_tests {
         let bonus_symbol_id = SymbolId(20);
         visitor.scopes.define("bonus".to_string(), bonus_symbol_id);
 
-        let expression_kind = ExpressionKind::identifier("bonus".to_string());
+        let expression_kind = expression_identifier!("bonus");
         let bonus_node_id = expression_kind.node_id().unwrap();
 
-        let assignment = Statement::assignment(Assignment::new(
-            "score".to_string(),
-            Expression::new(expression_kind, 0),
-        ));
+        let assignment = assignment!("score", Expression::new(expression_kind, 0));
         let assignment_id = assignment.id();
 
         let result = assignment.accept(&mut visitor);
@@ -439,11 +429,7 @@ mod assignment_tests {
         let mut visitor = SymbolResolutionVisitor::new();
         visitor.scopes.define("score".to_string(), SymbolId(10));
 
-        let expression_kind = ExpressionKind::identifier("bonus".to_string());
-        let assignment = Statement::assignment(Assignment::new(
-            "score".to_string(),
-            Expression::new(expression_kind, 0),
-        ));
+        let assignment = assignment!("score", expression_identifier!("bonus", 0));
 
         let result = assignment.accept(&mut visitor);
         assert_eq!(
@@ -457,7 +443,7 @@ mod assignment_tests {
 mod if_tests {
     use super::*;
     use crate::ast::expr::{Expression, ExpressionKind};
-    use crate::ast::statement::{Assignment, Block, If, Statement};
+    use crate::ast::statement::{Block, If, Statement};
     use crate::semantic::SymbolId;
 
     #[test]
@@ -472,10 +458,7 @@ mod if_tests {
         ));
         assert!(if_statement.accept(&mut visitor).is_ok());
 
-        let assignment = Statement::assignment(Assignment::new(
-            "then_var".to_string(),
-            Expression::new(ExpressionKind::I32(10), 0),
-        ));
+        let assignment = assignment!("then_var", expression_i32!(10, 0));
         let result = assignment.accept(&mut visitor);
         assert_eq!(
             result,
@@ -495,10 +478,7 @@ mod if_tests {
         ));
         assert!(if_statement.accept(&mut visitor).is_ok());
 
-        let assignment = Statement::assignment(Assignment::new(
-            "else_var".to_string(),
-            Expression::new(ExpressionKind::I32(10), 0),
-        ));
+        let assignment = assignment!("else_var", expression_i32!(10, 0));
         let result = assignment.accept(&mut visitor);
         assert_eq!(
             result,
@@ -512,10 +492,7 @@ mod if_tests {
 
         let then_declaration = variable_declaration!("first_name");
 
-        let else_assign = Statement::assignment(Assignment::new(
-            "first_name".to_string(),
-            Expression::new(ExpressionKind::I32(10), 0),
-        ));
+        let else_assign = assignment!("first_name", expression_i32!(10, 0));
 
         let if_statement = Statement::conditional(If::new(
             Expression::new(ExpressionKind::Boolean(true), 0),
@@ -539,16 +516,10 @@ mod if_tests {
             .scopes
             .define("outer_var".to_string(), expected_symbol_id);
 
-        let then_assign = Statement::assignment(Assignment::new(
-            "outer_var".to_string(),
-            Expression::new(ExpressionKind::I32(10), 0),
-        ));
+        let then_assign = assignment!("outer_var", expression_i32!(10, 0));
         let then_assign_id = then_assign.id();
 
-        let else_assign = Statement::assignment(Assignment::new(
-            "outer_var".to_string(),
-            Expression::new(ExpressionKind::I32(20), 0),
-        ));
+        let else_assign = assignment!("outer_var", expression_i32!(20, 0));
         let else_assign_id = else_assign.id();
 
         let if_statement = Statement::conditional(If::new(
@@ -615,7 +586,7 @@ mod if_tests {
 #[cfg(test)]
 mod loop_tests {
     use super::*;
-    use crate::ast::statement::{Assignment, Block, Loop, Statement};
+    use crate::ast::statement::{Block, Loop, Statement};
 
     #[test]
     fn entering_a_loop_updates_the_state_to_be_inside_a_loop() {
@@ -653,10 +624,7 @@ mod loop_tests {
             Statement::iteration(Loop::new(Block::new(vec![variable_declaration])));
         assert!(loop_statement.accept(&mut visitor).is_ok());
 
-        let assignment = Statement::assignment(Assignment::new(
-            "name".to_string(),
-            Expression::new(ExpressionKind::String("John".to_string()), 0),
-        ));
+        let assignment = assignment!("name", expression_string!("John", 0));
         let result = assignment.accept(&mut visitor);
         assert_eq!(
             result,
@@ -668,8 +636,7 @@ mod loop_tests {
 #[cfg(test)]
 mod block_tests {
     use super::*;
-    use crate::ast::expr::{Expression, ExpressionKind};
-    use crate::ast::statement::{Assignment, Block, Statement};
+    use crate::ast::statement::{Block, Statement};
     use crate::semantic::SymbolId;
 
     #[test]
@@ -695,10 +662,7 @@ mod block_tests {
         assert!(block.accept(&mut visitor).is_ok());
 
         // Assign to "temp" outside the block.
-        let assignment = Statement::assignment(Assignment::new(
-            "temp".to_string(),
-            Expression::new(ExpressionKind::I32(42), 0),
-        ));
+        let assignment = assignment!("temp", expression_i32!(42, 0));
 
         let result = assignment.accept(&mut visitor);
 
@@ -717,10 +681,7 @@ mod block_tests {
             .scopes
             .define("score".to_string(), expected_symbol_id);
 
-        let inner_assignment = Statement::assignment(Assignment::new(
-            "score".to_string(),
-            Expression::new(ExpressionKind::I32(50), 0),
-        ));
+        let inner_assignment = assignment!("score", expression_i32!(50, 0));
         let assignment_id = inner_assignment.id();
         let block = Statement::block(Block::new(vec![inner_assignment]));
 
@@ -735,10 +696,7 @@ mod block_tests {
 #[cfg(test)]
 mod function_definition_tests {
     use super::*;
-    use crate::ast::expr::{Expression, ExpressionKind};
-    use crate::ast::statement::{
-        Assignment, Block, FunctionDefinition, FunctionParameter, Statement,
-    };
+    use crate::ast::statement::{Block, FunctionDefinition, FunctionParameter, Statement};
     use crate::semantic::SymbolId;
 
     #[test]
@@ -814,10 +772,7 @@ mod function_definition_tests {
 
         let function_parameter =
             FunctionParameter::new("score".to_string(), Some("int".to_string()));
-        let inner_assignment = Statement::assignment(Assignment::new(
-            "score".to_string(),
-            Expression::new(ExpressionKind::I32(100), 0),
-        ));
+        let inner_assignment = assignment!("score", expression_i32!(100, 0));
         let assignment_id = inner_assignment.id();
 
         let function_definition = Statement::function_definition(FunctionDefinition::new(

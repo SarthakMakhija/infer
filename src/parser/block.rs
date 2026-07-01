@@ -44,7 +44,6 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> BlockParser<'src, 'stre
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::statement::Assignment;
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
 
@@ -71,10 +70,7 @@ mod tests {
             block,
             Block::new(vec![
                 variable_declaration!("score", value: expression_i32!(10, line)),
-                Statement::assignment(Assignment::new(
-                    "score".to_string(),
-                    expression_i32!(20, line)
-                ))
+                assignment!("score", expression_i32!(20, line))
             ])
         );
     }

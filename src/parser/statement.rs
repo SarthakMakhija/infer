@@ -103,7 +103,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, '
 mod tests {
     use super::*;
     use crate::ast::expr::{BinaryOperator, Expression, ExpressionKind};
-    use crate::ast::statement::{Assignment, Block, FunctionDefinition, FunctionParameter, Loop};
+    use crate::ast::statement::{Block, FunctionDefinition, FunctionParameter, Loop};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
 
@@ -130,13 +130,7 @@ mod tests {
         let statement = parser.parse().unwrap();
         let line = 1;
 
-        assert_eq!(
-            statement,
-            Statement::assignment(Assignment::new(
-                "id".to_string(),
-                Expression::new(ExpressionKind::I32(20), line)
-            ))
-        );
+        assert_eq!(statement, assignment!("id", expression_i32!(20, line)));
     }
 
     #[test]

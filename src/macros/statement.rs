@@ -42,6 +42,17 @@ macro_rules! variable_declaration {
     };
 }
 
+/// Constructs a `Statement::Assignment` statement.
+#[macro_export]
+macro_rules! assignment {
+    ($name:expr, $expression:expr) => {
+        $crate::ast::statement::Statement::assignment($crate::ast::statement::Assignment::new(
+            $name.to_string(),
+            $expression,
+        ))
+    };
+}
+
 /// Constructs a `Statement::Break` statement.
 #[macro_export]
 macro_rules! break_statement {
@@ -165,5 +176,17 @@ mod tests {
         };
         assert_eq!(print.arguments().len(), 1);
         assert_eq!(print.arguments()[0].kind, ExpressionKind::I32(42));
+    }
+
+    #[test]
+    fn assignment_statement() {
+        let expression = expression_i32!(42, 1);
+        let statement = assignment!("user_score", expression);
+        let Statement::Assignment(assignment, _node_id) = statement else {
+            panic!("Expected Assignment variant");
+        };
+
+        assert_eq!(assignment.variable(), "user_score");
+        assert_eq!(assignment.expression().kind, ExpressionKind::I32(42));
     }
 }

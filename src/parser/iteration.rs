@@ -37,8 +37,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> LoopParser<'src, 'strea
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::{BinaryOperator, Expression, ExpressionKind};
-    use crate::ast::statement::{Assignment, Block, Loop, Statement};
+    use crate::ast::statement::{Block, Loop, Statement};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
     use crate::parser::stream::ParserStream;
@@ -71,28 +70,24 @@ mod tests {
         assert_eq!(
             statement,
             Statement::iteration(Loop::new(Block::new(vec![
-                Statement::assignment(Assignment::new(
-                    "counter".to_string(),
-                    Expression::new(
-                        ExpressionKind::Binary(
-                            Box::new(ExpressionKind::identifier("counter".to_string())),
-                            BinaryOperator::Plus,
-                            Box::new(ExpressionKind::I32(1))
-                        ),
+                assignment!(
+                    "counter",
+                    expression_binary!(
+                        expression_identifier!("counter"),
+                        Plus,
+                        expression_i32!(1),
                         line
                     )
-                )),
-                Statement::assignment(Assignment::new(
-                    "total".to_string(),
-                    Expression::new(
-                        ExpressionKind::Binary(
-                            Box::new(ExpressionKind::identifier("total".to_string())),
-                            BinaryOperator::Plus,
-                            Box::new(ExpressionKind::identifier("counter".to_string()))
-                        ),
+                ),
+                assignment!(
+                    "total",
+                    expression_binary!(
+                        expression_identifier!("total"),
+                        Plus,
+                        expression_identifier!("counter"),
                         line
                     )
-                ))
+                )
             ])))
         );
     }

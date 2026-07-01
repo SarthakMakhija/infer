@@ -450,10 +450,7 @@ mod tests {
 
     #[test]
     fn assignment_id() {
-        let statement = Statement::assignment(Assignment::new(
-            "user_score".to_string(),
-            Expression::new(ExpressionKind::I32(100), 0),
-        ));
+        let statement = assignment!("user_score", expression_i32!(100, 0));
 
         assert!(*statement.id() > 0);
     }
@@ -633,11 +630,7 @@ mod accept_tests {
 
     #[test]
     fn statement_accept_dispatches_assignment_to_visitor() {
-        use crate::ast::expr::{Expression, ExpressionKind};
-        let statement = Statement::assignment(Assignment::new(
-            "score".to_string(),
-            Expression::new(ExpressionKind::I32(10), 0),
-        ));
+        let statement = assignment!("score", expression_i32!(10, 0));
 
         let mut visitor = TestVisitor {
             visited_var_declaration: false,

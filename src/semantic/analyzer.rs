@@ -37,17 +37,12 @@ mod var_declaration_tests {
 #[cfg(test)]
 mod assignment_tests {
     use super::*;
-    use crate::ast::expr::{Expression, ExpressionKind};
-    use crate::ast::statement::{Assignment, Statement};
 
     #[test]
     fn analyze_valid_assignment() {
         let mut analyzer = Analyzer::new();
         let declaration = variable_declaration!("score");
-        let assignment = Statement::assignment(Assignment::new(
-            "score".to_string(),
-            Expression::new(ExpressionKind::I32(100), 0),
-        ));
+        let assignment = assignment!("score", expression_i32!(100, 0));
         let program = Program::new(vec![declaration, assignment]);
 
         let result = analyzer.analyze(&program);

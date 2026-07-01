@@ -56,10 +56,7 @@ mod tests {
         let mut parser = AssignmentParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
-        assert_eq!(
-            statement,
-            Statement::assignment(Assignment::new("id".to_string(), expression_i32!(20, 1)))
-        );
+        assert_eq!(statement, assignment!("id", expression_i32!(20, 1)));
     }
 
     #[test]
@@ -72,8 +69,8 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::assignment(Assignment::new(
-                "total".to_string(),
+            assignment!(
+                "total",
                 expression_binary!(
                     expression_identifier!("amount"),
                     Plus,
@@ -84,7 +81,7 @@ mod tests {
                     ),
                     line
                 )
-            ))
+            )
         );
     }
 
