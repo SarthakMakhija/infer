@@ -104,8 +104,6 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> FnParser<'src, 'stream,
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::{BinaryOperator, Expression, ExpressionKind};
-    use crate::ast::statement::{Block, If};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
     use crate::parser::stream::ParserStream;
@@ -233,14 +231,12 @@ mod tests {
             "test_func".to_string(),
             vec![],
             None,
-            Block::new(vec![Statement::conditional(If::new(
-                Expression::new(
-                    ExpressionKind::Binary(
-                        Box::new(ExpressionKind::identifier("discount_rate".to_string())),
-                        BinaryOperator::GreaterThan,
-                        Box::new(ExpressionKind::I32(0)),
-                    ),
-                    line,
+            Block::new(vec![conditional!(
+                expression_binary!(
+                    expression_identifier!("discount_rate"),
+                    GreaterThan,
+                    expression_i32!(0),
+                    line
                 ),
                 Block::new(vec![assignment!(
                     "final_price",
@@ -250,9 +246,8 @@ mod tests {
                         expression_identifier!("savings"),
                         line
                     )
-                )]),
-                None,
-            ))]),
+                )])
+            )]),
         ));
         assert_eq!(statement, expected);
     }

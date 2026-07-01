@@ -442,8 +442,8 @@ mod assignment_tests {
 #[cfg(test)]
 mod if_tests {
     use super::*;
-    use crate::ast::expr::{Expression, ExpressionKind};
-    use crate::ast::statement::{Block, If, Statement};
+    use crate::ast::expr::Expression;
+    use crate::ast::statement::Block;
     use crate::semantic::SymbolId;
 
     #[test]
@@ -451,11 +451,10 @@ mod if_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let then_declaration = variable_declaration!("then_var");
-        let if_statement = Statement::conditional(If::new(
-            Expression::new(ExpressionKind::Boolean(true), 0),
-            Block::new(vec![then_declaration]),
-            None,
-        ));
+        let if_statement = conditional!(
+            expression_boolean!(true, 0),
+            Block::new(vec![then_declaration])
+        );
         assert!(if_statement.accept(&mut visitor).is_ok());
 
         let assignment = assignment!("then_var", expression_i32!(10, 0));
@@ -471,11 +470,11 @@ mod if_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let else_declaration = variable_declaration!("else_var");
-        let if_statement = Statement::conditional(If::new(
-            Expression::new(ExpressionKind::Boolean(false), 0),
+        let if_statement = conditional!(
+            expression_boolean!(false, 0),
             Block::new(vec![]),
-            Some(Block::new(vec![else_declaration])),
-        ));
+            else: Block::new(vec![else_declaration])
+        );
         assert!(if_statement.accept(&mut visitor).is_ok());
 
         let assignment = assignment!("else_var", expression_i32!(10, 0));
@@ -491,14 +490,13 @@ mod if_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let then_declaration = variable_declaration!("first_name");
-
         let else_assign = assignment!("first_name", expression_i32!(10, 0));
 
-        let if_statement = Statement::conditional(If::new(
-            Expression::new(ExpressionKind::Boolean(true), 0),
+        let if_statement = conditional!(
+            expression_boolean!(true, 0),
             Block::new(vec![then_declaration]),
-            Some(Block::new(vec![else_assign])),
-        ));
+            else: Block::new(vec![else_assign])
+        );
 
         let result = if_statement.accept(&mut visitor);
         assert_eq!(
@@ -522,11 +520,11 @@ mod if_tests {
         let else_assign = assignment!("outer_var", expression_i32!(20, 0));
         let else_assign_id = else_assign.id();
 
-        let if_statement = Statement::conditional(If::new(
-            Expression::new(ExpressionKind::Boolean(true), 0),
+        let if_statement = conditional!(
+            expression_boolean!(true, 0),
             Block::new(vec![then_assign]),
-            Some(Block::new(vec![else_assign])),
-        ));
+            else: Block::new(vec![else_assign])
+        );
 
         assert!(if_statement.accept(&mut visitor).is_ok());
         assert_eq!(
@@ -547,14 +545,11 @@ mod if_tests {
             .scopes
             .define("score".to_string(), expected_symbol_id);
 
-        let condition_expression_kind = ExpressionKind::identifier("score".to_string());
-        let score_node_id = condition_expression_kind.node_id().unwrap();
+        let condition_kind = expression_identifier!("score");
+        let score_node_id = condition_kind.node_id().unwrap();
+        let condition = Expression::new(condition_kind, 0);
 
-        let if_statement = Statement::conditional(If::new(
-            Expression::new(condition_expression_kind, 0),
-            Block::new(vec![]),
-            None,
-        ));
+        let if_statement = conditional!(condition, Block::new(vec![]));
 
         let result = if_statement.accept(&mut visitor);
         assert!(result.is_ok());
@@ -568,12 +563,7 @@ mod if_tests {
     fn if_condition_fails_given_undefined_variable() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let condition_expression_kind = ExpressionKind::identifier("score".to_string());
-        let if_statement = Statement::conditional(If::new(
-            Expression::new(condition_expression_kind, 0),
-            Block::new(vec![]),
-            None,
-        ));
+        let if_statement = conditional!(expression_identifier!("score", 0), Block::new(vec![]));
 
         let result = if_statement.accept(&mut visitor);
         assert_eq!(
@@ -1210,7 +1200,6 @@ mod print_tests {
 #[cfg(test)]
 mod unreachable_code_tests {
     use super::*;
-    use crate::ast::expr::{Expression, ExpressionKind};
     use crate::ast::statement::{Block, FunctionDefinition, Statement};
 
     #[test]
@@ -1269,11 +1258,10 @@ mod unreachable_code_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let return_statement = return_statement!();
-        let if_statement = Statement::conditional(If::new(
-            Expression::new(ExpressionKind::Boolean(true), 0),
-            Block::new(vec![return_statement]),
-            None,
-        ));
+        let if_statement = conditional!(
+            expression_boolean!(true, 0),
+            Block::new(vec![return_statement])
+        );
 
         let variable_declaration = variable_declaration!("score");
 

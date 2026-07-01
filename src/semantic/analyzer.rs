@@ -53,17 +53,12 @@ mod assignment_tests {
 #[cfg(test)]
 mod if_tests {
     use super::*;
-    use crate::ast::expr::{Expression, ExpressionKind};
-    use crate::ast::statement::{Block, If, Statement};
+    use crate::ast::statement::Block;
 
     #[test]
     fn analyze_valid_if_statement() {
         let mut analyzer = Analyzer::new();
-        let if_statement = Statement::conditional(If::new(
-            Expression::new(ExpressionKind::Boolean(true), 0),
-            Block::new(vec![]),
-            None,
-        ));
+        let if_statement = conditional!(expression_boolean!(true, 0), Block::new(vec![]));
         let program = Program::new(vec![if_statement]);
 
         let result = analyzer.analyze(&program);

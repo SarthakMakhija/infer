@@ -53,6 +53,26 @@ macro_rules! assignment {
     };
 }
 
+/// Constructs a `Statement::If` (conditional) statement.
+#[macro_export]
+macro_rules! conditional {
+    // 1. No else: conditional!(condition, body)
+    ($condition:expr, $body:expr) => {
+        $crate::ast::statement::Statement::conditional($crate::ast::statement::If::new(
+            $condition, $body, None,
+        ))
+    };
+
+    // 2. With else: conditional!(condition, body, else: block)
+    ($condition:expr, $body:expr, else: $else_body:expr) => {
+        $crate::ast::statement::Statement::conditional($crate::ast::statement::If::new(
+            $condition,
+            $body,
+            Some($else_body),
+        ))
+    };
+}
+
 /// Constructs a `Statement::Break` statement.
 #[macro_export]
 macro_rules! break_statement {
@@ -188,5 +208,40 @@ mod tests {
 
         assert_eq!(assignment.variable(), "user_score");
         assert_eq!(assignment.expression().kind, ExpressionKind::I32(42));
+    }
+
+    #[test]
+    fn conditional_statement_without_else() {
+        use crate::ast::statement::{Block, Statement};
+
+        let statement = conditional!(expression_boolean!(true, 0), Block::new(vec![]));
+        let Statement::If(if_statement, _node_id) = statement else {
+            panic!("Expected If variant");
+        };
+
+        assert_eq!(if_statement.condition().kind, ExpressionKind::Boolean(true));
+        assert!(if_statement.else_body().is_none());
+    }
+
+    #[test]
+    fn conditional_statement_with_else() {
+        use crate::ast::statement::{Block, Statement};
+
+        let then_statement = variable_declaration!("then_var");
+        let else_statement = variable_declaration!("else_var");
+
+        let statement = conditional!(
+            expression_boolean!(true, 0),
+            Block::new(vec![then_statement]),
+            else: Block::new(vec![else_statement])
+        );
+        let Statement::If(if_statement, _node_id) = statement else {
+            panic!("Expected If variant");
+        };
+
+        assert_eq!(if_statement.condition().kind, ExpressionKind::Boolean(true));
+        assert_eq!(if_statement.body().len(), 1);
+        assert!(if_statement.else_body().is_some());
+        assert_eq!(if_statement.else_body().unwrap().len(), 1);
     }
 }

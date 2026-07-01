@@ -1,6 +1,4 @@
 use crate::ast::expr::Expression;
-#[cfg(test)]
-use crate::ast::expr::ExpressionKind;
 use crate::semantic::error::SemanticError;
 use crate::semantic::visitor::StatementVisitor;
 use std::cell::Cell;
@@ -439,7 +437,6 @@ impl Print {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::Expression;
 
     #[test]
     fn variable_declaration_id() {
@@ -457,11 +454,7 @@ mod tests {
 
     #[test]
     fn if_id() {
-        let statement = Statement::conditional(If::new(
-            Expression::new(ExpressionKind::Boolean(true), 0),
-            Block::new(vec![]),
-            None,
-        ));
+        let statement = conditional!(expression_boolean!(true, 0), Block::new(vec![]));
         assert!(*statement.id() > 0);
     }
 
@@ -490,7 +483,7 @@ mod tests {
 
     #[test]
     fn function_call_id() {
-        let statement = Statement::function_call(Expression::new(ExpressionKind::I32(42), 0));
+        let statement = Statement::function_call(expression_i32!(42, 0));
         assert!(*statement.id() > 0);
     }
 
@@ -524,7 +517,6 @@ mod tests {
 
 #[cfg(test)]
 mod accept_tests {
-    use crate::ast::expr::{Expression, ExpressionKind};
     use crate::ast::statement::{
         Assignment, Block, FunctionDefinition, If, Loop, NodeId, Print, Return, Statement,
         VariableDeclaration,
@@ -651,11 +643,7 @@ mod accept_tests {
 
     #[test]
     fn statement_accept_dispatches_if_to_visitor() {
-        let statement = Statement::conditional(If::new(
-            Expression::new(ExpressionKind::Boolean(true), 0),
-            Block::new(vec![]),
-            None,
-        ));
+        let statement = conditional!(expression_boolean!(true, 0), Block::new(vec![]));
 
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
