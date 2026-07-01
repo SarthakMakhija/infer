@@ -126,7 +126,7 @@ macro_rules! assert_conditional {
         let Statement::If(condition, _) = $statement else {
             panic!("Expected If conditional, found {:?}", $statement);
         };
-        assert_eq!(condition.condition(), $expected_condition);
+        assert_eq!(&condition.condition().kind, $expected_condition);
         assert_eq!(condition.body().len(), $expected_body_len);
         assert_eq!(condition.else_body().map(|b| b.len()), $expected_else_len);
         condition

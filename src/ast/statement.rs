@@ -243,13 +243,13 @@ impl Assignment {
 /// Example: `if x == 10 { var y = 1; } else { var y = 2; }`
 #[derive(Debug, PartialEq)]
 pub struct If {
-    pub(crate) condition: ExpressionKind,
+    pub(crate) condition: Expression,
     pub(crate) body: Block,
     pub(crate) else_body: Option<Block>,
 }
 
 impl If {
-    pub(crate) fn new(condition: ExpressionKind, body: Block, else_body: Option<Block>) -> Self {
+    pub(crate) fn new(condition: Expression, body: Block, else_body: Option<Block>) -> Self {
         Self {
             condition,
             body,
@@ -258,7 +258,7 @@ impl If {
     }
 
     /// Returns the condition expression governing the conditional execution.
-    pub fn condition(&self) -> &ExpressionKind {
+    pub fn condition(&self) -> &Expression {
         &self.condition
     }
 
@@ -474,7 +474,7 @@ mod tests {
     #[test]
     fn if_id() {
         let statement = Statement::conditional(If::new(
-            ExpressionKind::Boolean(true),
+            Expression::new(ExpressionKind::Boolean(true), 0),
             Block::new(vec![]),
             None,
         ));
@@ -548,6 +548,7 @@ mod tests {
 
 #[cfg(test)]
 mod accept_tests {
+    use crate::ast::expr::{Expression, ExpressionKind};
     use crate::ast::statement::{
         Assignment, Block, Break, FunctionDefinition, If, Loop, NodeId, Print, Return, Statement,
         VariableDeclaration,
@@ -682,9 +683,8 @@ mod accept_tests {
 
     #[test]
     fn statement_accept_dispatches_if_to_visitor() {
-        use crate::ast::expr::ExpressionKind;
         let statement = Statement::conditional(If::new(
-            ExpressionKind::Boolean(true),
+            Expression::new(ExpressionKind::Boolean(true), 0),
             Block::new(vec![]),
             None,
         ));

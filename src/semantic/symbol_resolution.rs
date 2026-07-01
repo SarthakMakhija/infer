@@ -489,7 +489,7 @@ mod if_tests {
             None,
         ));
         let if_statement = Statement::conditional(If::new(
-            ExpressionKind::Boolean(true),
+            Expression::new(ExpressionKind::Boolean(true), 0),
             Block::new(vec![then_declaration]),
             None,
         ));
@@ -516,7 +516,7 @@ mod if_tests {
             None,
         ));
         let if_statement = Statement::conditional(If::new(
-            ExpressionKind::Boolean(false),
+            Expression::new(ExpressionKind::Boolean(false), 0),
             Block::new(vec![]),
             Some(Block::new(vec![else_declaration])),
         ));
@@ -549,7 +549,7 @@ mod if_tests {
         ));
 
         let if_statement = Statement::conditional(If::new(
-            ExpressionKind::Boolean(true),
+            Expression::new(ExpressionKind::Boolean(true), 0),
             Block::new(vec![then_declaration]),
             Some(Block::new(vec![else_assign])),
         ));
@@ -583,7 +583,7 @@ mod if_tests {
         let else_assign_id = else_assign.id();
 
         let if_statement = Statement::conditional(If::new(
-            ExpressionKind::Boolean(true),
+            Expression::new(ExpressionKind::Boolean(true), 0),
             Block::new(vec![then_assign]),
             Some(Block::new(vec![else_assign])),
         ));
@@ -610,8 +610,11 @@ mod if_tests {
         let condition_expression_kind = ExpressionKind::identifier("score".to_string());
         let score_node_id = condition_expression_kind.node_id().unwrap();
 
-        let if_statement =
-            Statement::conditional(If::new(condition_expression_kind, Block::new(vec![]), None));
+        let if_statement = Statement::conditional(If::new(
+            Expression::new(condition_expression_kind, 0),
+            Block::new(vec![]),
+            None,
+        ));
 
         let result = if_statement.accept(&mut visitor);
         assert!(result.is_ok());
@@ -626,8 +629,11 @@ mod if_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let condition_expression_kind = ExpressionKind::identifier("score".to_string());
-        let if_statement =
-            Statement::conditional(If::new(condition_expression_kind, Block::new(vec![]), None));
+        let if_statement = Statement::conditional(If::new(
+            Expression::new(condition_expression_kind, 0),
+            Block::new(vec![]),
+            None,
+        ));
 
         let result = if_statement.accept(&mut visitor);
         assert_eq!(
@@ -1296,7 +1302,7 @@ mod print_tests {
 #[cfg(test)]
 mod unreachable_code_tests {
     use super::*;
-    use crate::ast::expr::ExpressionKind;
+    use crate::ast::expr::{Expression, ExpressionKind};
     use crate::ast::statement::{
         Block, Break, FunctionDefinition, Return, Statement, VariableDeclaration,
     };
@@ -1366,7 +1372,7 @@ mod unreachable_code_tests {
 
         let return_statement = Statement::return_(Return::new(None));
         let if_statement = Statement::conditional(crate::ast::statement::If::new(
-            ExpressionKind::Boolean(true),
+            Expression::new(ExpressionKind::Boolean(true), 0),
             Block::new(vec![return_statement]),
             None,
         ));

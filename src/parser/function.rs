@@ -247,10 +247,13 @@ mod tests {
             vec![],
             None,
             Block::new(vec![Statement::conditional(If::new(
-                ExpressionKind::Binary(
-                    Box::new(ExpressionKind::identifier("discount_rate".to_string())),
-                    BinaryOperator::GreaterThan,
-                    Box::new(ExpressionKind::I32(0)),
+                Expression::new(
+                    ExpressionKind::Binary(
+                        Box::new(ExpressionKind::identifier("discount_rate".to_string())),
+                        BinaryOperator::GreaterThan,
+                        Box::new(ExpressionKind::I32(0)),
+                    ),
+                    line,
                 ),
                 Block::new(vec![Statement::assignment(Assignment::new(
                     "final_price".to_string(),
