@@ -72,7 +72,7 @@ mod tests {
         let mut parser = BreakParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
-        assert_eq!(statement, Statement::control_flow(Break::new()));
+        assert_eq!(statement, break_statement!());
     }
 
     #[test]
@@ -105,7 +105,7 @@ mod tests {
         let mut parser = ReturnParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
-        assert_eq!(statement, Statement::return_(Return::new(None)));
+        assert_eq!(statement, return_statement!());
     }
 
     #[test]
@@ -116,10 +116,7 @@ mod tests {
 
         let statement = parser.parse().unwrap();
         let line = 1;
-        assert_eq!(
-            statement,
-            Statement::return_(Return::new(Some(expression_i32!(42, line))))
-        );
+        assert_eq!(statement, return_statement!(expression_i32!(42, line)));
     }
 
     #[test]

@@ -1,6 +1,4 @@
 use crate::ast::expr::Expression;
-#[cfg(test)]
-use crate::ast::expr::ExpressionKind;
 use crate::ast::statement::{Print, Statement};
 use crate::lexer::token::TokenType;
 use crate::lexer::LexResult;
@@ -62,11 +60,11 @@ mod tests {
         let line = 1;
         assert_eq!(
             statement,
-            Statement::print(Print::new(vec![
-                Expression::new(ExpressionKind::identifier("name".to_string()), line),
-                Expression::new(ExpressionKind::I32(42), line),
-                Expression::new(ExpressionKind::Boolean(true), line),
-            ]))
+            print_statement!(
+                expression_identifier!("name", line),
+                expression_i32!(42, line),
+                expression_boolean!(true, line)
+            )
         );
     }
 
@@ -80,14 +78,12 @@ mod tests {
         let line = 1;
         assert_eq!(
             statement,
-            Statement::print(Print::new(vec![Expression::new(
-                ExpressionKind::Binary(
-                    Box::new(ExpressionKind::identifier("age".to_string())),
-                    crate::ast::expr::BinaryOperator::Plus,
-                    Box::new(ExpressionKind::I32(10))
-                ),
+            print_statement!(expression_binary!(
+                expression_identifier!("age"),
+                Plus,
+                expression_i32!(10),
                 line
-            )]))
+            ))
         );
     }
 

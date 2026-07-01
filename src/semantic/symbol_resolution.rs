@@ -615,14 +615,13 @@ mod if_tests {
 #[cfg(test)]
 mod loop_tests {
     use super::*;
-    use crate::ast::expr::{Expression, ExpressionKind};
-    use crate::ast::statement::{Assignment, Block, Break, Loop, Statement};
+    use crate::ast::statement::{Assignment, Block, Loop, Statement};
 
     #[test]
     fn entering_a_loop_updates_the_state_to_be_inside_a_loop() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let break_statement = Statement::control_flow(Break::new());
+        let break_statement = break_statement!();
         let loop_statement = Statement::iteration(Loop::new(Block::new(vec![break_statement])));
 
         let result = loop_statement.accept(&mut visitor);
@@ -634,10 +633,10 @@ mod loop_tests {
     fn nested_loops_track_state_depth_correctly() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let inner_break = Statement::control_flow(Break::new());
+        let inner_break = break_statement!();
         let inner_loop = Statement::iteration(Loop::new(Block::new(vec![inner_break])));
 
-        let outer_break = Statement::control_flow(Break::new());
+        let outer_break = break_statement!();
         let outer_loop = Statement::iteration(Loop::new(Block::new(vec![inner_loop, outer_break])));
 
         let result = outer_loop.accept(&mut visitor);
@@ -1076,12 +1075,11 @@ mod function_call_tests {
 #[cfg(test)]
 mod break_tests {
     use super::*;
-    use crate::ast::statement::{Break, Statement};
 
     #[test]
     fn break_statement_outside_any_loop_is_invalid() {
         let mut visitor = SymbolResolutionVisitor::new();
-        let break_statement = Statement::control_flow(Break::new());
+        let break_statement = break_statement!();
 
         let result = break_statement.accept(&mut visitor);
         assert_eq!(result, Err(SemanticError::BreakOutsideLoop));
@@ -1092,7 +1090,7 @@ mod break_tests {
         let mut visitor = SymbolResolutionVisitor::new();
         visitor.state.entered_loop();
 
-        let break_statement = Statement::control_flow(Break::new());
+        let break_statement = break_statement!();
         let result = break_statement.accept(&mut visitor);
 
         assert!(result.is_ok());
@@ -1102,8 +1100,6 @@ mod break_tests {
 #[cfg(test)]
 mod return_tests {
     use super::*;
-    use crate::ast::expr::ExpressionKind;
-    use crate::ast::statement::Statement;
     use crate::semantic::state::FunctionMetadata;
     use crate::semantic::SymbolId;
 
@@ -1111,7 +1107,7 @@ mod return_tests {
     fn return_statement_outside_any_function_is_invalid() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let return_statement = Statement::return_(Return::new(None));
+        let return_statement = return_statement!();
         let result = return_statement.accept(&mut visitor);
 
         assert_eq!(result, Err(SemanticError::ReturnOutsideFunction));
@@ -1125,7 +1121,7 @@ mod return_tests {
             FunctionMetadata::new("calculate".to_string(), 0, true),
         );
 
-        let return_statement = Statement::return_(Return::new(None));
+        let return_statement = return_statement!();
         let result = return_statement.accept(&mut visitor);
 
         assert_eq!(result, Err(SemanticError::MissingReturnExpression));
@@ -1139,10 +1135,7 @@ mod return_tests {
             FunctionMetadata::new("log_message".to_string(), 0, false),
         );
 
-        let return_statement = Statement::return_(Return::new(Some(Expression::new(
-            ExpressionKind::I32(100),
-            0,
-        ))));
+        let return_statement = return_statement!(expression_i32!(100, 0));
         let result = return_statement.accept(&mut visitor);
 
         assert_eq!(result, Err(SemanticError::UnexpectedReturnExpression));
@@ -1156,7 +1149,7 @@ mod return_tests {
             FunctionMetadata::new("log_message".to_string(), 0, false),
         );
 
-        let return_statement = Statement::return_(Return::new(None));
+        let return_statement = return_statement!();
         let result = return_statement.accept(&mut visitor);
 
         assert!(result.is_ok());
@@ -1170,10 +1163,7 @@ mod return_tests {
             FunctionMetadata::new("calculate".to_string(), 0, true),
         );
 
-        let return_statement = Statement::return_(Return::new(Some(Expression::new(
-            ExpressionKind::I32(100),
-            0,
-        ))));
+        let return_statement = return_statement!(expression_i32!(100, 0));
         let result = return_statement.accept(&mut visitor);
 
         assert!(result.is_ok());
@@ -1191,10 +1181,9 @@ mod return_tests {
             FunctionMetadata::new("calculate".to_string(), 0, true),
         );
 
-        let expression_kind = ExpressionKind::identifier("score".to_string());
+        let expression_kind = expression_identifier!("score");
         let score_node_id = expression_kind.node_id().unwrap();
-        let return_statement =
-            Statement::return_(Return::new(Some(Expression::new(expression_kind, 0))));
+        let return_statement = return_statement!(Expression::new(expression_kind, 0));
         let result = return_statement.accept(&mut visitor);
 
         assert!(result.is_ok());
@@ -1212,9 +1201,7 @@ mod return_tests {
             FunctionMetadata::new("calculate".to_string(), 0, true),
         );
 
-        let expression_kind = ExpressionKind::identifier("score".to_string());
-        let return_statement =
-            Statement::return_(Return::new(Some(Expression::new(expression_kind, 0))));
+        let return_statement = return_statement!(expression_identifier!("score", 0));
         let result = return_statement.accept(&mut visitor);
 
         assert_eq!(
@@ -1228,7 +1215,6 @@ mod return_tests {
 mod print_tests {
     use super::*;
     use crate::ast::expr::{Expression, ExpressionKind};
-    use crate::ast::statement::{Print, Statement};
     use crate::semantic::SymbolId;
 
     #[test]
@@ -1241,10 +1227,7 @@ mod print_tests {
 
         let argument_expression_kind = ExpressionKind::identifier("score".to_string());
         let score_node_id = argument_expression_kind.node_id().unwrap();
-        let print_statement = Statement::print(Print::new(vec![Expression::new(
-            argument_expression_kind,
-            0,
-        )]));
+        let print_statement = print_statement!(Expression::new(argument_expression_kind, 0));
         let result = print_statement.accept(&mut visitor);
 
         assert!(result.is_ok());
@@ -1259,10 +1242,7 @@ mod print_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let argument_expression_kind = ExpressionKind::identifier("score".to_string());
-        let print_statement = Statement::print(Print::new(vec![Expression::new(
-            argument_expression_kind,
-            0,
-        )]));
+        let print_statement = print_statement!(Expression::new(argument_expression_kind, 0));
         let result = print_statement.accept(&mut visitor);
 
         assert_eq!(
@@ -1276,13 +1256,13 @@ mod print_tests {
 mod unreachable_code_tests {
     use super::*;
     use crate::ast::expr::{Expression, ExpressionKind};
-    use crate::ast::statement::{Block, Break, FunctionDefinition, Return, Statement};
+    use crate::ast::statement::{Block, FunctionDefinition, Statement};
 
     #[test]
     fn unreachable_statement_after_return_in_function_body_returns_error() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let return_statement = Statement::return_(Return::new(None));
+        let return_statement = return_statement!();
         let variable_declaration = variable_declaration!("score");
 
         let function_definition = Statement::function_definition(FunctionDefinition::new(
@@ -1300,7 +1280,7 @@ mod unreachable_code_tests {
     fn unreachable_statement_after_break_in_loop_body_returns_error() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let break_statement = Statement::control_flow(Break::new());
+        let break_statement = break_statement!();
         let variable_declaration = variable_declaration!("score");
 
         let loop_statement = Statement::iteration(Loop::new(Block::new(vec![
@@ -1315,7 +1295,7 @@ mod unreachable_code_tests {
     fn unreachable_nested_block_after_return_in_function_body_returns_error() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let return_statement = Statement::return_(Return::new(None));
+        let return_statement = return_statement!();
         let nested_block = Statement::block(Block::new(vec![]));
 
         let function_definition = Statement::function_definition(FunctionDefinition::new(
@@ -1333,7 +1313,7 @@ mod unreachable_code_tests {
     fn statement_after_conditional_return_in_if_is_reachable() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let return_statement = Statement::return_(Return::new(None));
+        let return_statement = return_statement!();
         let if_statement = Statement::conditional(If::new(
             Expression::new(ExpressionKind::Boolean(true), 0),
             Block::new(vec![return_statement]),
@@ -1357,7 +1337,7 @@ mod unreachable_code_tests {
     fn statement_after_loop_with_break_is_reachable() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let break_statement = Statement::control_flow(Break::new());
+        let break_statement = break_statement!();
         let loop_statement =
             Statement::iteration(crate::ast::statement::Loop::new(Block::new(vec![
                 break_statement,
@@ -1380,7 +1360,7 @@ mod unreachable_code_tests {
     fn return_in_first_function_does_not_affect_second_function_reachability() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let return_statement = Statement::return_(Return::new(None));
+        let return_statement = return_statement!();
         let first_function = Statement::function_definition(FunctionDefinition::new(
             "first".to_string(),
             vec![],

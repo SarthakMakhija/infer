@@ -226,12 +226,12 @@ mod pending_call_tests {
 #[cfg(test)]
 mod break_tests {
     use super::*;
-    use crate::ast::statement::{Block, Break, Loop, Statement};
+    use crate::ast::statement::{Block, Loop, Statement};
 
     #[test]
     fn analyze_valid_break_inside_loop() {
         let mut analyzer = Analyzer::new();
-        let break_statement = Statement::control_flow(Break::new());
+        let break_statement = break_statement!();
         let loop_statement = Statement::iteration(Loop::new(Block::new(vec![break_statement])));
         let program = Program::new(vec![loop_statement]);
 
@@ -243,12 +243,12 @@ mod break_tests {
 #[cfg(test)]
 mod return_tests {
     use super::*;
-    use crate::ast::statement::{Block, FunctionDefinition, Return, Statement};
+    use crate::ast::statement::{Block, FunctionDefinition, Statement};
 
     #[test]
     fn analyze_valid_return_inside_function() {
         let mut analyzer = Analyzer::new();
-        let return_statement = Statement::return_(Return::new(None));
+        let return_statement = return_statement!();
         let definition = Statement::function_definition(FunctionDefinition::new(
             "calculate_total".to_string(),
             vec![],

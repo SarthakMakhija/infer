@@ -499,23 +499,19 @@ mod tests {
 
     #[test]
     fn break_id() {
-        let statement = Statement::control_flow(Break::new());
+        let statement = break_statement!();
         assert!(*statement.id() > 0);
     }
 
     #[test]
     fn return_id() {
-        let statement = Statement::return_(Return::new(Some(Expression::new(
-            ExpressionKind::I32(1),
-            0,
-        ))));
+        let statement = return_statement!(expression_i32!(1, 0));
         assert!(*statement.id() > 0);
     }
 
     #[test]
     fn print_id() {
-        let statement =
-            Statement::print(Print::new(vec![Expression::new(ExpressionKind::I32(1), 0)]));
+        let statement = print_statement!(expression_i32!(1, 0));
         assert!(*statement.id() > 0);
     }
 
@@ -533,7 +529,7 @@ mod tests {
 mod accept_tests {
     use crate::ast::expr::{Expression, ExpressionKind};
     use crate::ast::statement::{
-        Assignment, Block, Break, FunctionDefinition, If, Loop, NodeId, Print, Return, Statement,
+        Assignment, Block, FunctionDefinition, If, Loop, NodeId, Print, Return, Statement,
         VariableDeclaration,
     };
     use crate::semantic::error::SemanticError;
@@ -755,7 +751,7 @@ mod accept_tests {
 
     #[test]
     fn statement_accept_dispatches_break_to_visitor() {
-        let statement = Statement::control_flow(Break::new());
+        let statement = break_statement!();
 
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
@@ -776,7 +772,7 @@ mod accept_tests {
 
     #[test]
     fn statement_accept_dispatches_return_to_visitor() {
-        let statement = Statement::return_(Return::new(None));
+        let statement = return_statement!();
 
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
@@ -797,7 +793,7 @@ mod accept_tests {
 
     #[test]
     fn statement_accept_dispatches_print_to_visitor() {
-        let statement = Statement::print(Print::new(vec![]));
+        let statement = print_statement!();
 
         let mut visitor = TestVisitor {
             visited_var_declaration: false,

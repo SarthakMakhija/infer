@@ -103,9 +103,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, '
 mod tests {
     use super::*;
     use crate::ast::expr::{BinaryOperator, Expression, ExpressionKind};
-    use crate::ast::statement::{
-        Assignment, Block, Break, FunctionDefinition, FunctionParameter, Loop, Print, Return,
-    };
+    use crate::ast::statement::{Assignment, Block, FunctionDefinition, FunctionParameter, Loop};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
 
@@ -207,7 +205,7 @@ mod tests {
         let mut parser = StatementParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
-        assert_eq!(statement, Statement::control_flow(Break::new()));
+        assert_eq!(statement, break_statement!());
     }
 
     #[test]
@@ -218,13 +216,7 @@ mod tests {
 
         let statement = parser.parse().unwrap();
         let line = 1;
-        assert_eq!(
-            statement,
-            Statement::return_(Return::new(Some(Expression::new(
-                ExpressionKind::I32(100),
-                line
-            ))))
-        );
+        assert_eq!(statement, return_statement!(expression_i32!(100, line)));
     }
 
     #[test]
@@ -234,7 +226,7 @@ mod tests {
         let mut parser = StatementParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
-        assert_eq!(statement, Statement::return_(Return::new(None)));
+        assert_eq!(statement, return_statement!());
     }
 
     #[test]
@@ -246,9 +238,7 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::iteration(Loop::new(Block::new(vec![Statement::control_flow(
-                Break::new()
-            )])))
+            Statement::iteration(Loop::new(Block::new(vec![break_statement!()])))
         );
     }
 
@@ -383,11 +373,11 @@ mod tests {
         let line = 1;
         assert_eq!(
             statement,
-            Statement::print(Print::new(vec![
-                Expression::new(ExpressionKind::identifier("name".to_string()), line),
-                Expression::new(ExpressionKind::I32(42), line),
-                Expression::new(ExpressionKind::Boolean(true), line),
-            ]))
+            print_statement!(
+                expression_identifier!("name", line),
+                expression_i32!(42, line),
+                expression_boolean!(true, line)
+            )
         );
     }
 
@@ -401,14 +391,12 @@ mod tests {
         let line = 1;
         assert_eq!(
             statement,
-            Statement::print(Print::new(vec![Expression::new(
-                ExpressionKind::Binary(
-                    Box::new(ExpressionKind::identifier("age".to_string())),
-                    BinaryOperator::Plus,
-                    Box::new(ExpressionKind::I32(10))
-                ),
+            print_statement!(expression_binary!(
+                expression_identifier!("age"),
+                Plus,
+                expression_i32!(10),
                 line
-            )]))
+            ))
         );
     }
 
