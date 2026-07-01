@@ -41,7 +41,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ConditionalParser<'src,
             if let Some(next) = self.stream.peek()? {
                 if next.token_type == TokenType::If {
                     let nested_if = self.parse()?;
-                    return Ok(Some(Block::new(vec![nested_if])));
+                    return Ok(Some(block!(nested_if)));
                 }
             }
             return Ok(Some(self.parse_else()?));
@@ -61,7 +61,6 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ConditionalParser<'src,
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::statement::Block;
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
     use crate::parser::stream::ParserStream;
@@ -86,10 +85,7 @@ mod tests {
                     expression_identifier!("minimum_score"),
                     line
                 ),
-                Block::new(vec![assignment!(
-                    "is_eligible",
-                    expression_boolean!(true, 1)
-                )])
+                block!(assignment!("is_eligible", expression_boolean!(true, 1)))
             )
         );
     }
@@ -115,7 +111,7 @@ mod tests {
                     expression_identifier!("budget"),
                     line
                 ),
-                Block::new(vec![
+                block!(
                     assignment!("status", expression_string!("over_budget", line)),
                     assignment!(
                         "charge",
@@ -126,7 +122,7 @@ mod tests {
                             line
                         )
                     ),
-                ])
+                )
             )
         );
     }
@@ -148,7 +144,7 @@ mod tests {
                     expression_boolean!(true),
                     line
                 ),
-                Block::new(vec![])
+                block!()
             )
         );
     }
@@ -174,14 +170,14 @@ mod tests {
                     expression_identifier!("budget"),
                     line
                 ),
-                Block::new(vec![assignment!(
+                block!(assignment!(
                     "status",
                     expression_string!("over_budget", line)
-                )]),
-                else: Block::new(vec![assignment!(
+                )),
+                else: block!(assignment!(
                     "status",
                     expression_string!("within_budget", line)
-                )])
+                ))
             )
         );
     }
@@ -232,8 +228,8 @@ mod else_if_tests {
                     expression_i32!(90),
                     line
                 ),
-                Block::new(vec![assignment!("grade", expression_string!("A", line))]),
-                else: Block::new(vec![conditional!(
+                block!(assignment!("grade", expression_string!("A", line))),
+                else: block!(conditional!(
                     expression_binary!(
                         expression_identifier!("score"),
                         GreaterThanEquals,
@@ -245,7 +241,7 @@ mod else_if_tests {
                         "grade",
                         expression_string!("C", line)
                     )])
-                )])
+                ))
             )
         );
     }
@@ -271,11 +267,11 @@ mod else_if_tests {
                     expression_i32!(8),
                     line
                 ),
-                Block::new(vec![assignment!(
+                block!(assignment!(
                     "status",
                     expression_string!("high", line)
-                )]),
-                else: Block::new(vec![conditional!(
+                )),
+                else: block!(conditional!(
                     expression_binary!(
                         expression_identifier!("risk_level"),
                         GreaterThan,
@@ -286,7 +282,7 @@ mod else_if_tests {
                         "status",
                         expression_string!("medium", line)
                     )])
-                )])
+                ))
             )
         );
     }
@@ -312,8 +308,8 @@ mod else_if_tests {
                     expression_i32!(100000),
                     line
                 ),
-                Block::new(vec![assignment!("rate", expression_i32!(30, 1))]),
-                else: Block::new(vec![conditional!(
+                block!(assignment!("rate", expression_i32!(30, 1))),
+                else: block!(conditional!(
                     expression_binary!(
                         expression_identifier!("income"),
                         GreaterThan,
@@ -334,7 +330,7 @@ mod else_if_tests {
                             expression_i32!(5, line)
                         )])
                     )])
-                )])
+                ))
             )
         );
     }

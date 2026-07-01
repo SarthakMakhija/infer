@@ -443,7 +443,6 @@ mod assignment_tests {
 mod if_tests {
     use super::*;
     use crate::ast::expr::Expression;
-    use crate::ast::statement::Block;
     use crate::semantic::SymbolId;
 
     #[test]
@@ -451,10 +450,7 @@ mod if_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let then_declaration = variable_declaration!("then_var");
-        let if_statement = conditional!(
-            expression_boolean!(true, 0),
-            Block::new(vec![then_declaration])
-        );
+        let if_statement = conditional!(expression_boolean!(true, 0), block!(then_declaration));
         assert!(if_statement.accept(&mut visitor).is_ok());
 
         let assignment = assignment!("then_var", expression_i32!(10, 0));
@@ -472,8 +468,8 @@ mod if_tests {
         let else_declaration = variable_declaration!("else_var");
         let if_statement = conditional!(
             expression_boolean!(false, 0),
-            Block::new(vec![]),
-            else: Block::new(vec![else_declaration])
+            block!(),
+            else: block!(else_declaration)
         );
         assert!(if_statement.accept(&mut visitor).is_ok());
 
@@ -494,8 +490,8 @@ mod if_tests {
 
         let if_statement = conditional!(
             expression_boolean!(true, 0),
-            Block::new(vec![then_declaration]),
-            else: Block::new(vec![else_assign])
+            block!(then_declaration),
+            else: block!(else_assign)
         );
 
         let result = if_statement.accept(&mut visitor);
@@ -522,8 +518,8 @@ mod if_tests {
 
         let if_statement = conditional!(
             expression_boolean!(true, 0),
-            Block::new(vec![then_assign]),
-            else: Block::new(vec![else_assign])
+            block!(then_assign),
+            else: block!(else_assign)
         );
 
         assert!(if_statement.accept(&mut visitor).is_ok());
@@ -549,7 +545,7 @@ mod if_tests {
         let score_node_id = condition_kind.node_id().unwrap();
         let condition = Expression::new(condition_kind, 0);
 
-        let if_statement = conditional!(condition, Block::new(vec![]));
+        let if_statement = conditional!(condition, block!());
 
         let result = if_statement.accept(&mut visitor);
         assert!(result.is_ok());
@@ -563,7 +559,7 @@ mod if_tests {
     fn if_condition_fails_given_undefined_variable() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let if_statement = conditional!(expression_identifier!("score", 0), Block::new(vec![]));
+        let if_statement = conditional!(expression_identifier!("score", 0), block!());
 
         let result = if_statement.accept(&mut visitor);
         assert_eq!(
@@ -576,14 +572,13 @@ mod if_tests {
 #[cfg(test)]
 mod loop_tests {
     use super::*;
-    use crate::ast::statement::Block;
 
     #[test]
     fn entering_a_loop_updates_the_state_to_be_inside_a_loop() {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let break_statement = break_statement!();
-        let loop_statement = iteration!(Block::new(vec![break_statement]));
+        let loop_statement = iteration!(block!(break_statement));
 
         let result = loop_statement.accept(&mut visitor);
         assert!(result.is_ok());
@@ -595,10 +590,10 @@ mod loop_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let inner_break = break_statement!();
-        let inner_loop = iteration!(Block::new(vec![inner_break]));
+        let inner_loop = iteration!(block!(inner_break));
 
         let outer_break = break_statement!();
-        let outer_loop = iteration!(Block::new(vec![inner_loop, outer_break]));
+        let outer_loop = iteration!(block!(inner_loop, outer_break));
 
         let result = outer_loop.accept(&mut visitor);
         assert!(result.is_ok());
@@ -610,7 +605,7 @@ mod loop_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let variable_declaration = variable_declaration!("name");
-        let loop_statement = iteration!(Block::new(vec![variable_declaration]));
+        let loop_statement = iteration!(block!(variable_declaration));
         assert!(loop_statement.accept(&mut visitor).is_ok());
 
         let assignment = assignment!("name", expression_string!("John", 0));
@@ -625,7 +620,6 @@ mod loop_tests {
 #[cfg(test)]
 mod block_tests {
     use super::*;
-    use crate::ast::statement::{Block, Statement};
     use crate::semantic::SymbolId;
 
     #[test]
@@ -636,8 +630,7 @@ mod block_tests {
         visitor.scopes.define("score".to_string(), outer_symbol_id);
 
         let inner_declaration = variable_declaration!("score");
-
-        let block = Statement::block(Block::new(vec![inner_declaration]));
+        let block = block_statement!(inner_declaration);
         assert!(block.accept(&mut visitor).is_ok());
         assert_eq!(visitor.scopes.get("score"), Some(outer_symbol_id));
     }
@@ -647,7 +640,7 @@ mod block_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let declaration = variable_declaration!("temp");
-        let block = Statement::block(Block::new(vec![declaration]));
+        let block = block_statement!(declaration);
         assert!(block.accept(&mut visitor).is_ok());
 
         // Assign to "temp" outside the block.
@@ -672,7 +665,7 @@ mod block_tests {
 
         let inner_assignment = assignment!("score", expression_i32!(50, 0));
         let assignment_id = inner_assignment.id();
-        let block = Statement::block(Block::new(vec![inner_assignment]));
+        let block = block_statement!(inner_assignment);
 
         assert!(block.accept(&mut visitor).is_ok());
         assert_eq!(
@@ -685,7 +678,7 @@ mod block_tests {
 #[cfg(test)]
 mod function_definition_tests {
     use super::*;
-    use crate::ast::statement::{Block, FunctionDefinition, FunctionParameter, Statement};
+    use crate::ast::statement::{FunctionDefinition, FunctionParameter, Statement};
     use crate::semantic::SymbolId;
 
     #[test]
@@ -701,7 +694,7 @@ mod function_definition_tests {
             "calculate_total".to_string(),
             vec![first_parameter, second_parameter],
             Some("i32".to_string()),
-            Block::new(vec![]),
+            block!(),
         ));
 
         let result = function_definition.accept(&mut visitor);
@@ -720,7 +713,7 @@ mod function_definition_tests {
             "calculate_total".to_string(),
             vec![],
             None,
-            Block::new(vec![]),
+            block!(),
         ));
         let result = second_function.accept(&mut visitor);
         assert_eq!(
@@ -742,7 +735,7 @@ mod function_definition_tests {
             "calculate_total".to_string(),
             vec![first_parameter, second_parameter],
             None,
-            Block::new(vec![]),
+            block!(),
         ));
 
         let result = function_definition.accept(&mut visitor);
@@ -768,7 +761,7 @@ mod function_definition_tests {
             "calculate_total".to_string(),
             vec![function_parameter],
             None,
-            Block::new(vec![inner_assignment]),
+            block!(inner_assignment),
         ));
         assert!(function_definition.accept(&mut visitor).is_ok());
 
@@ -785,7 +778,7 @@ mod function_definition_tests {
             "greeting".to_string(),
             vec![parameter],
             None,
-            Block::new(vec![]),
+            block!(),
         ));
 
         assert!(function_definition.accept(&mut visitor).is_ok());
@@ -1199,7 +1192,7 @@ mod print_tests {
 #[cfg(test)]
 mod unreachable_code_tests {
     use super::*;
-    use crate::ast::statement::{Block, FunctionDefinition, Statement};
+    use crate::ast::statement::{FunctionDefinition, Statement};
 
     #[test]
     fn unreachable_statement_after_return_in_function_body_returns_error() {
@@ -1212,7 +1205,7 @@ mod unreachable_code_tests {
             "calculate".to_string(),
             vec![],
             None,
-            Block::new(vec![return_statement, variable_declaration]),
+            block!(return_statement, variable_declaration),
         ));
 
         let result = function_definition.accept(&mut visitor);
@@ -1226,7 +1219,7 @@ mod unreachable_code_tests {
         let break_statement = break_statement!();
         let variable_declaration = variable_declaration!("score");
 
-        let loop_statement = iteration!(Block::new(vec![break_statement, variable_declaration,]));
+        let loop_statement = iteration!(block!(break_statement, variable_declaration,));
         let result = loop_statement.accept(&mut visitor);
         assert_eq!(result, Err(SemanticError::UnreachableCode));
     }
@@ -1236,13 +1229,13 @@ mod unreachable_code_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let return_statement = return_statement!();
-        let nested_block = Statement::block(Block::new(vec![]));
+        let nested_block = block_statement!();
 
         let function_definition = Statement::function_definition(FunctionDefinition::new(
             "calculate".to_string(),
             vec![],
             None,
-            Block::new(vec![return_statement, nested_block]),
+            block!(return_statement, nested_block),
         ));
 
         let result = function_definition.accept(&mut visitor);
@@ -1254,10 +1247,7 @@ mod unreachable_code_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let return_statement = return_statement!();
-        let if_statement = conditional!(
-            expression_boolean!(true, 0),
-            Block::new(vec![return_statement])
-        );
+        let if_statement = conditional!(expression_boolean!(true, 0), block!(return_statement));
 
         let variable_declaration = variable_declaration!("score");
 
@@ -1265,7 +1255,7 @@ mod unreachable_code_tests {
             "calculate".to_string(),
             vec![],
             None,
-            Block::new(vec![if_statement, variable_declaration]),
+            block!(if_statement, variable_declaration),
         ));
 
         let result = function_definition.accept(&mut visitor);
@@ -1277,7 +1267,7 @@ mod unreachable_code_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let break_statement = break_statement!();
-        let loop_statement = iteration!(Block::new(vec![break_statement]));
+        let loop_statement = iteration!(block!(break_statement));
 
         let variable_declaration = variable_declaration!("score");
 
@@ -1285,7 +1275,7 @@ mod unreachable_code_tests {
             "calculate".to_string(),
             vec![],
             None,
-            Block::new(vec![loop_statement, variable_declaration]),
+            block!(loop_statement, variable_declaration),
         ));
 
         let result = function_definition.accept(&mut visitor);
@@ -1301,7 +1291,7 @@ mod unreachable_code_tests {
             "first".to_string(),
             vec![],
             None,
-            Block::new(vec![return_statement]),
+            block!(return_statement),
         ));
 
         let variable_declaration = variable_declaration!("score");
@@ -1309,7 +1299,7 @@ mod unreachable_code_tests {
             "second".to_string(),
             vec![],
             None,
-            Block::new(vec![variable_declaration]),
+            block!(variable_declaration),
         ));
 
         assert!(first_function.accept(&mut visitor).is_ok());

@@ -121,7 +121,7 @@ mod tests {
                 "calculate".to_string(),
                 vec![],
                 None,
-                Block::new(vec![])
+                block!()
             ))
         );
     }
@@ -142,7 +142,7 @@ mod tests {
                     Some("i32".to_string())
                 )],
                 Some("i32".to_string()),
-                Block::new(vec![])
+                block!()
             ))
         );
     }
@@ -160,7 +160,7 @@ mod tests {
                 "determine_grade".to_string(),
                 vec![FunctionParameter::new("score".to_string(), None)],
                 None,
-                Block::new(vec![])
+                block!()
             ))
         );
     }
@@ -183,10 +183,10 @@ mod tests {
                 "assign".to_string(),
                 vec![],
                 None,
-                Block::new(vec![
+                block!(
                     assignment!("height", expression_i32!(200, line)),
                     assignment!("weight", expression_i32!(300, line)),
-                ])
+                )
             ))
         );
     }
@@ -207,10 +207,10 @@ mod tests {
             "test_func".to_string(),
             vec![],
             None,
-            Block::new(vec![
+            block!(
                 variable_declaration!("id", value: expression_i32!(100, line)),
                 assignment!("id", expression_i32!(200, line)),
-            ]),
+            ),
         ));
         assert_eq!(statement, expected);
     }
@@ -231,7 +231,7 @@ mod tests {
             "test_func".to_string(),
             vec![],
             None,
-            Block::new(vec![conditional!(
+            block!(conditional!(
                 expression_binary!(
                     expression_identifier!("discount_rate"),
                     GreaterThan,
@@ -247,7 +247,7 @@ mod tests {
                         line
                     )
                 )])
-            )]),
+            )),
         ));
         assert_eq!(statement, expected);
     }
@@ -268,7 +268,7 @@ mod tests {
             "test_func".to_string(),
             vec![],
             None,
-            Block::new(vec![assignment!(
+            block!(assignment!(
                 "total_price",
                 expression_binary!(
                     expression_identifier!("base_price"),
@@ -280,7 +280,7 @@ mod tests {
                     ),
                     line
                 )
-            )]),
+            )),
         ));
         assert_eq!(statement, expected);
     }
@@ -301,7 +301,7 @@ mod tests {
             "test_func".to_string(),
             vec![],
             None,
-            Block::new(vec![assignment!(
+            block!(assignment!(
                 "adjusted_score",
                 expression_binary!(
                     expression_grouped!(expression_binary!(
@@ -313,7 +313,7 @@ mod tests {
                     expression_identifier!("multiplier"),
                     line
                 )
-            )]),
+            )),
         ));
         assert_eq!(statement, expected);
     }
@@ -333,7 +333,7 @@ mod tests {
             "test_func".to_string(),
             vec![],
             None,
-            Block::new(vec![variable_declaration!(
+            block!(variable_declaration!(
                 "total_cost",
                 value: expression_binary!(
                     expression_identifier!("fixed_cost"),
@@ -345,7 +345,7 @@ mod tests {
                     ),
                     line
                 )
-            )]),
+            )),
         ));
         assert_eq!(statement, expected);
     }
@@ -366,7 +366,7 @@ mod tests {
             "test_func".to_string(),
             vec![],
             None,
-            Block::new(vec![
+            block!(
                 variable_declaration!(
                     "net_salary",
                     value: expression_binary!(
@@ -385,7 +385,7 @@ mod tests {
                         line
                     )
                 ),
-            ]),
+            ),
         ));
         assert_eq!(statement, expected);
     }

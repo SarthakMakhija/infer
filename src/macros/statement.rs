@@ -81,6 +81,28 @@ macro_rules! iteration {
     };
 }
 
+/// Constructs a `Block` containing zero or more statements.
+#[macro_export]
+macro_rules! block {
+    () => {
+        $crate::ast::statement::Block::new(vec![])
+    };
+    ($($statement:expr),* $(,)?) => {
+        $crate::ast::statement::Block::new(vec![$($statement),*])
+    };
+}
+
+/// Constructs a `Block` containing zero or more statements.
+#[macro_export]
+macro_rules! block_statement {
+    () => {
+        $crate::ast::statement::Statement::block(block!())
+    };
+    ($($statement:expr),* $(,)?) => {
+        $crate::ast::statement::Statement::block(block!($($statement),*))
+    };
+}
+
 /// Constructs a `Statement::Break` statement.
 #[macro_export]
 macro_rules! break_statement {
@@ -113,7 +135,22 @@ macro_rules! print_statement {
 #[cfg(test)]
 mod tests {
     use crate::ast::expr::{Expression, ExpressionKind};
-    use crate::ast::statement::{Block, Statement};
+    use crate::ast::statement::Statement;
+
+    #[test]
+    fn block_empty() {
+        let block = block!();
+        assert_eq!(block.statements().len(), 0);
+    }
+
+    #[test]
+    fn block_with_statements() {
+        let block = block!(
+            variable_declaration!("score"),
+            variable_declaration!("total")
+        );
+        assert_eq!(block.statements().len(), 2);
+    }
 
     #[test]
     fn variable_declaration_name_only() {
@@ -220,7 +257,7 @@ mod tests {
 
     #[test]
     fn conditional_statement_without_else() {
-        let statement = conditional!(expression_boolean!(true, 0), Block::new(vec![]));
+        let statement = conditional!(expression_boolean!(true, 0), block!());
         let Statement::If(if_statement, _node_id) = statement else {
             panic!("Expected If variant");
         };
@@ -236,8 +273,8 @@ mod tests {
 
         let statement = conditional!(
             expression_boolean!(true, 0),
-            Block::new(vec![then_statement]),
-            else: Block::new(vec![else_statement])
+            block!(then_statement),
+            else: block!(else_statement)
         );
         let Statement::If(if_statement, _node_id) = statement else {
             panic!("Expected If variant");
@@ -252,7 +289,7 @@ mod tests {
     #[test]
     fn iteration_with_body() {
         let body_statement = variable_declaration!("counter");
-        let statement = iteration!(Block::new(vec![body_statement]));
+        let statement = iteration!(block!(body_statement));
         let Statement::Loop(loop_statement, _node_id) = statement else {
             panic!("Expected Loop variant");
         };
@@ -262,7 +299,7 @@ mod tests {
 
     #[test]
     fn iteration_empty_body() {
-        let statement = iteration!(Block::new(vec![]));
+        let statement = iteration!(block!());
         let Statement::Loop(loop_statement, _node_id) = statement else {
             panic!("Expected Loop variant");
         };

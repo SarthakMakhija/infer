@@ -54,7 +54,7 @@ mod tests {
         let mut parser = BlockParser::new(&mut stream);
 
         let block = parser.parse().unwrap();
-        assert_eq!(block, Block::new(vec![]));
+        assert_eq!(block, block!());
     }
 
     #[test]
@@ -68,10 +68,10 @@ mod tests {
 
         assert_eq!(
             block,
-            Block::new(vec![
+            block!(
                 variable_declaration!("score", value: expression_i32!(10, line)),
                 assignment!("score", expression_i32!(20, line))
-            ])
+            )
         );
     }
 
@@ -88,13 +88,13 @@ mod tests {
         let line = 1;
         assert_eq!(
             block,
-            Block::new(vec![
+            block!(
                 variable_declaration!("score", value: expression_i32!(10, line)),
-                Statement::block(Block::new(vec![
+                block_statement!(
                     variable_declaration!("risk_level", value: expression_i32!(20, line))
-                ])),
+                ),
                 variable_declaration!("threshold", value: expression_i32!(30, line))
-            ])
+            )
         );
     }
 
@@ -111,14 +111,12 @@ mod tests {
         let line = 1;
         assert_eq!(
             block,
-            Block::new(vec![
-                Statement::block(Block::new(vec![
-                    variable_declaration!("score", value: expression_i32!(10, line))
-                ])),
-                Statement::block(Block::new(vec![
+            block!(
+                block_statement!(variable_declaration!("score", value: expression_i32!(10, line))),
+                block_statement!(
                     variable_declaration!("risk_level", value: expression_i32!(20, line))
-                ]))
-            ])
+                )
+            )
         );
     }
 

@@ -454,19 +454,19 @@ mod tests {
 
     #[test]
     fn if_id() {
-        let statement = conditional!(expression_boolean!(true, 0), Block::new(vec![]));
+        let statement = conditional!(expression_boolean!(true, 0), block!());
         assert!(*statement.id() > 0);
     }
 
     #[test]
     fn loop_id() {
-        let statement = iteration!(Block::new(vec![]));
+        let statement = iteration!(block!());
         assert!(*statement.id() > 0);
     }
 
     #[test]
     fn block_id() {
-        let statement = Statement::block(Block::new(vec![]));
+        let statement = block_statement!();
         assert!(*statement.id() > 0);
     }
 
@@ -476,7 +476,7 @@ mod tests {
             "calculate_total".to_string(),
             vec![],
             None,
-            Block::new(vec![]),
+            block!(),
         ));
         assert!(*statement.id() > 0);
     }
@@ -643,7 +643,7 @@ mod accept_tests {
 
     #[test]
     fn statement_accept_dispatches_if_to_visitor() {
-        let statement = conditional!(expression_boolean!(true, 0), Block::new(vec![]));
+        let statement = conditional!(expression_boolean!(true, 0), block!());
 
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
@@ -664,7 +664,7 @@ mod accept_tests {
 
     #[test]
     fn statement_accept_dispatches_loop_to_visitor() {
-        let statement = iteration!(Block::new(vec![]));
+        let statement = iteration!(block!());
 
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
@@ -685,7 +685,7 @@ mod accept_tests {
 
     #[test]
     fn statement_accept_dispatches_block_to_visitor() {
-        let statement = Statement::block(Block::new(vec![]));
+        let statement = block_statement!();
 
         let mut visitor = TestVisitor {
             visited_var_declaration: false,
@@ -710,7 +710,7 @@ mod accept_tests {
             "calculate".to_string(),
             vec![],
             None,
-            Block::new(vec![]),
+            block!(),
         ));
 
         let mut visitor = TestVisitor {
