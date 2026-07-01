@@ -1,4 +1,4 @@
-use crate::ast::expr::ExpressionKind;
+use crate::ast::expr::{Expression, ExpressionKind};
 use crate::ast::statement::{
     Assignment, Block, FunctionDefinition, If, Loop, NodeId, Print, Return, Statement,
     VariableDeclaration,
@@ -177,11 +177,11 @@ impl StatementVisitor for SymbolResolutionVisitor {
         Ok(())
     }
 
-    fn visit_function_call(&mut self, call: &ExpressionKind) -> Result<(), SemanticError> {
-        let ExpressionKind::FunctionCall(..) = call else {
+    fn visit_function_call(&mut self, call: &Expression) -> Result<(), SemanticError> {
+        let ExpressionKind::FunctionCall(..) = &call.kind else {
             panic!("Expected ExpressionKind::FunctionCall variant");
         };
-        call.accept(self)
+        call.kind.accept(self)
     }
 
     fn visit_break(&mut self) -> Result<(), SemanticError> {
@@ -277,7 +277,6 @@ impl ExpressionVisitor for SymbolResolutionVisitor {
 #[cfg(test)]
 mod var_declaration_tests {
     use super::*;
-    use crate::ast::expr::Expression;
     use crate::ast::statement::Statement;
     use crate::semantic::SymbolId;
 
@@ -919,7 +918,7 @@ mod function_call_tests {
 
         let callee_expression_kind = ExpressionKind::identifier("calculate_total".to_string());
         let call_expression_kind = ExpressionKind::function_call(callee_expression_kind, vec![]);
-        let call_statement = Statement::function_call(call_expression_kind);
+        let call_statement = Statement::function_call(Expression::new(call_expression_kind, 0));
 
         let result = call_statement.accept(&mut visitor);
         assert!(result.is_ok());
@@ -941,7 +940,7 @@ mod function_call_tests {
 
         let callee_expression_kind = ExpressionKind::identifier("calculate_total".to_string());
         let call_expression_kind = ExpressionKind::function_call(callee_expression_kind, vec![]);
-        let call_statement = Statement::function_call(call_expression_kind);
+        let call_statement = Statement::function_call(Expression::new(call_expression_kind, 0));
 
         let result = call_statement.accept(&mut visitor);
         assert_eq!(
@@ -965,7 +964,7 @@ mod function_call_tests {
 
         let callee_expression_kind = ExpressionKind::identifier("calculate_total".to_string());
         let call_expression_kind = ExpressionKind::function_call(callee_expression_kind, vec![]);
-        let call_statement = Statement::function_call(call_expression_kind);
+        let call_statement = Statement::function_call(Expression::new(call_expression_kind, 0));
 
         let result = call_statement.accept(&mut visitor);
         assert_eq!(
@@ -982,7 +981,7 @@ mod function_call_tests {
         let expected_callee_node_id = callee_expression_kind.node_id().unwrap();
         let call_expression_kind =
             ExpressionKind::function_call(callee_expression_kind, vec![ExpressionKind::I32(42)]);
-        let call_statement = Statement::function_call(call_expression_kind);
+        let call_statement = Statement::function_call(Expression::new(call_expression_kind, 0));
 
         let result = call_statement.accept(&mut visitor);
         assert!(result.is_ok());
@@ -1003,7 +1002,7 @@ mod function_call_tests {
 
         let callee_expression_kind = ExpressionKind::I32(42);
         let call_expression_kind = ExpressionKind::function_call(callee_expression_kind, vec![]);
-        let call_statement = Statement::function_call(call_expression_kind);
+        let call_statement = Statement::function_call(Expression::new(call_expression_kind, 0));
 
         let result = call_statement.accept(&mut visitor);
         assert_eq!(result, Err(SemanticError::NotAFunction("".to_string())));
@@ -1014,7 +1013,8 @@ mod function_call_tests {
     fn panics_on_non_function_call_expression_variant() {
         let mut visitor = SymbolResolutionVisitor::new();
         let expression_kind = ExpressionKind::I32(42);
-        let _ = StatementVisitor::visit_function_call(&mut visitor, &expression_kind);
+        let expression = Expression::new(expression_kind, 0);
+        let _ = StatementVisitor::visit_function_call(&mut visitor, &expression);
     }
 
     #[test]

@@ -1,3 +1,4 @@
+use crate::ast::expr::Expression;
 use crate::ast::statement::Statement;
 use crate::lexer::token::{Token, TokenType};
 use crate::lexer::LexResult;
@@ -83,9 +84,15 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, '
     fn maybe_function_call(&mut self) -> Result<Option<Statement>, ParseError> {
         if let Some(next_token) = self.stream.peek_second()? {
             if next_token.token_type == TokenType::LeftParentheses {
-                let expression = ExpressionParser::new(self.stream).parse()?;
+                let identifier = self.stream.peek()?.ok_or(ParseError::UnexpectedEof)?;
+                let line = identifier.line;
+                let expression_kind = ExpressionParser::new(self.stream).parse()?;
                 self.stream.expect(TokenType::Semicolon)?;
-                return Ok(Some(Statement::function_call(expression)));
+
+                return Ok(Some(Statement::function_call(Expression::new(
+                    expression_kind,
+                    line,
+                ))));
             }
         }
         Ok(None)
@@ -287,11 +294,15 @@ mod tests {
         let mut parser = StatementParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        let line = 1;
         assert_eq!(
             statement,
-            Statement::function_call(ExpressionKind::function_call(
-                ExpressionKind::identifier("adjust_risk".to_string()),
-                vec![ExpressionKind::I32(45)]
+            Statement::function_call(Expression::new(
+                ExpressionKind::function_call(
+                    ExpressionKind::identifier("adjust_risk".to_string()),
+                    vec![ExpressionKind::I32(45)]
+                ),
+                line
             ))
         );
     }
@@ -303,15 +314,19 @@ mod tests {
         let mut parser = StatementParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        let line = 1;
         assert_eq!(
             statement,
-            Statement::function_call(ExpressionKind::function_call(
-                ExpressionKind::identifier("adjust_risk".to_string()),
-                vec![ExpressionKind::Binary(
-                    Box::new(ExpressionKind::identifier("base_score".to_string())),
-                    BinaryOperator::Plus,
-                    Box::new(ExpressionKind::I32(10))
-                )]
+            Statement::function_call(Expression::new(
+                ExpressionKind::function_call(
+                    ExpressionKind::identifier("adjust_risk".to_string()),
+                    vec![ExpressionKind::Binary(
+                        Box::new(ExpressionKind::identifier("base_score".to_string())),
+                        BinaryOperator::Plus,
+                        Box::new(ExpressionKind::I32(10))
+                    )]
+                ),
+                line
             ))
         );
     }

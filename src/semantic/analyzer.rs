@@ -141,7 +141,7 @@ mod function_definition_tests {
 #[cfg(test)]
 mod pending_call_tests {
     use super::*;
-    use crate::ast::expr::ExpressionKind;
+    use crate::ast::expr::{Expression, ExpressionKind};
     use crate::ast::program::Program;
     use crate::ast::statement::{Block, FunctionDefinition, Statement, VariableDeclaration};
 
@@ -151,7 +151,7 @@ mod pending_call_tests {
 
         let callee = ExpressionKind::identifier("calculate_total".to_string());
         let call_expression = ExpressionKind::function_call(callee, vec![]);
-        let call_statement = Statement::function_call(call_expression);
+        let call_statement = Statement::function_call(Expression::new(call_expression, 0));
 
         let variable_declaration = Statement::variable_declaration(VariableDeclaration::new(
             "calculate_total".to_string(),
@@ -174,7 +174,7 @@ mod pending_call_tests {
 
         let callee = ExpressionKind::identifier("calculate_total".to_string());
         let call_expression = ExpressionKind::function_call(callee, vec![]);
-        let call_statement = Statement::function_call(call_expression);
+        let call_statement = Statement::function_call(Expression::new(call_expression, 0));
 
         let function_definition = Statement::function_definition(FunctionDefinition::new(
             "calculate_total".to_string(),
@@ -195,7 +195,7 @@ mod pending_call_tests {
 
         let callee = ExpressionKind::identifier("calculate_total".to_string());
         let call_expression = ExpressionKind::function_call(callee, vec![ExpressionKind::I32(10)]);
-        let call_statement = Statement::function_call(call_expression);
+        let call_statement = Statement::function_call(Expression::new(call_expression, 0));
 
         let function_definition = Statement::function_definition(FunctionDefinition::new(
             "calculate_total".to_string(),
@@ -223,7 +223,7 @@ mod pending_call_tests {
 
         let callee = ExpressionKind::identifier("calculate_total".to_string());
         let call_expression = ExpressionKind::function_call(callee, vec![]);
-        let call_statement = Statement::function_call(call_expression);
+        let call_statement = Statement::function_call(Expression::new(call_expression, 0));
 
         let program = Program::new(vec![call_statement]);
 

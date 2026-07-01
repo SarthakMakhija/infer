@@ -47,7 +47,7 @@ pub enum Statement {
     /// A function definition statement.
     FunctionDefinition(FunctionDefinition, NodeId),
     /// A standalone expression evaluated as a statement (typically a function call).
-    FunctionCall(ExpressionKind, NodeId),
+    FunctionCall(Expression, NodeId),
     /// A break control flow statement.
     Break(Break, NodeId),
     /// A return statement.
@@ -109,10 +109,10 @@ impl Statement {
         Statement::FunctionDefinition(statement, Self::statement_id())
     }
 
-    /// Wraps a function call [`ExpressionKind`] into a [`Statement::FunctionCall`].
+    /// Wraps a function call [`Expression`] into a [`Statement::FunctionCall`].
     ///
-    /// The caller is expected to pass a [`ExpressionKind::FunctionCall`] variant.
-    pub(crate) fn function_call(expression: ExpressionKind) -> Self {
+    /// The caller is expected to pass a [`Expression`] wrapping a [`ExpressionKind::FunctionCall`] variant.
+    pub(crate) fn function_call(expression: Expression) -> Self {
         Statement::FunctionCall(expression, Self::statement_id())
     }
 
@@ -506,7 +506,7 @@ mod tests {
 
     #[test]
     fn function_call_id() {
-        let statement = Statement::function_call(ExpressionKind::I32(42));
+        let statement = Statement::function_call(Expression::new(ExpressionKind::I32(42), 0));
         assert!(*statement.id() > 0);
     }
 
@@ -611,7 +611,7 @@ mod accept_tests {
 
         fn visit_function_call(
             &mut self,
-            _call: &crate::ast::expr::ExpressionKind,
+            _call: &crate::ast::expr::Expression,
         ) -> Result<(), SemanticError> {
             Ok(())
         }
