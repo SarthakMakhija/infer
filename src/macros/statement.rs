@@ -42,6 +42,35 @@ macro_rules! variable_declaration {
     };
 }
 
+/// Constructs a `Statement::Break` statement.
+#[macro_export]
+macro_rules! break_statement {
+    () => {
+        $crate::ast::statement::Statement::control_flow($crate::ast::statement::Break::new())
+    };
+}
+
+/// Constructs a `Statement::Return` statement.
+#[macro_export]
+macro_rules! return_statement {
+    () => {
+        $crate::ast::statement::Statement::return_($crate::ast::statement::Return::new(None))
+    };
+    ($expression:expr) => {
+        $crate::ast::statement::Statement::return_($crate::ast::statement::Return::new(Some(
+            $expression,
+        )))
+    };
+}
+
+/// Constructs a `Statement::Print` statement.
+#[macro_export]
+macro_rules! print_statement {
+    ($($arg:expr),*) => {
+        $crate::ast::statement::Statement::print($crate::ast::statement::Print::new(vec![$($arg),*]))
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use crate::ast::expr::{Expression, ExpressionKind};
@@ -101,5 +130,40 @@ mod tests {
             declaration.expression().unwrap().kind,
             ExpressionKind::I32(42)
         );
+    }
+
+    #[test]
+    fn break_statement() {
+        let statement = break_statement!();
+        assert!(matches!(statement, Statement::Break(_, _)));
+    }
+
+    #[test]
+    fn return_statement() {
+        let empty_return = return_statement!();
+        let Statement::Return(ret, _node_id) = empty_return else {
+            panic!("Expected Return variant");
+        };
+        assert!(ret.expression().is_none());
+
+        let value_expression = expression_i32!(42, 1);
+        let value_return = return_statement!(value_expression);
+        let Statement::Return(ret_val, _node_id) = value_return else {
+            panic!("Expected Return variant");
+        };
+        assert_eq!(
+            ret_val.expression().as_ref().unwrap().kind,
+            ExpressionKind::I32(42)
+        );
+    }
+
+    #[test]
+    fn print_statement() {
+        let print_stmt = print_statement!(expression_i32!(42, 1));
+        let Statement::Print(print, _node_id) = print_stmt else {
+            panic!("Expected Print variant");
+        };
+        assert_eq!(print.arguments().len(), 1);
+        assert_eq!(print.arguments()[0].kind, ExpressionKind::I32(42));
     }
 }
