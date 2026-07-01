@@ -401,16 +401,16 @@ impl Break {
 /// Example: `return expression;` or `return;`
 #[derive(Debug, PartialEq)]
 pub struct Return {
-    pub(crate) expression: Option<ExpressionKind>,
+    pub(crate) expression: Option<Expression>,
 }
 
 impl Return {
-    pub(crate) fn new(expression: Option<ExpressionKind>) -> Self {
+    pub(crate) fn new(expression: Option<Expression>) -> Self {
         Self { expression }
     }
 
     /// Returns the expression being returned, if any.
-    pub fn expression(&self) -> Option<&ExpressionKind> {
+    pub fn expression(&self) -> Option<&Expression> {
         self.expression.as_ref()
     }
 }
@@ -518,7 +518,10 @@ mod tests {
 
     #[test]
     fn return_id() {
-        let statement = Statement::return_(Return::new(Some(ExpressionKind::I32(1))));
+        let statement = Statement::return_(Return::new(Some(Expression::new(
+            ExpressionKind::I32(1),
+            0,
+        ))));
         assert!(*statement.id() > 0);
     }
 

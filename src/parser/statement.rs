@@ -222,9 +222,13 @@ mod tests {
         let mut parser = StatementParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        let line = 1;
         assert_eq!(
             statement,
-            Statement::return_(Return::new(Some(ExpressionKind::I32(100))))
+            Statement::return_(Return::new(Some(Expression::new(
+                ExpressionKind::I32(100),
+                line
+            ))))
         );
     }
 

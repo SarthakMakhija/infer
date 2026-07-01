@@ -1180,7 +1180,10 @@ mod return_tests {
             FunctionMetadata::new("log_message".to_string(), 0, false),
         );
 
-        let return_statement = Statement::return_(Return::new(Some(ExpressionKind::I32(100))));
+        let return_statement = Statement::return_(Return::new(Some(Expression::new(
+            ExpressionKind::I32(100),
+            0,
+        ))));
         let result = return_statement.accept(&mut visitor);
 
         assert_eq!(result, Err(SemanticError::UnexpectedReturnExpression));
@@ -1208,7 +1211,10 @@ mod return_tests {
             FunctionMetadata::new("calculate".to_string(), 0, true),
         );
 
-        let return_statement = Statement::return_(Return::new(Some(ExpressionKind::I32(100))));
+        let return_statement = Statement::return_(Return::new(Some(Expression::new(
+            ExpressionKind::I32(100),
+            0,
+        ))));
         let result = return_statement.accept(&mut visitor);
 
         assert!(result.is_ok());
@@ -1228,7 +1234,8 @@ mod return_tests {
 
         let expression_kind = ExpressionKind::identifier("score".to_string());
         let score_node_id = expression_kind.node_id().unwrap();
-        let return_statement = Statement::return_(Return::new(Some(expression_kind)));
+        let return_statement =
+            Statement::return_(Return::new(Some(Expression::new(expression_kind, 0))));
         let result = return_statement.accept(&mut visitor);
 
         assert!(result.is_ok());
@@ -1247,7 +1254,8 @@ mod return_tests {
         );
 
         let expression_kind = ExpressionKind::identifier("score".to_string());
-        let return_statement = Statement::return_(Return::new(Some(expression_kind)));
+        let return_statement =
+            Statement::return_(Return::new(Some(Expression::new(expression_kind, 0))));
         let result = return_statement.accept(&mut visitor);
 
         assert_eq!(

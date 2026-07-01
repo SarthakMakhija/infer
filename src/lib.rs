@@ -128,7 +128,10 @@ macro_rules! assert_conditional {
         };
         assert_eq!(&condition.condition().kind, $expected_condition);
         assert_eq!(condition.body().len(), $expected_body_len);
-        assert_eq!(condition.else_body().map(|b| b.len()), $expected_else_len);
+        assert_eq!(
+            condition.else_body().map(|body| body.len()),
+            $expected_else_len
+        );
         condition
     }};
 }
@@ -158,7 +161,10 @@ macro_rules! assert_return {
         let Statement::Return(return_, _) = $statement else {
             panic!("Expected Return statement, found {:?}", $statement);
         };
-        assert_eq!(return_.expression(), $expected_expression);
+        assert_eq!(
+            return_.expression().map(|expression| &expression.kind),
+            $expected_expression
+        );
         return_
     }};
 }

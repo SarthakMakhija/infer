@@ -1,3 +1,4 @@
+use crate::ast::expr::Expression;
 use crate::ast::statement::{Break, Return, Statement};
 use crate::lexer::token::TokenType;
 use crate::lexer::LexResult;
@@ -43,14 +44,14 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ReturnParser<'src, 'str
 
     /// Parses a `return [Expression];` statement.
     pub(crate) fn parse(&mut self) -> Result<Statement, ParseError> {
-        self.stream.expect(TokenType::Return)?;
+        let return_token = self.stream.expect(TokenType::Return)?;
 
         let expression = if self.stream.maybe_matches(TokenType::Semicolon) {
             None
         } else {
-            let expr = ExpressionParser::new(self.stream).parse()?;
+            let expression = ExpressionParser::new(self.stream).parse()?;
             self.stream.expect(TokenType::Semicolon)?;
-            Some(expr)
+            Some(Expression::new(expression, return_token.line))
         };
 
         Ok(Statement::return_(Return::new(expression)))
@@ -60,7 +61,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> ReturnParser<'src, 'str
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::ExpressionKind;
+    use crate::ast::expr::{Expression, ExpressionKind};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
     use crate::parser::stream::ParserStream;
@@ -115,9 +116,13 @@ mod tests {
         let mut parser = ReturnParser::new(&mut stream);
 
         let statement = parser.parse().unwrap();
+        let line = 1;
         assert_eq!(
             statement,
-            Statement::return_(Return::new(Some(ExpressionKind::I32(42))))
+            Statement::return_(Return::new(Some(Expression::new(
+                ExpressionKind::I32(42),
+                line
+            ))))
         );
     }
 
