@@ -1385,7 +1385,7 @@ mod unreachable_code_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let return_statement = Statement::return_(Return::new(None));
-        let if_statement = Statement::conditional(crate::ast::statement::If::new(
+        let if_statement = Statement::conditional(If::new(
             Expression::new(ExpressionKind::Boolean(true), 0),
             Block::new(vec![return_statement]),
             None,
