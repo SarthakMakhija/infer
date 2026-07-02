@@ -10,6 +10,7 @@ pub(crate) trait StatementVisitor {
     fn visit_var_declaration(
         &mut self,
         variable_declaration: &VariableDeclaration,
+        node_id: NodeId,
     ) -> Result<(), SemanticError>;
 
     /// Visits a variable assignment statement.
@@ -32,6 +33,7 @@ pub(crate) trait StatementVisitor {
     fn visit_function_definition(
         &mut self,
         definition: &FunctionDefinition,
+        node_id: NodeId,
     ) -> Result<(), SemanticError>;
 
     /// Visits a standalone expression statement representing a function call.

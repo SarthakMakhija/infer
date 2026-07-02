@@ -137,15 +137,15 @@ impl Statement {
     /// to process the statement. It dispatches the statement to the corresponding `visit_*` method.
     pub(crate) fn accept(&self, visitor: &mut dyn StatementVisitor) -> Result<(), SemanticError> {
         match self {
-            Statement::VariableDeclaration(ref declaration, _) => {
-                visitor.visit_var_declaration(declaration)
+            Statement::VariableDeclaration(ref declaration, id) => {
+                visitor.visit_var_declaration(declaration, *id)
             }
             Statement::Assignment(ref assignment, id) => visitor.visit_assignment(assignment, *id),
             Statement::If(ref if_statement, _) => visitor.visit_if(if_statement),
             Statement::Loop(ref loop_statement, _) => visitor.visit_loop(loop_statement),
             Statement::Block(ref block, _) => visitor.visit_block(block),
-            Statement::FunctionDefinition(ref definition, _) => {
-                visitor.visit_function_definition(definition)
+            Statement::FunctionDefinition(ref definition, id) => {
+                visitor.visit_function_definition(definition, *id)
             }
             Statement::FunctionCall(ref expression, _) => visitor.visit_function_call(expression),
             Statement::Break(_, _) => visitor.visit_break(),
@@ -538,6 +538,7 @@ mod accept_tests {
         fn visit_var_declaration(
             &mut self,
             _variable_declaration: &VariableDeclaration,
+            _node_id: NodeId,
         ) -> Result<(), SemanticError> {
             self.visited_var_declaration = true;
             Ok(())
@@ -570,6 +571,7 @@ mod accept_tests {
         fn visit_function_definition(
             &mut self,
             _definition: &FunctionDefinition,
+            _node_id: NodeId,
         ) -> Result<(), SemanticError> {
             self.visited_function_definition = true;
             Ok(())

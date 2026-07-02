@@ -106,6 +106,7 @@ impl StatementVisitor for SymbolResolutionVisitor {
     fn visit_var_declaration(
         &mut self,
         variable_declaration: &VariableDeclaration,
+        node_id: NodeId,
     ) -> Result<(), SemanticError> {
         let name = variable_declaration.variable();
         if self.scopes.contains_locally(name) {
@@ -114,7 +115,9 @@ impl StatementVisitor for SymbolResolutionVisitor {
         if let Some(expression_kind) = variable_declaration.expression() {
             expression_kind.accept(self)?;
         }
-        self.scopes.define(name.to_string(), next_symbol_id());
+        let symbol_id = next_symbol_id();
+        self.scopes.define(name.to_string(), symbol_id);
+        self.resolution_table.resolve(node_id, symbol_id);
         Ok(())
     }
 
@@ -212,6 +215,7 @@ impl StatementVisitor for SymbolResolutionVisitor {
     fn visit_function_definition(
         &mut self,
         definition: &FunctionDefinition,
+        node_id: NodeId,
     ) -> Result<(), SemanticError> {
         if self.scopes.contains_locally(definition.name()) {
             return Err(SemanticError::DuplicateFunctionName(
@@ -222,6 +226,7 @@ impl StatementVisitor for SymbolResolutionVisitor {
         let function_symbol_id = next_symbol_id();
         self.scopes
             .define(definition.name.to_string(), function_symbol_id);
+        self.resolution_table.resolve(node_id, function_symbol_id);
         self.state.add_global_function(
             function_symbol_id,
             FunctionMetadata::new(
@@ -417,9 +422,14 @@ mod var_declaration_tests {
         let mut visitor = SymbolResolutionVisitor::new();
         let declaration = variable_declaration!("username");
 
+        let declaration_id = declaration.id();
         let result = declaration.accept(&mut visitor);
         assert!(result.is_ok());
         assert!(visitor.scopes.contains("username"));
+        assert_eq!(
+            visitor.resolution_table.get(&declaration_id),
+            visitor.scopes.get("username")
+        );
     }
 
     #[test]
@@ -826,9 +836,14 @@ mod function_definition_tests {
             block!()
         );
 
+        let function_definition_id = function_definition.id();
         let result = function_definition.accept(&mut visitor);
         assert!(result.is_ok());
         assert!(visitor.scopes.contains("calculate_total"));
+        assert_eq!(
+            visitor.resolution_table.get(&function_definition_id),
+            visitor.scopes.get("calculate_total")
+        );
     }
 
     #[test]
