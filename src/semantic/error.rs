@@ -1,16 +1,27 @@
 use std::fmt::{Display, Formatter};
 
+/// Represents various semantic and scope errors caught during AST validation.
 #[derive(Debug, PartialEq)]
 pub(crate) enum SemanticError {
+    /// A variable was declared multiple times in the same scope.
     DuplicateVariable(String),
+    /// An identifier was referenced but is not declared in the current scope stack.
     UndefinedVariable(String),
+    /// A function was defined multiple times in the same global/lexical scope.
     DuplicateFunctionName(String),
+    /// A return statement was placed outside a function body.
     ReturnOutsideFunction,
+    /// A return statement in a typed function is missing an expression value.
     MissingReturnExpression,
+    /// A return statement in a void function has an unexpected expression value.
     UnexpectedReturnExpression,
+    /// A break control flow statement was placed outside a loop construct.
     BreakOutsideLoop,
+    /// Statements were detected after a break or return statement.
     UnreachableCode,
+    /// A callee was called as a function but it is actually a non-callable variable.
     NotAFunction(String),
+    /// A function call has an incorrect number of arguments.
     ArgumentCountMismatch(String, usize, usize),
 }
 

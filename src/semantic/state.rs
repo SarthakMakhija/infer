@@ -2,6 +2,10 @@ use crate::ast::statement::NodeId;
 use crate::semantic::SymbolId;
 use std::collections::HashMap;
 
+/// Represents a deferred function call that will be resolved at the end of the pass.
+///
+/// Forward references to functions are permitted, so any call to a function
+/// not yet declared is collected as a pending call and validated after the program walk.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct PendingCall {
     pub(crate) name: String,
@@ -9,6 +13,7 @@ pub(crate) struct PendingCall {
     pub(crate) callee_node_id: NodeId,
 }
 
+/// Metadata storing the signature details of a declared function.
 #[derive(Clone)]
 pub(crate) struct FunctionMetadata {
     pub(crate) name: String,
@@ -17,6 +22,7 @@ pub(crate) struct FunctionMetadata {
 }
 
 impl FunctionMetadata {
+    /// Creates a new `FunctionMetadata` containing signature information.
     pub(crate) fn new(name: String, parameter_count: usize, has_return_type: bool) -> Self {
         Self {
             name,
@@ -26,6 +32,7 @@ impl FunctionMetadata {
     }
 }
 
+/// The compiler semantic state tracked during the symbol resolution walk.
 pub(crate) struct State {
     current_function: Option<FunctionMetadata>,
     global_functions: HashMap<SymbolId, FunctionMetadata>,
@@ -36,6 +43,7 @@ pub(crate) struct State {
 }
 
 impl State {
+    /// Creates a new, empty semantic `State`.
     pub(crate) fn new() -> Self {
         Self {
             current_function: None,
@@ -47,6 +55,7 @@ impl State {
         }
     }
 
+    /// Defers a function call for later arity and declaration validation.
     pub(crate) fn add_pending_call(
         &mut self,
         name: String,
@@ -60,51 +69,63 @@ impl State {
         });
     }
 
+    /// Registers a global function declaration and marks it as the current active function.
     pub(crate) fn add_global_function(&mut self, symbol_id: SymbolId, function: FunctionMetadata) {
         self.global_functions.insert(symbol_id, function.clone());
         self.current_function = Some(function);
     }
 
+    /// Retrieves metadata for a previously declared global function.
     pub(crate) fn get_global_function(&self, symbol_id: &SymbolId) -> Option<&FunctionMetadata> {
         self.global_functions.get(symbol_id)
     }
 
+    /// Resets the current function context when exiting a function body.
     pub(crate) fn exited_function(&mut self) {
         self.current_function = None;
     }
 
+    /// Returns the metadata of the currently active function, if any.
     pub(crate) fn current_function(&self) -> Option<&FunctionMetadata> {
         self.current_function.as_ref()
     }
 
+    /// Enters a loop statement context.
     pub(crate) fn entered_loop(&mut self) {
         self.loop_depth += 1;
     }
 
+    /// Exits a loop statement context.
     pub(crate) fn exited_loop(&mut self) {
         self.loop_depth = self.loop_depth.saturating_sub(1);
     }
 
+    /// Returns `true` if currently within one or more loop contexts.
     pub(crate) fn is_in_loop(&self) -> bool {
         self.loop_depth != 0
     }
 
+    /// Records that a break control flow statement was encountered.
     pub(crate) fn encountered_break(&mut self) {
         self.encountered_break = true;
     }
 
+    /// Records that a function return statement was encountered.
     pub(crate) fn encountered_return(&mut self) {
         self.encountered_return = true;
     }
 
+    /// Resets the break detection flag.
     pub(crate) fn reset_break(&mut self) {
         self.encountered_break = false;
     }
 
+    /// Resets the return detection flag.
     pub(crate) fn reset_return(&mut self) {
         self.encountered_return = false;
     }
 
+    /// Returns `true` if subsequent statements in the block are unreachable.
     pub(crate) fn is_unreachable(&self) -> bool {
         self.encountered_break || self.encountered_return
     }

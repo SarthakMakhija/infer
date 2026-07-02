@@ -74,6 +74,7 @@ impl Expression {
         Expression { kind, line }
     }
 
+    /// Accepts an expression visitor, delegating the visitor dispatch to the inner `ExpressionKind`.
     pub(crate) fn accept(&self, visitor: &mut dyn ExpressionVisitor) -> Result<(), SemanticError> {
         self.kind.accept(visitor)
     }
@@ -148,6 +149,7 @@ impl ExpressionKind {
         ExpressionKind::FunctionCall(Box::new(callee), arguments, next_id())
     }
 
+    /// Accepts an expression visitor, dispatching the expression kind to the corresponding `visit_*` method.
     pub(crate) fn accept(&self, visitor: &mut dyn ExpressionVisitor) -> Result<(), SemanticError> {
         match self {
             ExpressionKind::Identifier(ref name, id) => visitor.visit_identifier(name, *id),

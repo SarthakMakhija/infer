@@ -10,6 +10,8 @@ use crate::semantic::scope::Scopes;
 use crate::semantic::state::{FunctionMetadata, State};
 use crate::semantic::visitor::{ExpressionVisitor, StatementVisitor};
 
+/// An AST visitor that resolves symbols, verifies scope nesting, checks arity,
+/// validates control flow statements (`break`, `return`), and checks for unreachable code.
 pub(crate) struct SymbolResolutionVisitor {
     scopes: Scopes,
     state: State,
@@ -17,6 +19,7 @@ pub(crate) struct SymbolResolutionVisitor {
 }
 
 impl SymbolResolutionVisitor {
+    /// Creates a new `SymbolResolutionVisitor` with empty scopes, state, and resolution table.
     pub(crate) fn new() -> Self {
         Self {
             scopes: Scopes::new(),
@@ -25,6 +28,11 @@ impl SymbolResolutionVisitor {
         }
     }
 
+    /// Recursively visits a sequence of statements.
+    ///
+    /// # Errors
+    ///
+    /// Returns `SemanticError::UnreachableCode` if a statement is placed after a break or return.
     pub(crate) fn visit_statements(
         &mut self,
         statements: &[Statement],
@@ -38,6 +46,12 @@ impl SymbolResolutionVisitor {
         Ok(())
     }
 
+    /// Resolves any deferred function calls that were encountered before the function was defined.
+    ///
+    /// # Errors
+    ///
+    /// Returns `SemanticError` if a deferred function is undefined, is actually a variable,
+    /// or if there is a mismatch in argument count (arity mismatch).
     pub(crate) fn resolve_pending_calls(&mut self) -> Result<(), SemanticError> {
         for pending_call in &self.state.pending_calls {
             let symbol_id = self
@@ -79,6 +93,16 @@ impl SymbolResolutionVisitor {
 }
 
 impl StatementVisitor for SymbolResolutionVisitor {
+    /// Resolves a variable declaration statement.
+    ///
+    /// # Details
+    /// - Checks if the variable is already declared in the local (innermost) scope, returning a
+    ///   `SemanticError::DuplicateVariable` on conflict.
+    /// - If there is an initializer expression, recursively visits it to resolve its identifiers.
+    /// - Defines the variable in the current lexical scope with a new unique `SymbolId`.
+    ///
+    /// # Errors
+    /// Returns `SemanticError::DuplicateVariable` if the name has already been defined in the current block scope.
     fn visit_var_declaration(
         &mut self,
         variable_declaration: &VariableDeclaration,
@@ -94,6 +118,16 @@ impl StatementVisitor for SymbolResolutionVisitor {
         Ok(())
     }
 
+    /// Resolves a variable assignment statement.
+    ///
+    /// # Details
+    /// - Looks up the variable in the active scope stack.
+    /// - Recursively visits the right-hand side expression to resolve its symbols.
+    /// - Records the resolution of this assignment statement node to the resolved variable's `SymbolId`
+    ///   in the `resolution_table`.
+    ///
+    /// # Errors
+    /// Returns `SemanticError::UndefinedVariable` if the variable name cannot be found in the current scope stack.
     fn visit_assignment(
         &mut self,
         assignment: &Assignment,
@@ -111,6 +145,12 @@ impl StatementVisitor for SymbolResolutionVisitor {
         Ok(())
     }
 
+    /// Resolves an if statement (conditional control flow).
+    ///
+    /// # Details
+    /// - Recursively visits the condition expression to resolve its identifiers.
+    /// - Visits the `then` block, entering a nested block scope.
+    /// - If an `else` block is present, visits the `else` block in its own nested scope.
     fn visit_if(&mut self, if_statement: &If) -> Result<(), SemanticError> {
         if_statement.condition.accept(self)?;
         self.visit_block(&if_statement.body)?;
@@ -120,6 +160,12 @@ impl StatementVisitor for SymbolResolutionVisitor {
         Ok(())
     }
 
+    /// Resolves a loop statement (iteration control flow).
+    ///
+    /// # Details
+    /// - Enters a loop statement context in the semantic state (incrementing loop depth) to allow `break` statements.
+    /// - Visits the loop body block.
+    /// - Exits the loop context (decrementing loop depth).
     fn visit_loop(&mut self, loop_statement: &Loop) -> Result<(), SemanticError> {
         self.state.entered_loop();
         self.visit_block(&loop_statement.body)?;
@@ -127,6 +173,17 @@ impl StatementVisitor for SymbolResolutionVisitor {
         Ok(())
     }
 
+    /// Resolves a block statement.
+    ///
+    /// # Details
+    /// - Verifies the block is not unreachable due to a preceding break or return in the same parent block.
+    /// - Opens a new nested lexical scope level.
+    /// - Visits all statements contained within the block sequentially.
+    /// - Closes/discards the local scope.
+    /// - Resets any temporary break/return flags to allow execution paths after the block.
+    ///
+    /// # Errors
+    /// Returns `SemanticError::UnreachableCode` if the block starts after a preceding jump/return statement.
     fn visit_block(&mut self, block: &Block) -> Result<(), SemanticError> {
         if self.state.is_unreachable() {
             return Err(SemanticError::UnreachableCode);
@@ -139,6 +196,19 @@ impl StatementVisitor for SymbolResolutionVisitor {
         Ok(())
     }
 
+    /// Resolves a function definition statement.
+    ///
+    /// # Details
+    /// - Verifies the function name is not a duplicate in the local scope.
+    /// - Allocates a new global `SymbolId` for the function and registers it in the current scope.
+    /// - Adds the function to the global function signature registry in the state (including its parameter count and return type presence).
+    /// - Opens a new scope for the function body, defines all parameter names inside it with unique `SymbolId`s (preventing duplicate parameter names).
+    /// - Visits the statements in the function body sequentially.
+    /// - Closes the function scope, resets the current function context, and resets any return flags.
+    ///
+    /// # Errors
+    /// - Returns `SemanticError::DuplicateFunctionName` if the function name has already been defined.
+    /// - Returns `SemanticError::DuplicateVariable` if there are duplicate parameter names.
     fn visit_function_definition(
         &mut self,
         definition: &FunctionDefinition,
@@ -177,6 +247,11 @@ impl StatementVisitor for SymbolResolutionVisitor {
         Ok(())
     }
 
+    /// Resolves a standalone function call statement.
+    ///
+    /// # Details
+    /// - Asserts that the expression is a function call variant.
+    /// - Dispatches validation of the function call expression kind.
     fn visit_function_call(&mut self, call: &Expression) -> Result<(), SemanticError> {
         let ExpressionKind::FunctionCall(..) = &call.kind else {
             panic!("Expected ExpressionKind::FunctionCall variant");
@@ -184,6 +259,14 @@ impl StatementVisitor for SymbolResolutionVisitor {
         call.kind.accept(self)
     }
 
+    /// Resolves a break statement.
+    ///
+    /// # Details
+    /// - Checks that we are currently inside an active loop body.
+    /// - Marks the break state flag to signal that subsequent statements in the enclosing block are unreachable.
+    ///
+    /// # Errors
+    /// Returns `SemanticError::BreakOutsideLoop` if loop depth is zero.
     fn visit_break(&mut self) -> Result<(), SemanticError> {
         if !self.state.is_in_loop() {
             return Err(SemanticError::BreakOutsideLoop);
@@ -192,6 +275,20 @@ impl StatementVisitor for SymbolResolutionVisitor {
         Ok(())
     }
 
+    /// Resolves a return statement.
+    ///
+    /// # Details
+    /// - If return has an expression value, visits it to resolve its symbols.
+    /// - Checks if currently within a function body.
+    /// - Validates that the return value matches the function type annotation:
+    ///   - Returns `SemanticError::MissingReturnExpression` if a typed function returns no value.
+    ///   - Returns `SemanticError::UnexpectedReturnExpression` if a void function returns a value.
+    /// - Marks the return state flag to signal that subsequent statements in the enclosing block are unreachable.
+    ///
+    /// # Errors
+    /// - Returns `SemanticError::ReturnOutsideFunction` if return is used outside any function definition.
+    /// - Returns `SemanticError::MissingReturnExpression` if function has a return type annotation but return statement is empty.
+    /// - Returns `SemanticError::UnexpectedReturnExpression` if function has no return type annotation but return statement has a value.
     fn visit_return(&mut self, return_statement: &Return) -> Result<(), SemanticError> {
         if let Some(expression_kind) = return_statement.expression() {
             expression_kind.accept(self)?;
@@ -211,6 +308,10 @@ impl StatementVisitor for SymbolResolutionVisitor {
         }
     }
 
+    /// Resolves a print statement.
+    ///
+    /// # Details
+    /// - Recursively visits all expression arguments in the print statement to resolve their symbols.
     fn visit_print(&mut self, print_statement: &Print) -> Result<(), SemanticError> {
         for expression_kind in print_statement.arguments() {
             expression_kind.accept(self)?;
@@ -220,6 +321,14 @@ impl StatementVisitor for SymbolResolutionVisitor {
 }
 
 impl ExpressionVisitor for SymbolResolutionVisitor {
+    /// Resolves an identifier expression.
+    ///
+    /// # Details
+    /// - Looks up the identifier name in the scope stack.
+    /// - Resolves the identifier expression node to the found `SymbolId` in the `resolution_table`.
+    ///
+    /// # Errors
+    /// Returns `SemanticError::UndefinedVariable` if the variable name has not been declared.
     fn visit_identifier(&mut self, name: &str, node_id: NodeId) -> Result<(), SemanticError> {
         let symbol_id = self
             .scopes
@@ -230,6 +339,18 @@ impl ExpressionVisitor for SymbolResolutionVisitor {
         Ok(())
     }
 
+    /// Resolves a function call expression.
+    ///
+    /// # Details
+    /// - Verifies the callee is an identifier.
+    /// - Looks up the function name in the scope:
+    ///   - If not yet declared, defers validation by adding it to `pending_calls` (for forward reference resolution).
+    ///   - If already declared, validates its arity/parameter count immediately and records the callee node resolution in the `resolution_table`.
+    /// - Recursively visits all arguments to resolve their identifiers.
+    ///
+    /// # Errors
+    /// - Returns `SemanticError::NotAFunction` if the callee is a non-function variable name.
+    /// - Returns `SemanticError::ArgumentCountMismatch` if arity does not match function signature.
     fn visit_function_call(
         &mut self,
         callee: &ExpressionKind,
@@ -255,10 +376,18 @@ impl ExpressionVisitor for SymbolResolutionVisitor {
         Ok(())
     }
 
+    /// Resolves a unary expression operator and its operand.
+    ///
+    /// # Details
+    /// - Recursively visits the inner operand of the unary expression.
     fn visit_unary(&mut self, expr: &ExpressionKind) -> Result<(), SemanticError> {
         expr.accept(self)
     }
 
+    /// Resolves a binary expression and both its left and right operands.
+    ///
+    /// # Details
+    /// - Recursively visits both the left and right operands of the binary operator expression.
     fn visit_binary(
         &mut self,
         left: &ExpressionKind,
@@ -269,6 +398,10 @@ impl ExpressionVisitor for SymbolResolutionVisitor {
         Ok(())
     }
 
+    /// Resolves a grouped (parenthesized) expression operand.
+    ///
+    /// # Details
+    /// - Recursively visits the inner grouped/parenthesized expression.
     fn visit_grouped(&mut self, expr: &ExpressionKind) -> Result<(), SemanticError> {
         expr.accept(self)
     }

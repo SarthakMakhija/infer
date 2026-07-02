@@ -2,17 +2,27 @@ use crate::ast::program::Program;
 use crate::semantic::error::SemanticError;
 use crate::semantic::symbol_resolution::SymbolResolutionVisitor;
 
+/// The compiler driver for running semantic analysis passes.
+///
+/// It orchestrates identifier lookup checks, scoping, loop control validation,
+/// unreachable code analysis, and resolves forward-referenced function calls.
 pub(crate) struct Analyzer {
     visitor: SymbolResolutionVisitor,
 }
 
 impl Analyzer {
+    /// Creates a new `Analyzer`.
     pub(crate) fn new() -> Self {
         Analyzer {
             visitor: SymbolResolutionVisitor::new(),
         }
     }
 
+    /// Performs semantic analysis on the abstract syntax tree of the program.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `SemanticError` if any semantic constraint or scoping rule is violated.
     pub(crate) fn analyze(&mut self, program: &Program) -> Result<(), SemanticError> {
         self.visitor.visit_statements(program.statements())?;
         self.visitor.resolve_pending_calls()?;

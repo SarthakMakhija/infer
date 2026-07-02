@@ -131,6 +131,10 @@ impl Statement {
         Statement::Print(statement, Self::statement_id())
     }
 
+    /// Accepts a statement visitor to perform operations on the statement node.
+    ///
+    /// This is the entry point for visitor-based passes (such as symbol resolution or code generation)
+    /// to process the statement. It dispatches the statement to the corresponding `visit_*` method.
     pub(crate) fn accept(&self, visitor: &mut dyn StatementVisitor) -> Result<(), SemanticError> {
         match self {
             Statement::VariableDeclaration(ref declaration, _) => {

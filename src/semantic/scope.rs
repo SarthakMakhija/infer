@@ -1,34 +1,44 @@
 use crate::semantic::SymbolId;
 use std::collections::HashMap;
 
+/// Manages a stack of nested lexical scopes for symbol resolution.
+///
+/// It supports block-structured scoping, allowing inner scopes to shadow
+/// variable definitions in outer scopes.
 pub(crate) struct Scopes {
     entries: Vec<Scope>,
 }
 
+/// Represents a single lexical scope mapping variable/function names to their SymbolIds.
 struct Scope {
     symbols: HashMap<String, SymbolId>,
 }
 
 impl Scopes {
+    /// Creates a new `Scopes` manager initialized with a global scope.
     pub(crate) fn new() -> Self {
         Self {
             entries: vec![Scope::new()],
         }
     }
 
+    /// Enters a new nested lexical scope.
     pub(crate) fn begin_scope(&mut self) {
         self.entries.push(Scope::new())
     }
 
+    /// Exits the current lexical scope, restoring the enclosing scope.
     pub(crate) fn end_scope(&mut self) {
         self.entries.pop();
     }
 
+    /// Defines a symbol in the current (innermost) lexical scope.
     pub(crate) fn define(&mut self, name: String, id: SymbolId) {
         let scope = self.current_scope_mut();
         scope.define(name, id);
     }
 
+    /// Returns `true` if the symbol exists in the current scope or any of its enclosing scopes.
     pub(crate) fn contains(&self, name: &str) -> bool {
         for scope in self.entries.iter().rev() {
             if scope.contains(name) {
@@ -38,11 +48,13 @@ impl Scopes {
         false
     }
 
+    /// Returns `true` if the symbol is defined specifically in the current (innermost) scope.
     pub(crate) fn contains_locally(&self, name: &str) -> bool {
         let scope = self.current_scope();
         scope.contains(name)
     }
 
+    /// Retrieves the `SymbolId` of a symbol by searching from the innermost scope outwards.
     pub(crate) fn get(&self, name: &str) -> Option<SymbolId> {
         for scope in self.entries.iter().rev() {
             if let Some(symbol_id) = scope.get(name) {
