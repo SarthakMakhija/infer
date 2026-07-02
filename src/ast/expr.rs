@@ -163,6 +163,7 @@ impl ExpressionKind {
         }
     }
 
+    /// Retrieves the unique `NodeId` of this expression if the variant carries one (e.g. `Identifier`, `FunctionCall`).
     pub(crate) fn node_id(&self) -> Option<NodeId> {
         match self {
             ExpressionKind::Identifier(_, node_id) => Some(*node_id),

@@ -4,6 +4,9 @@ use crate::semantic::visitor::StatementVisitor;
 use std::cell::Cell;
 use std::ops::Deref;
 
+/// A unique identifier assigned to AST statements and expressions.
+///
+/// Used for mapping nodes to symbol IDs, types, and other semantic metadata.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd)]
 pub struct NodeId(pub usize);
 

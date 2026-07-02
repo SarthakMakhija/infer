@@ -1,3 +1,8 @@
+//! Syntactic analysis (parsing) module.
+//!
+//! Implements a recursive descent parser for language statements combined with
+//! a Pratt (top-down operator precedence) parser for parsing expressions.
+
 use crate::ast::program::{Program, ProgramBuilder};
 use crate::lexer::token::TokenType;
 use crate::lexer::LexResult;

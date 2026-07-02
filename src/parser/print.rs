@@ -6,15 +6,22 @@ use crate::parser::error::ParseError;
 use crate::parser::expr::ExpressionParser;
 use crate::parser::stream::ParserStream;
 
+/// A sub-parser responsible for parsing `print` statements.
+///
+/// See [grammar.ebnf](../../docs/grammar.ebnf) for the full language grammar.
 pub(crate) struct PrintParser<'src, 'stream, I: Iterator<Item = LexResult<'src>>> {
     stream: &'stream mut ParserStream<'src, I>,
 }
 
 impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> PrintParser<'src, 'stream, I> {
+    /// Creates a new `PrintParser` sharing the parser stream borrow.
     pub(crate) fn new(stream: &'stream mut ParserStream<'src, I>) -> Self {
         Self { stream }
     }
 
+    /// Parses a `print` statement from the token stream.
+    ///
+    /// Expects the `print` keyword followed by one or more comma-separated expressions, terminated by a semicolon.
     pub(crate) fn parse(&mut self) -> Result<Statement, ParseError> {
         let print_token = self.stream.expect(TokenType::Print)?;
 

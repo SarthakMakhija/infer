@@ -1,3 +1,8 @@
+//! The `infer` compiler library.
+//!
+//! Provides the core compiler pipeline phases (lexing, parsing, semantic analysis,
+//! and type inference) for the toy language.
+
 #![allow(dead_code)]
 
 #[macro_use]
