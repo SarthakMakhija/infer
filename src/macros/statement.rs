@@ -132,6 +132,14 @@ macro_rules! print_statement {
     };
 }
 
+/// Constructs a `Statement::FunctionCall` statement.
+#[macro_export]
+macro_rules! function_call {
+    ($expression:expr) => {
+        $crate::ast::statement::Statement::function_call($expression)
+    };
+}
+
 /// Constructs a `FunctionParameter`.
 #[macro_export]
 macro_rules! function_parameter {
@@ -373,5 +381,22 @@ mod tests {
         assert_eq!(function_definition.name(), "calculate_score");
         assert_eq!(function_definition.parameters().len(), 1);
         assert_eq!(function_definition.return_type(), None);
+    }
+
+    #[test]
+    fn function_call() {
+        let call_expression =
+            expression_function_call!(expression_identifier!("calculate_score"), vec![], 0);
+        let statement = function_call!(call_expression);
+        let Statement::FunctionCall(wrapped_expression, _) = statement else {
+            panic!("Expected FunctionCall variant");
+        };
+        assert_eq!(
+            wrapped_expression.kind,
+            ExpressionKind::function_call(
+                ExpressionKind::identifier("calculate_score".to_string()),
+                vec![]
+            )
+        );
     }
 }

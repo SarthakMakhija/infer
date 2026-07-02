@@ -478,7 +478,7 @@ mod tests {
 
     #[test]
     fn function_call_id() {
-        let statement = Statement::function_call(expression_i32!(42, 0));
+        let statement = function_call!(expression_i32!(42, 0));
         assert!(*statement.id() > 0);
     }
 

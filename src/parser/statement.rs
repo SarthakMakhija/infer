@@ -102,7 +102,6 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, '
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::expr::{BinaryOperator, Expression, ExpressionKind};
 
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
@@ -265,11 +264,9 @@ mod tests {
         let line = 1;
         assert_eq!(
             statement,
-            Statement::function_call(Expression::new(
-                ExpressionKind::function_call(
-                    ExpressionKind::identifier("adjust_risk".to_string()),
-                    vec![ExpressionKind::I32(45)]
-                ),
+            function_call!(expression_function_call!(
+                expression_identifier!("adjust_risk"),
+                vec![expression_i32!(45)],
                 line
             ))
         );
@@ -285,15 +282,13 @@ mod tests {
         let line = 1;
         assert_eq!(
             statement,
-            Statement::function_call(Expression::new(
-                ExpressionKind::function_call(
-                    ExpressionKind::identifier("adjust_risk".to_string()),
-                    vec![ExpressionKind::Binary(
-                        Box::new(ExpressionKind::identifier("base_score".to_string())),
-                        BinaryOperator::Plus,
-                        Box::new(ExpressionKind::I32(10))
-                    )]
-                ),
+            function_call!(expression_function_call!(
+                expression_identifier!("adjust_risk"),
+                vec![expression_binary!(
+                    expression_identifier!("base_score"),
+                    Plus,
+                    expression_i32!(10)
+                )],
                 line
             ))
         );

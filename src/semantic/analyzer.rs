@@ -113,17 +113,17 @@ mod function_definition_tests {
 #[cfg(test)]
 mod pending_call_tests {
     use super::*;
-    use crate::ast::expr::{Expression, ExpressionKind};
     use crate::ast::program::Program;
-    use crate::ast::statement::Statement;
 
     #[test]
     fn detects_shadowed_deferred_call_on_variable() {
         let mut analyzer = Analyzer::new();
 
-        let callee = ExpressionKind::identifier("calculate_total".to_string());
-        let call_expression = ExpressionKind::function_call(callee, vec![]);
-        let call_statement = Statement::function_call(Expression::new(call_expression, 0));
+        let call_statement = function_call!(expression_function_call!(
+            expression_identifier!("calculate_total"),
+            vec![],
+            0
+        ));
 
         let variable_declaration = variable_declaration!("calculate_total");
         let program = Program::new(vec![call_statement, variable_declaration]);
@@ -139,9 +139,11 @@ mod pending_call_tests {
     fn successfully_resolves_valid_pending_call() {
         let mut analyzer = Analyzer::new();
 
-        let callee = ExpressionKind::identifier("calculate_total".to_string());
-        let call_expression = ExpressionKind::function_call(callee, vec![]);
-        let call_statement = Statement::function_call(Expression::new(call_expression, 0));
+        let call_statement = function_call!(expression_function_call!(
+            expression_identifier!("calculate_total"),
+            vec![],
+            0
+        ));
 
         let function_definition = function_definition!("calculate_total", vec![], block!());
 
@@ -155,9 +157,11 @@ mod pending_call_tests {
     fn detects_arity_mismatch_on_deferred_call() {
         let mut analyzer = Analyzer::new();
 
-        let callee = ExpressionKind::identifier("calculate_total".to_string());
-        let call_expression = ExpressionKind::function_call(callee, vec![ExpressionKind::I32(10)]);
-        let call_statement = Statement::function_call(Expression::new(call_expression, 0));
+        let call_statement = function_call!(expression_function_call!(
+            expression_identifier!("calculate_total"),
+            vec![expression_i32!(10)],
+            0
+        ));
 
         let function_definition = function_definition!("calculate_total", vec![], block!());
 
@@ -178,9 +182,11 @@ mod pending_call_tests {
     fn detects_undefined_deferred_call() {
         let mut analyzer = Analyzer::new();
 
-        let callee = ExpressionKind::identifier("calculate_total".to_string());
-        let call_expression = ExpressionKind::function_call(callee, vec![]);
-        let call_statement = Statement::function_call(Expression::new(call_expression, 0));
+        let call_statement = function_call!(expression_function_call!(
+            expression_identifier!("calculate_total"),
+            vec![],
+            0
+        ));
 
         let program = Program::new(vec![call_statement]);
 

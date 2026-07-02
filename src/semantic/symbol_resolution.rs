@@ -774,8 +774,6 @@ mod function_definition_tests {
 #[cfg(test)]
 mod function_call_tests {
     use super::*;
-    use crate::ast::expr::ExpressionKind;
-    use crate::ast::statement::Statement;
     use crate::semantic::state::PendingCall;
     use crate::semantic::SymbolId;
 
@@ -792,9 +790,11 @@ mod function_call_tests {
             FunctionMetadata::new("calculate_total".to_string(), 0, false),
         );
 
-        let callee_expression_kind = ExpressionKind::identifier("calculate_total".to_string());
-        let call_expression_kind = ExpressionKind::function_call(callee_expression_kind, vec![]);
-        let call_statement = Statement::function_call(Expression::new(call_expression_kind, 0));
+        let call_statement = function_call!(expression_function_call!(
+            expression_identifier!("calculate_total"),
+            vec![],
+            0
+        ));
 
         let result = call_statement.accept(&mut visitor);
         assert!(result.is_ok());
@@ -814,9 +814,11 @@ mod function_call_tests {
             FunctionMetadata::new("calculate_total".to_string(), 1, false),
         );
 
-        let callee_expression_kind = ExpressionKind::identifier("calculate_total".to_string());
-        let call_expression_kind = ExpressionKind::function_call(callee_expression_kind, vec![]);
-        let call_statement = Statement::function_call(Expression::new(call_expression_kind, 0));
+        let call_statement = function_call!(expression_function_call!(
+            expression_identifier!("calculate_total"),
+            vec![],
+            0
+        ));
 
         let result = call_statement.accept(&mut visitor);
         assert_eq!(
@@ -838,9 +840,11 @@ mod function_call_tests {
             .scopes
             .define("calculate_total".to_string(), variable_symbol_id);
 
-        let callee_expression_kind = ExpressionKind::identifier("calculate_total".to_string());
-        let call_expression_kind = ExpressionKind::function_call(callee_expression_kind, vec![]);
-        let call_statement = Statement::function_call(Expression::new(call_expression_kind, 0));
+        let call_statement = function_call!(expression_function_call!(
+            expression_identifier!("calculate_total"),
+            vec![],
+            0
+        ));
 
         let result = call_statement.accept(&mut visitor);
         assert_eq!(
@@ -853,11 +857,13 @@ mod function_call_tests {
     fn defers_unresolved_function_call_to_pending_calls() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let callee_expression_kind = ExpressionKind::identifier("calculate_total".to_string());
-        let expected_callee_node_id = callee_expression_kind.node_id().unwrap();
-        let call_expression_kind =
-            ExpressionKind::function_call(callee_expression_kind, vec![ExpressionKind::I32(42)]);
-        let call_statement = Statement::function_call(Expression::new(call_expression_kind, 0));
+        let callee_kind = expression_identifier!("calculate_total");
+        let expected_callee_node_id = callee_kind.node_id().unwrap();
+        let call_statement = function_call!(expression_function_call!(
+            callee_kind,
+            vec![expression_i32!(42)],
+            0
+        ));
 
         let result = call_statement.accept(&mut visitor);
         assert!(result.is_ok());
@@ -876,9 +882,8 @@ mod function_call_tests {
     fn detects_non_identifier_callee_as_not_a_function() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let callee_expression_kind = ExpressionKind::I32(42);
-        let call_expression_kind = ExpressionKind::function_call(callee_expression_kind, vec![]);
-        let call_statement = Statement::function_call(Expression::new(call_expression_kind, 0));
+        let call_statement =
+            function_call!(expression_function_call!(expression_i32!(42), vec![], 0));
 
         let result = call_statement.accept(&mut visitor);
         assert_eq!(result, Err(SemanticError::NotAFunction("".to_string())));
@@ -888,8 +893,7 @@ mod function_call_tests {
     #[should_panic(expected = "Expected ExpressionKind::FunctionCall variant")]
     fn panics_on_non_function_call_expression_variant() {
         let mut visitor = SymbolResolutionVisitor::new();
-        let expression_kind = ExpressionKind::I32(42);
-        let expression = Expression::new(expression_kind, 0);
+        let expression = expression_i32!(42, 0);
         let _ = StatementVisitor::visit_function_call(&mut visitor, &expression);
     }
 
@@ -906,9 +910,9 @@ mod function_call_tests {
             FunctionMetadata::new("calculate_total".to_string(), 0, false),
         );
 
-        let callee_expression_kind = ExpressionKind::identifier("calculate_total".to_string());
-        let callee_node_id = callee_expression_kind.node_id().unwrap();
-        let call_expression_kind = ExpressionKind::function_call(callee_expression_kind, vec![]);
+        let callee_kind = expression_identifier!("calculate_total");
+        let callee_node_id = callee_kind.node_id().unwrap();
+        let call_expression_kind = expression_function_call!(callee_kind, vec![]);
 
         let result = call_expression_kind.accept(&mut visitor);
         assert!(result.is_ok());
@@ -922,9 +926,9 @@ mod function_call_tests {
     fn visitor_resolves_deferred_function_call_in_resolution_table_on_pending_calls_resolve() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let callee_expression_kind = ExpressionKind::identifier("calculate_total".to_string());
-        let callee_node_id = callee_expression_kind.node_id().unwrap();
-        let call_expression_kind = ExpressionKind::function_call(callee_expression_kind, vec![]);
+        let callee_kind = expression_identifier!("calculate_total");
+        let callee_node_id = callee_kind.node_id().unwrap();
+        let call_expression_kind = expression_function_call!(callee_kind, vec![]);
 
         // Visit call, which defers it
         let result = call_expression_kind.accept(&mut visitor);
@@ -969,13 +973,12 @@ mod function_call_tests {
             .scopes
             .define("score".to_string(), variable_symbol_id);
 
-        let callee_expression_kind = ExpressionKind::identifier("calculate_total".to_string());
-        let callee_node_id = callee_expression_kind.node_id().unwrap();
+        let callee_kind = expression_identifier!("calculate_total");
+        let callee_node_id = callee_kind.node_id().unwrap();
 
-        let argument_expression_kind = ExpressionKind::identifier("score".to_string());
-        let argument_node_id = argument_expression_kind.node_id().unwrap();
-        let call_expression_kind =
-            ExpressionKind::function_call(callee_expression_kind, vec![argument_expression_kind]);
+        let argument_kind = expression_identifier!("score");
+        let argument_node_id = argument_kind.node_id().unwrap();
+        let call_expression_kind = expression_function_call!(callee_kind, vec![argument_kind]);
 
         let result = call_expression_kind.accept(&mut visitor);
         assert!(result.is_ok());
