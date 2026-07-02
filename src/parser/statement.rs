@@ -103,7 +103,7 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> StatementParser<'src, '
 mod tests {
     use super::*;
     use crate::ast::expr::{BinaryOperator, Expression, ExpressionKind};
-    use crate::ast::statement::{FunctionDefinition, FunctionParameter};
+
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
 
@@ -243,18 +243,15 @@ mod tests {
         let line = 1;
         assert_eq!(
             statement,
-            Statement::function_definition(FunctionDefinition::new(
-                "adjust_risk".to_string(),
-                vec![FunctionParameter::new(
-                    "score".to_string(),
-                    Some("i32".to_string())
-                )],
+            function_definition!(
+                "adjust_risk",
+                vec![function_parameter!("score", "i32")],
                 Some("i32".to_string()),
                 block!(variable_declaration!(
                     "risk_level",
                     value: expression_identifier!("score", line)
                 ))
-            ))
+            )
         );
     }
 

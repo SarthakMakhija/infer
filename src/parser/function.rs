@@ -117,12 +117,7 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::function_definition(FunctionDefinition::new(
-                "calculate".to_string(),
-                vec![],
-                None,
-                block!()
-            ))
+            function_definition!("calculate", vec![], block!())
         );
     }
 
@@ -135,15 +130,12 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::function_definition(FunctionDefinition::new(
-                "compute_tax".to_string(),
-                vec![FunctionParameter::new(
-                    "income".to_string(),
-                    Some("i32".to_string())
-                )],
+            function_definition!(
+                "compute_tax",
+                vec![function_parameter!("income", "i32")],
                 Some("i32".to_string()),
                 block!()
-            ))
+            )
         );
     }
 
@@ -156,12 +148,11 @@ mod tests {
         let statement = parser.parse().unwrap();
         assert_eq!(
             statement,
-            Statement::function_definition(FunctionDefinition::new(
-                "determine_grade".to_string(),
-                vec![FunctionParameter::new("score".to_string(), None)],
-                None,
+            function_definition!(
+                "determine_grade",
+                vec![function_parameter!("score")],
                 block!()
-            ))
+            )
         );
     }
 
@@ -179,15 +170,14 @@ mod tests {
 
         assert_eq!(
             statement,
-            Statement::function_definition(FunctionDefinition::new(
-                "assign".to_string(),
+            function_definition!(
+                "assign",
                 vec![],
-                None,
                 block!(
                     assignment!("height", expression_i32!(200, line)),
                     assignment!("weight", expression_i32!(300, line)),
                 )
-            ))
+            )
         );
     }
 
@@ -203,15 +193,14 @@ mod tests {
         let statement = parser.parse().unwrap();
         let line = 1;
 
-        let expected = Statement::function_definition(FunctionDefinition::new(
-            "test_func".to_string(),
+        let expected = function_definition!(
+            "test_func",
             vec![],
-            None,
             block!(
                 variable_declaration!("id", value: expression_i32!(100, line)),
                 assignment!("id", expression_i32!(200, line)),
-            ),
-        ));
+            )
+        );
         assert_eq!(statement, expected);
     }
 
@@ -227,10 +216,9 @@ mod tests {
         let statement = parser.parse().unwrap();
         let line = 1;
 
-        let expected = Statement::function_definition(FunctionDefinition::new(
-            "test_func".to_string(),
+        let expected = function_definition!(
+            "test_func",
             vec![],
-            None,
             block!(conditional!(
                 expression_binary!(
                     expression_identifier!("discount_rate"),
@@ -238,7 +226,7 @@ mod tests {
                     expression_i32!(0),
                     line
                 ),
-                Block::new(vec![assignment!(
+                block!(assignment!(
                     "final_price",
                     expression_binary!(
                         expression_identifier!("regular_price"),
@@ -246,9 +234,9 @@ mod tests {
                         expression_identifier!("savings"),
                         line
                     )
-                )])
-            )),
-        ));
+                ))
+            ))
+        );
         assert_eq!(statement, expected);
     }
 
@@ -264,10 +252,9 @@ mod tests {
         let statement = parser.parse().unwrap();
         let line = 1;
 
-        let expected = Statement::function_definition(FunctionDefinition::new(
-            "test_func".to_string(),
+        let expected = function_definition!(
+            "test_func",
             vec![],
-            None,
             block!(assignment!(
                 "total_price",
                 expression_binary!(
@@ -280,8 +267,8 @@ mod tests {
                     ),
                     line
                 )
-            )),
-        ));
+            ))
+        );
         assert_eq!(statement, expected);
     }
 
@@ -297,10 +284,9 @@ mod tests {
         let statement = parser.parse().unwrap();
         let line = 1;
 
-        let expected = Statement::function_definition(FunctionDefinition::new(
-            "test_func".to_string(),
+        let expected = function_definition!(
+            "test_func",
             vec![],
-            None,
             block!(assignment!(
                 "adjusted_score",
                 expression_binary!(
@@ -313,8 +299,8 @@ mod tests {
                     expression_identifier!("multiplier"),
                     line
                 )
-            )),
-        ));
+            ))
+        );
         assert_eq!(statement, expected);
     }
 
@@ -329,10 +315,9 @@ mod tests {
 
         let statement = parser.parse().unwrap();
         let line = 1;
-        let expected = Statement::function_definition(FunctionDefinition::new(
-            "test_func".to_string(),
+        let expected = function_definition!(
+            "test_func",
             vec![],
-            None,
             block!(variable_declaration!(
                 "total_cost",
                 value: expression_binary!(
@@ -345,8 +330,8 @@ mod tests {
                     ),
                     line
                 )
-            )),
-        ));
+            ))
+        );
         assert_eq!(statement, expected);
     }
 
@@ -362,10 +347,9 @@ mod tests {
         let statement = parser.parse().unwrap();
         let line = 1;
 
-        let expected = Statement::function_definition(FunctionDefinition::new(
-            "test_func".to_string(),
+        let expected = function_definition!(
+            "test_func",
             vec![],
-            None,
             block!(
                 variable_declaration!(
                     "net_salary",
@@ -385,8 +369,8 @@ mod tests {
                         line
                     )
                 ),
-            ),
-        ));
+            )
+        );
         assert_eq!(statement, expected);
     }
 

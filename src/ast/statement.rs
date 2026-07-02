@@ -472,12 +472,7 @@ mod tests {
 
     #[test]
     fn function_definition_id() {
-        let statement = Statement::function_definition(FunctionDefinition::new(
-            "calculate_total".to_string(),
-            vec![],
-            None,
-            block!(),
-        ));
+        let statement = function_definition!("calculate_total", vec![], block!());
         assert!(*statement.id() > 0);
     }
 
@@ -518,8 +513,7 @@ mod tests {
 #[cfg(test)]
 mod accept_tests {
     use crate::ast::statement::{
-        Assignment, Block, FunctionDefinition, If, Loop, NodeId, Print, Return, Statement,
-        VariableDeclaration,
+        Assignment, Block, FunctionDefinition, If, Loop, NodeId, Print, Return, VariableDeclaration,
     };
     use crate::semantic::error::SemanticError;
     use crate::semantic::visitor::StatementVisitor;
@@ -706,12 +700,7 @@ mod accept_tests {
 
     #[test]
     fn statement_accept_dispatches_function_definition_to_visitor() {
-        let statement = Statement::function_definition(FunctionDefinition::new(
-            "calculate".to_string(),
-            vec![],
-            None,
-            block!(),
-        ));
+        let statement = function_definition!("calculate", vec![], block!());
 
         let mut visitor = TestVisitor {
             visited_var_declaration: false,

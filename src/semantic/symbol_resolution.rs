@@ -678,24 +678,20 @@ mod block_tests {
 #[cfg(test)]
 mod function_definition_tests {
     use super::*;
-    use crate::ast::statement::{FunctionDefinition, FunctionParameter, Statement};
     use crate::semantic::SymbolId;
 
     #[test]
     fn accepts_a_valid_function_definition() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let first_parameter =
-            FunctionParameter::new("first_score".to_string(), Some("i32".to_string()));
-        let second_parameter =
-            FunctionParameter::new("second_score".to_string(), Some("i32".to_string()));
-
-        let function_definition = Statement::function_definition(FunctionDefinition::new(
-            "calculate_total".to_string(),
+        let first_parameter = function_parameter!("first_score", "i32");
+        let second_parameter = function_parameter!("second_score", "i32");
+        let function_definition = function_definition!(
+            "calculate_total",
             vec![first_parameter, second_parameter],
             Some("i32".to_string()),
-            block!(),
-        ));
+            block!()
+        );
 
         let result = function_definition.accept(&mut visitor);
         assert!(result.is_ok());
@@ -709,12 +705,7 @@ mod function_definition_tests {
             .scopes
             .define("calculate_total".to_string(), SymbolId(1));
 
-        let second_function = Statement::function_definition(FunctionDefinition::new(
-            "calculate_total".to_string(),
-            vec![],
-            None,
-            block!(),
-        ));
+        let second_function = function_definition!("calculate_total", vec![], block!());
         let result = second_function.accept(&mut visitor);
         assert_eq!(
             result,
@@ -728,15 +719,13 @@ mod function_definition_tests {
     fn rejects_function_definitions_with_duplicate_parameter_names() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let first_parameter = FunctionParameter::new("score".to_string(), Some("int".to_string()));
-        let second_parameter = FunctionParameter::new("score".to_string(), Some("int".to_string()));
-
-        let function_definition = Statement::function_definition(FunctionDefinition::new(
-            "calculate_total".to_string(),
+        let first_parameter = function_parameter!("score", "int");
+        let second_parameter = function_parameter!("score", "int");
+        let function_definition = function_definition!(
+            "calculate_total",
             vec![first_parameter, second_parameter],
-            None,
-            block!(),
-        ));
+            block!()
+        );
 
         let result = function_definition.accept(&mut visitor);
         assert_eq!(
@@ -752,17 +741,14 @@ mod function_definition_tests {
 
         visitor.scopes.define("score".to_string(), outer_symbol_id);
 
-        let function_parameter =
-            FunctionParameter::new("score".to_string(), Some("int".to_string()));
+        let function_parameter = function_parameter!("score", "int");
         let inner_assignment = assignment!("score", expression_i32!(100, 0));
         let assignment_id = inner_assignment.id();
-
-        let function_definition = Statement::function_definition(FunctionDefinition::new(
-            "calculate_total".to_string(),
+        let function_definition = function_definition!(
+            "calculate_total",
             vec![function_parameter],
-            None,
-            block!(inner_assignment),
-        ));
+            block!(inner_assignment)
+        );
         assert!(function_definition.accept(&mut visitor).is_ok());
 
         let inner_symbol_id = visitor.resolution_table.get(&assignment_id).unwrap();
@@ -773,13 +759,8 @@ mod function_definition_tests {
     fn registers_global_function_with_parameter_count_in_state() {
         let mut visitor = SymbolResolutionVisitor::new();
 
-        let parameter = FunctionParameter::new("name".to_string(), Some("String".to_string()));
-        let function_definition = Statement::function_definition(FunctionDefinition::new(
-            "greeting".to_string(),
-            vec![parameter],
-            None,
-            block!(),
-        ));
+        let parameter = function_parameter!("name", "String");
+        let function_definition = function_definition!("greeting", vec![parameter], block!());
 
         assert!(function_definition.accept(&mut visitor).is_ok());
 
@@ -1192,7 +1173,6 @@ mod print_tests {
 #[cfg(test)]
 mod unreachable_code_tests {
     use super::*;
-    use crate::ast::statement::{FunctionDefinition, Statement};
 
     #[test]
     fn unreachable_statement_after_return_in_function_body_returns_error() {
@@ -1201,12 +1181,11 @@ mod unreachable_code_tests {
         let return_statement = return_statement!();
         let variable_declaration = variable_declaration!("score");
 
-        let function_definition = Statement::function_definition(FunctionDefinition::new(
-            "calculate".to_string(),
+        let function_definition = function_definition!(
+            "calculate",
             vec![],
-            None,
-            block!(return_statement, variable_declaration),
-        ));
+            block!(return_statement, variable_declaration)
+        );
 
         let result = function_definition.accept(&mut visitor);
         assert_eq!(result, Err(SemanticError::UnreachableCode));
@@ -1231,12 +1210,8 @@ mod unreachable_code_tests {
         let return_statement = return_statement!();
         let nested_block = block_statement!();
 
-        let function_definition = Statement::function_definition(FunctionDefinition::new(
-            "calculate".to_string(),
-            vec![],
-            None,
-            block!(return_statement, nested_block),
-        ));
+        let function_definition =
+            function_definition!("calculate", vec![], block!(return_statement, nested_block));
 
         let result = function_definition.accept(&mut visitor);
         assert_eq!(result, Err(SemanticError::UnreachableCode));
@@ -1251,12 +1226,11 @@ mod unreachable_code_tests {
 
         let variable_declaration = variable_declaration!("score");
 
-        let function_definition = Statement::function_definition(FunctionDefinition::new(
-            "calculate".to_string(),
+        let function_definition = function_definition!(
+            "calculate",
             vec![],
-            None,
-            block!(if_statement, variable_declaration),
-        ));
+            block!(if_statement, variable_declaration)
+        );
 
         let result = function_definition.accept(&mut visitor);
         assert!(result.is_ok());
@@ -1271,12 +1245,11 @@ mod unreachable_code_tests {
 
         let variable_declaration = variable_declaration!("score");
 
-        let function_definition = Statement::function_definition(FunctionDefinition::new(
-            "calculate".to_string(),
+        let function_definition = function_definition!(
+            "calculate",
             vec![],
-            None,
-            block!(loop_statement, variable_declaration),
-        ));
+            block!(loop_statement, variable_declaration)
+        );
 
         let result = function_definition.accept(&mut visitor);
         assert!(result.is_ok());
@@ -1287,20 +1260,10 @@ mod unreachable_code_tests {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let return_statement = return_statement!();
-        let first_function = Statement::function_definition(FunctionDefinition::new(
-            "first".to_string(),
-            vec![],
-            None,
-            block!(return_statement),
-        ));
+        let first_function = function_definition!("first", vec![], block!(return_statement));
 
         let variable_declaration = variable_declaration!("score");
-        let second_function = Statement::function_definition(FunctionDefinition::new(
-            "second".to_string(),
-            vec![],
-            None,
-            block!(variable_declaration),
-        ));
+        let second_function = function_definition!("second", vec![], block!(variable_declaration));
 
         assert!(first_function.accept(&mut visitor).is_ok());
         assert!(second_function.accept(&mut visitor).is_ok());

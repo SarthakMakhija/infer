@@ -66,7 +66,6 @@ impl<'src, 'stream, I: Iterator<Item = LexResult<'src>>> Parser<'src, 'stream, I
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::statement::{Block, FunctionDefinition, FunctionParameter, Statement};
     use crate::lexer::keywords::Keywords;
     use crate::lexer::Lexer;
 
@@ -171,18 +170,15 @@ mod tests {
         let program = parser.parse().unwrap();
         let line = 1;
         let expected = ProgramBuilder::new()
-            .add(Statement::function_definition(FunctionDefinition::new(
-                "adjust_risk".to_string(),
-                vec![FunctionParameter::new(
-                    "score".to_string(),
-                    Some("i32".to_string()),
-                )],
+            .add(function_definition!(
+                "adjust_risk",
+                vec![function_parameter!("score", "i32")],
                 Some("i32".to_string()),
-                Block::new(vec![variable_declaration!(
+                block!(variable_declaration!(
                     "risk_level",
                     value: expression_identifier!("score", line)
-                )]),
-            )))
+                ))
+            ))
             .build();
         assert_eq!(program, expected);
     }

@@ -132,6 +132,45 @@ macro_rules! print_statement {
     };
 }
 
+/// Constructs a `FunctionParameter`.
+#[macro_export]
+macro_rules! function_parameter {
+    ($name:expr) => {
+        $crate::ast::statement::FunctionParameter::new($name.to_string(), None)
+    };
+    ($name:expr, $data_type:expr) => {
+        $crate::ast::statement::FunctionParameter::new(
+            $name.to_string(),
+            Some($data_type.to_string()),
+        )
+    };
+}
+
+/// Constructs a `Statement::FunctionDefinition` statement.
+#[macro_export]
+macro_rules! function_definition {
+    ($name:expr, $parameters:expr, $body:expr) => {
+        $crate::ast::statement::Statement::function_definition(
+            $crate::ast::statement::FunctionDefinition::new(
+                $name.to_string(),
+                $parameters,
+                None,
+                $body,
+            ),
+        )
+    };
+    ($name:expr, $parameters:expr, $return_type:expr, $body:expr) => {
+        $crate::ast::statement::Statement::function_definition(
+            $crate::ast::statement::FunctionDefinition::new(
+                $name.to_string(),
+                $parameters,
+                $return_type,
+                $body,
+            ),
+        )
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use crate::ast::expr::{Expression, ExpressionKind};
@@ -305,5 +344,34 @@ mod tests {
         };
 
         assert_eq!(loop_statement.body().len(), 0);
+    }
+
+    #[test]
+    fn function_parameter() {
+        let first_parameter = function_parameter!("score");
+        let second_parameter = function_parameter!("bonus", "i32");
+        assert_eq!(
+            first_parameter,
+            crate::ast::statement::FunctionParameter::new("score".to_string(), None)
+        );
+        assert_eq!(
+            second_parameter,
+            crate::ast::statement::FunctionParameter::new(
+                "bonus".to_string(),
+                Some("i32".to_string())
+            )
+        );
+    }
+
+    #[test]
+    fn function_definition() {
+        let parameter = function_parameter!("score");
+        let statement = function_definition!("calculate_score", vec![parameter], block!());
+        let Statement::FunctionDefinition(function_definition, _) = &statement else {
+            panic!("Expected FunctionDefinition variant");
+        };
+        assert_eq!(function_definition.name(), "calculate_score");
+        assert_eq!(function_definition.parameters().len(), 1);
+        assert_eq!(function_definition.return_type(), None);
     }
 }

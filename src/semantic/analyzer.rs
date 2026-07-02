@@ -98,17 +98,11 @@ mod block_tests {
 #[cfg(test)]
 mod function_definition_tests {
     use super::*;
-    use crate::ast::statement::{FunctionDefinition, Statement};
 
     #[test]
     fn analyze_valid_function_definition() {
         let mut analyzer = Analyzer::new();
-        let definition = Statement::function_definition(FunctionDefinition::new(
-            "calculate_total".to_string(),
-            vec![],
-            None,
-            block!(),
-        ));
+        let definition = function_definition!("calculate_total", vec![], block!());
         let program = Program::new(vec![definition]);
 
         let result = analyzer.analyze(&program);
@@ -121,7 +115,7 @@ mod pending_call_tests {
     use super::*;
     use crate::ast::expr::{Expression, ExpressionKind};
     use crate::ast::program::Program;
-    use crate::ast::statement::{FunctionDefinition, Statement};
+    use crate::ast::statement::Statement;
 
     #[test]
     fn detects_shadowed_deferred_call_on_variable() {
@@ -149,12 +143,7 @@ mod pending_call_tests {
         let call_expression = ExpressionKind::function_call(callee, vec![]);
         let call_statement = Statement::function_call(Expression::new(call_expression, 0));
 
-        let function_definition = Statement::function_definition(FunctionDefinition::new(
-            "calculate_total".to_string(),
-            vec![],
-            None,
-            block!(),
-        ));
+        let function_definition = function_definition!("calculate_total", vec![], block!());
 
         let program = Program::new(vec![call_statement, function_definition]);
 
@@ -170,12 +159,7 @@ mod pending_call_tests {
         let call_expression = ExpressionKind::function_call(callee, vec![ExpressionKind::I32(10)]);
         let call_statement = Statement::function_call(Expression::new(call_expression, 0));
 
-        let function_definition = Statement::function_definition(FunctionDefinition::new(
-            "calculate_total".to_string(),
-            vec![],
-            None,
-            block!(),
-        ));
+        let function_definition = function_definition!("calculate_total", vec![], block!());
 
         let program = Program::new(vec![call_statement, function_definition]);
 
@@ -229,18 +213,12 @@ mod break_tests {
 #[cfg(test)]
 mod return_tests {
     use super::*;
-    use crate::ast::statement::{FunctionDefinition, Statement};
 
     #[test]
     fn analyze_valid_return_inside_function() {
         let mut analyzer = Analyzer::new();
         let return_statement = return_statement!();
-        let definition = Statement::function_definition(FunctionDefinition::new(
-            "calculate_total".to_string(),
-            vec![],
-            None,
-            block!(return_statement),
-        ));
+        let definition = function_definition!("calculate_total", vec![], block!(return_statement));
         let program = Program::new(vec![definition]);
 
         let result = analyzer.analyze(&program);
