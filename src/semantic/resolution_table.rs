@@ -36,7 +36,9 @@ use std::collections::HashMap;
 /// Without the `ResolutionTable`, a type checker would walk the AST, encounter two variables named `"x"`,
 /// and get confused when resolving types (since `"x"` cannot simultaneously be `i32` and `string`).
 ///
-/// With the `ResolutionTable`, the map resolves the references as follows:
+/// With the `ResolutionTable`, the map resolves the nodes as follows:
+/// - `NodeId(1)` (outer `VarDecl`) maps to `SymbolId(1)`
+/// - `NodeId(2)` (inner `VarDecl`) maps to `SymbolId(2)`
 /// - `NodeId(3)` (inner print argument) maps to `SymbolId(2)`
 /// - `NodeId(4)` (outer print argument) maps to `SymbolId(1)`
 ///
