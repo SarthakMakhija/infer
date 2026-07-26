@@ -1,4 +1,5 @@
 pub(crate) mod error;
+pub(crate) mod inference;
 pub(crate) mod resolution_table;
 pub(crate) mod scoping;
 pub(crate) mod visitor;
