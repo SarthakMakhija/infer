@@ -3,6 +3,7 @@ use std::cell::Cell;
 use std::convert::TryFrom;
 
 pub(crate) mod constraints;
+pub(crate) mod type_inference;
 pub(crate) mod type_table;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
