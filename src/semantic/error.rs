@@ -23,6 +23,8 @@ pub(crate) enum SemanticError {
     NotAFunction(String),
     /// A function call has an incorrect number of arguments.
     ArgumentCountMismatch(String, usize, usize),
+    /// An unsupported type annotation was used.
+    UnsupportedTypeError(String),
 }
 
 impl Display for SemanticError {
@@ -67,6 +69,9 @@ impl Display for SemanticError {
                     "arity mismatch for function {}: expected {}, got {}",
                     name, expected, actual
                 )
+            }
+            SemanticError::UnsupportedTypeError(ty) => {
+                write!(formatter, "unsupported type: {}", ty)
             }
         }
     }
@@ -155,6 +160,14 @@ mod tests {
         assert_eq!(
             SemanticError::ArgumentCountMismatch("calculate".to_string(), 2, 1).to_string(),
             "arity mismatch for function calculate: expected 2, got 1"
+        );
+    }
+
+    #[test]
+    fn format_unsupported_type_error() {
+        assert_eq!(
+            SemanticError::UnsupportedTypeError("i64".to_string()).to_string(),
+            "unsupported type: i64"
         );
     }
 }
