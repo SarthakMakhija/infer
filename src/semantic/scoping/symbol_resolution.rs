@@ -4,8 +4,8 @@ use crate::ast::statement::{
     VariableDeclaration,
 };
 use crate::semantic::error::SemanticError;
+use crate::semantic::resolution_table::ResolutionTable;
 use crate::semantic::scoping::next_symbol_id;
-use crate::semantic::scoping::resolution_table::ResolutionTable;
 use crate::semantic::scoping::scope::Scopes;
 use crate::semantic::scoping::state::{FunctionMetadata, State};
 use crate::semantic::visitor::{ExpressionVisitor, StatementVisitor};
