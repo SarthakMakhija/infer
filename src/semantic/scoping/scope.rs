@@ -1,4 +1,4 @@
-use crate::semantic::scoping::SymbolId;
+use crate::semantic::SymbolId;
 use std::collections::HashMap;
 
 /// Manages a stack of nested lexical scopes for symbol resolution.

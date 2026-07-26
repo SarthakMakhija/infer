@@ -1,5 +1,5 @@
 use crate::ast::statement::NodeId;
-use crate::semantic::scoping::SymbolId;
+use crate::semantic::SymbolId;
 use std::collections::HashMap;
 
 /// Represents a deferred function call that will be resolved at the end of the pass.

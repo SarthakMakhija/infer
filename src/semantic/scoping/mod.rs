@@ -3,6 +3,7 @@
 //! Provides the semantic compiler pipeline phase including name resolution,
 //! lexical scope resolution, unreachable code detection, and arity checking.
 
+use crate::semantic::SymbolId;
 use std::cell::Cell;
 
 pub(crate) mod analyzer;
@@ -10,10 +11,6 @@ pub(crate) mod resolution_table;
 pub(crate) mod scope;
 pub(crate) mod state;
 pub(crate) mod symbol_resolution;
-
-/// Represents a unique identifier for a resolved symbol (variable, parameter, or function).
-#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
-pub(crate) struct SymbolId(pub usize);
 
 thread_local! {
     static ID: Cell<SymbolId> = const { Cell::new(SymbolId(0)) };

@@ -415,7 +415,7 @@ impl ExpressionVisitor for SymbolResolutionVisitor {
 #[cfg(test)]
 mod var_declaration_tests {
     use super::*;
-    use crate::semantic::scoping::SymbolId;
+    use crate::semantic::SymbolId;
 
     #[test]
     fn accepts_a_valid_variable_declaration() {
@@ -504,7 +504,7 @@ mod var_declaration_tests {
 mod assignment_tests {
     use super::*;
     use crate::ast::expr::Expression;
-    use crate::semantic::scoping::SymbolId;
+    use crate::semantic::SymbolId;
 
     #[test]
     fn assignment_to_a_defined_variable_succeeds_and_records_resolution() {
@@ -586,7 +586,7 @@ mod assignment_tests {
 mod if_tests {
     use super::*;
     use crate::ast::expr::Expression;
-    use crate::semantic::scoping::SymbolId;
+    use crate::semantic::SymbolId;
 
     #[test]
     fn variables_declared_inside_then_block_are_inaccessible_after_if_statement_exits() {
@@ -763,7 +763,7 @@ mod loop_tests {
 #[cfg(test)]
 mod block_tests {
     use super::*;
-    use crate::semantic::scoping::SymbolId;
+    use crate::semantic::SymbolId;
 
     #[test]
     fn block_creates_a_new_lexical_scope_allowing_shadowing() {
@@ -821,7 +821,7 @@ mod block_tests {
 #[cfg(test)]
 mod function_definition_tests {
     use super::*;
-    use crate::semantic::scoping::SymbolId;
+    use crate::semantic::SymbolId;
 
     #[test]
     fn accepts_a_valid_function_definition() {
@@ -923,7 +923,7 @@ mod function_definition_tests {
 mod function_call_tests {
     use super::*;
     use crate::semantic::scoping::state::PendingCall;
-    use crate::semantic::scoping::SymbolId;
+    use crate::semantic::SymbolId;
 
     #[test]
     fn accepts_valid_function_call() {
@@ -1170,7 +1170,7 @@ mod break_tests {
 mod return_tests {
     use super::*;
     use crate::semantic::scoping::state::FunctionMetadata;
-    use crate::semantic::scoping::SymbolId;
+    use crate::semantic::SymbolId;
 
     #[test]
     fn return_statement_outside_any_function_is_invalid() {
@@ -1284,7 +1284,7 @@ mod return_tests {
 mod print_tests {
     use super::*;
     use crate::ast::expr::{Expression, ExpressionKind};
-    use crate::semantic::scoping::SymbolId;
+    use crate::semantic::SymbolId;
 
     #[test]
     fn print_resolves_identifiers_in_arguments() {
@@ -1425,7 +1425,7 @@ mod unreachable_code_tests {
 mod identifier_expression_tests {
     use super::*;
     use crate::ast::expr::ExpressionKind;
-    use crate::semantic::scoping::SymbolId;
+    use crate::semantic::SymbolId;
 
     #[test]
     fn visitor_resolves_valid_identifier_expression() {
@@ -1465,7 +1465,7 @@ mod identifier_expression_tests {
 mod unary_expression_tests {
     use super::*;
     use crate::ast::expr::{ExpressionKind, UnaryOperator};
-    use crate::semantic::scoping::SymbolId;
+    use crate::semantic::SymbolId;
 
     #[test]
     fn visitor_resolves_identifier_inside_unary_expression() {
@@ -1510,7 +1510,7 @@ mod unary_expression_tests {
 mod binary_expression_tests {
     use super::*;
     use crate::ast::expr::{BinaryOperator, ExpressionKind};
-    use crate::semantic::scoping::SymbolId;
+    use crate::semantic::SymbolId;
 
     #[test]
     fn visitor_resolves_identifiers_inside_binary_expression() {
@@ -1593,7 +1593,7 @@ mod binary_expression_tests {
 mod grouped_expression_tests {
     use super::*;
     use crate::ast::expr::ExpressionKind;
-    use crate::semantic::scoping::SymbolId;
+    use crate::semantic::SymbolId;
 
     #[test]
     fn visitor_resolves_identifier_inside_grouped_expression() {
