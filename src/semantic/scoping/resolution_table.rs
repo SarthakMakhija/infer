@@ -1,5 +1,5 @@
 use crate::ast::statement::NodeId;
-use crate::semantic::SymbolId;
+use crate::semantic::scoping::SymbolId;
 use std::collections::HashMap;
 
 /// A lookup table mapping AST node identifiers (`NodeId`) to their semantically resolved `SymbolId`.

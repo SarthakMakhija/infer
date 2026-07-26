@@ -1,6 +1,6 @@
 use crate::ast::program::Program;
-use crate::semantic::error::SemanticError;
-use crate::semantic::symbol_resolution::SymbolResolutionVisitor;
+use crate::semantic::scoping::error::SemanticError;
+use crate::semantic::scoping::symbol_resolution::SymbolResolutionVisitor;
 
 /// The compiler driver for running semantic analysis passes.
 ///
