@@ -53,7 +53,7 @@ identifier
     = IDENTIFIER ;
 
 type
-    = "i32" | "i64" | "string" | "bool" ;
+    = "i32" | "string" | "bool" ;
 
 expression
     = primary | unary | binary ;
