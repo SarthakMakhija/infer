@@ -45,7 +45,7 @@ Source Code
 *   **Output:** A validated, semantically checked AST.
 *   **Role:** Performs name resolution, scope checking, and general structural validation (e.g., verifying `break` is only used inside loops, variables are not declared twice in the same scope) before type checking.
 
-### 4. Semantic Analysis - Type Inference: *Next Phase*
+### 4. Semantic Analysis - Type Inference: *WIP*
 *   **Input:** A validated, untyped AST.
 *   **Output:** A fully typed AST (or type errors).
 *   **Role:** Collects type equations/constraints by traversing the AST, and then unifies those equations (similar to Hindley-Milner unification) to determine the exact type of every expression without requiring the programmer to write explicit types!
