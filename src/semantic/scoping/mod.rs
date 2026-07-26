@@ -6,12 +6,10 @@
 use std::cell::Cell;
 
 pub(crate) mod analyzer;
-pub(crate) mod error;
 pub(crate) mod resolution_table;
 pub(crate) mod scope;
 pub(crate) mod state;
 pub(crate) mod symbol_resolution;
-pub(crate) mod visitor;
 
 /// Represents a unique identifier for a resolved symbol (variable, parameter, or function).
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]

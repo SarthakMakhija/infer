@@ -2,7 +2,7 @@ use crate::ast::expr::{Expression, ExpressionKind};
 use crate::ast::statement::{
     Assignment, Block, FunctionDefinition, If, Loop, NodeId, Print, Return, VariableDeclaration,
 };
-use crate::semantic::scoping::error::SemanticError;
+use crate::semantic::error::SemanticError;
 
 /// A visitor trait for walking and processing AST statement nodes.
 pub(crate) trait StatementVisitor {

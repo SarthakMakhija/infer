@@ -1,7 +1,7 @@
 use crate::ast::statement::{next_id, NodeId};
 use crate::lexer::token::{Token, TokenType};
-use crate::semantic::scoping::error::SemanticError;
-use crate::semantic::scoping::visitor::ExpressionVisitor;
+use crate::semantic::error::SemanticError;
+use crate::semantic::visitor::ExpressionVisitor;
 use std::fmt;
 
 /// Represents errors encountered while parsing tokens into AST expression kinds.

@@ -3,12 +3,12 @@ use crate::ast::statement::{
     Assignment, Block, FunctionDefinition, If, Loop, NodeId, Print, Return, Statement,
     VariableDeclaration,
 };
-use crate::semantic::scoping::error::SemanticError;
+use crate::semantic::error::SemanticError;
 use crate::semantic::scoping::next_symbol_id;
 use crate::semantic::scoping::resolution_table::ResolutionTable;
 use crate::semantic::scoping::scope::Scopes;
 use crate::semantic::scoping::state::{FunctionMetadata, State};
-use crate::semantic::scoping::visitor::{ExpressionVisitor, StatementVisitor};
+use crate::semantic::visitor::{ExpressionVisitor, StatementVisitor};
 
 /// An AST visitor that resolves symbols, verifies scope nesting, checks arity,
 /// validates control flow statements (`break`, `return`), and checks for unreachable code.
