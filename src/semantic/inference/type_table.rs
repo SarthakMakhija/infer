@@ -20,7 +20,7 @@ impl TypeTable {
 
     #[cfg(test)]
     fn get(&self, symbol_id: &SymbolId) -> Option<Type> {
-        self.entries.get(symbol_id).cloned()
+        self.entries.get(symbol_id).copied()
     }
 }
 

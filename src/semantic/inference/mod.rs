@@ -1,7 +1,7 @@
 pub(crate) mod constraints;
 pub(crate) mod type_table;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum Type {
     Int32,
     Bool,
