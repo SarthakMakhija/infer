@@ -158,7 +158,9 @@ impl ExpressionKind {
             }
             ExpressionKind::Unary(ref expr, _) => visitor.visit_unary(expr),
             ExpressionKind::Grouped(ref expr) => visitor.visit_grouped(expr),
-            ExpressionKind::Binary(ref left, _, ref right) => visitor.visit_binary(left, right),
+            ExpressionKind::Binary(ref left, ref operator, ref right) => {
+                visitor.visit_binary(left, operator, right)
+            }
             _ => Ok(()),
         }
     }
@@ -478,6 +480,7 @@ mod expression_tests {
         fn visit_binary(
             &mut self,
             _left: &ExpressionKind,
+            _operator: &BinaryOperator,
             _right: &ExpressionKind,
         ) -> Result<(), SemanticError> {
             self.visited_binary = true;

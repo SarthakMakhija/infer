@@ -1,4 +1,4 @@
-use crate::ast::expr::ExpressionKind;
+use crate::ast::expr::{BinaryOperator, ExpressionKind};
 use crate::ast::statement::NodeId;
 use crate::semantic::error::SemanticError;
 use crate::semantic::inference::constraints::Constraints;
@@ -70,6 +70,7 @@ impl<'symbols> ExpressionVisitor for TypeInferenceVisitor<'symbols> {
     fn visit_binary(
         &mut self,
         _left: &ExpressionKind,
+        _operator: &BinaryOperator,
         _right: &ExpressionKind,
     ) -> Result<(), SemanticError> {
         todo!()
