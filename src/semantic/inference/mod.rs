@@ -1,4 +1,5 @@
 pub(crate) mod constraints;
+pub(crate) mod type_table;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Type {
