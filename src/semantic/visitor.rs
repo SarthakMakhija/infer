@@ -74,4 +74,19 @@ pub(crate) trait ExpressionVisitor {
 
     /// Visits a parenthesized/grouped expression.
     fn visit_grouped(&mut self, expr: &ExpressionKind) -> Result<(), SemanticError>;
+
+    /// Visits an i32 literal expression.
+    fn visit_i32(&mut self, _value: i32) -> Result<(), SemanticError> {
+        Ok(())
+    }
+
+    /// Visits a string literal expression.
+    fn visit_string(&mut self, _value: &str) -> Result<(), SemanticError> {
+        Ok(())
+    }
+
+    /// Visits a boolean literal expression.
+    fn visit_bool(&mut self, _value: bool) -> Result<(), SemanticError> {
+        Ok(())
+    }
 }

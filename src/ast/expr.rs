@@ -152,6 +152,9 @@ impl ExpressionKind {
     /// Accepts an expression visitor, dispatching the expression kind to the corresponding `visit_*` method.
     pub(crate) fn accept(&self, visitor: &mut dyn ExpressionVisitor) -> Result<(), SemanticError> {
         match self {
+            ExpressionKind::I32(val) => visitor.visit_i32(*val),
+            ExpressionKind::String(ref val) => visitor.visit_string(val),
+            ExpressionKind::Boolean(val) => visitor.visit_bool(*val),
             ExpressionKind::Identifier(ref name, id) => visitor.visit_identifier(name, *id),
             ExpressionKind::FunctionCall(ref callee, ref arguments, _) => {
                 visitor.visit_function_call(callee, arguments)
@@ -161,7 +164,6 @@ impl ExpressionKind {
             ExpressionKind::Binary(ref left, ref operator, ref right) => {
                 visitor.visit_binary(left, operator, right)
             }
-            _ => Ok(()),
         }
     }
 
