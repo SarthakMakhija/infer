@@ -2,7 +2,7 @@ use crate::ast::expr::BinaryOperator;
 use crate::ast::expr::ExpressionKind;
 use crate::ast::statement::NodeId;
 use crate::semantic::error::SemanticError;
-use crate::semantic::inference::constraints::Constraints;
+use crate::semantic::inference::constraints::{Constraint, Constraints};
 use crate::semantic::inference::type_table::TypeTable;
 use crate::semantic::inference::Type;
 use crate::semantic::resolution_table::ResolutionTable;
@@ -64,11 +64,44 @@ impl<'symbols> ExpressionVisitor for TypeInferenceVisitor<'symbols> {
 
     fn visit_binary(
         &mut self,
-        _left: &ExpressionKind,
-        _operator: &BinaryOperator,
-        _right: &ExpressionKind,
+        left: &ExpressionKind,
+        operator: &BinaryOperator,
+        right: &ExpressionKind,
     ) -> Result<(), SemanticError> {
-        todo!()
+        let left_type = self.infer(left)?;
+        let right_type = self.infer(right)?;
+
+        match operator {
+            BinaryOperator::Plus
+            | BinaryOperator::Minus
+            | BinaryOperator::Multiply
+            | BinaryOperator::Divide => {
+                self.constraints
+                    .add(Constraint::new(left_type, Type::Int32));
+                self.constraints
+                    .add(Constraint::new(right_type, Type::Int32));
+                self.current_type = Some(Type::Int32);
+            }
+            BinaryOperator::GreaterThan
+            | BinaryOperator::LessThan
+            | BinaryOperator::GreaterThanEquals
+            | BinaryOperator::LessThanEquals
+            | BinaryOperator::EqualsEquals
+            | BinaryOperator::NotEquals => {
+                self.constraints
+                    .add(Constraint::new(left_type, Type::Int32));
+                self.constraints
+                    .add(Constraint::new(right_type, Type::Int32));
+                self.current_type = Some(Type::Bool);
+            }
+            BinaryOperator::And | BinaryOperator::Or => {
+                self.constraints.add(Constraint::new(left_type, Type::Bool));
+                self.constraints
+                    .add(Constraint::new(right_type, Type::Bool));
+                self.current_type = Some(Type::Bool);
+            }
+        }
+        Ok(())
     }
 
     fn visit_grouped(&mut self, _expr: &ExpressionKind) -> Result<(), SemanticError> {
@@ -167,5 +200,132 @@ mod literal_expression_tests {
 
         let inferred = visitor.infer(&bool_kind);
         assert_eq!(inferred, Ok(Type::Bool));
+    }
+}
+
+#[cfg(test)]
+mod binary_expression_tests {
+    use super::*;
+
+    #[test]
+    fn infer_binary_with_plus_returns_int32_type() {
+        let left = ExpressionKind::I32(10);
+        let right = ExpressionKind::I32(20);
+        let binary_kind =
+            ExpressionKind::Binary(Box::new(left), BinaryOperator::Plus, Box::new(right));
+
+        let resolution_table = ResolutionTable::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+
+        let inferred = visitor.infer(&binary_kind);
+        assert_eq!(inferred, Ok(Type::Int32));
+    }
+
+    #[test]
+    fn infer_binary_with_plus_constrains_left_operand_to_int32() {
+        let left = ExpressionKind::Identifier("age".to_string(), NodeId(1));
+        let right = ExpressionKind::I32(20);
+        let binary_kind =
+            ExpressionKind::Binary(Box::new(left), BinaryOperator::Plus, Box::new(right));
+
+        let mut resolution_table = ResolutionTable::new();
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        visitor.types.add(SymbolId(10), Type::Placeholder(1));
+
+        let _ = visitor.infer(&binary_kind);
+        assert_eq!(
+            *visitor.constraints.entry_at(0),
+            Constraint::new(Type::Placeholder(1), Type::Int32)
+        );
+    }
+
+    #[test]
+    fn infer_binary_with_plus_constrains_right_operand_to_int32() {
+        let left = ExpressionKind::I32(10);
+        let right = ExpressionKind::Identifier("bonus".to_string(), NodeId(1));
+        let binary_kind =
+            ExpressionKind::Binary(Box::new(left), BinaryOperator::Plus, Box::new(right));
+
+        let mut resolution_table = ResolutionTable::new();
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        visitor.types.add(SymbolId(10), Type::Placeholder(1));
+
+        let _ = visitor.infer(&binary_kind);
+        assert_eq!(
+            *visitor.constraints.entry_at(1),
+            Constraint::new(Type::Placeholder(1), Type::Int32)
+        );
+    }
+
+    #[test]
+    fn infer_binary_with_greater_than_returns_bool_type() {
+        let left = ExpressionKind::I32(10);
+        let right = ExpressionKind::I32(20);
+        let binary_kind =
+            ExpressionKind::Binary(Box::new(left), BinaryOperator::GreaterThan, Box::new(right));
+
+        let resolution_table = ResolutionTable::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+
+        let inferred = visitor.infer(&binary_kind);
+        assert_eq!(inferred, Ok(Type::Bool));
+    }
+
+    #[test]
+    fn infer_binary_with_and_returns_bool_type() {
+        let left = ExpressionKind::Boolean(true);
+        let right = ExpressionKind::Boolean(false);
+        let binary_kind =
+            ExpressionKind::Binary(Box::new(left), BinaryOperator::And, Box::new(right));
+
+        let resolution_table = ResolutionTable::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+
+        let inferred = visitor.infer(&binary_kind);
+        assert_eq!(inferred, Ok(Type::Bool));
+    }
+
+    #[test]
+    fn infer_binary_with_and_constrains_left_operand_to_bool() {
+        let left = ExpressionKind::Identifier("is_active".to_string(), NodeId(1));
+        let right = ExpressionKind::Boolean(false);
+        let binary_kind =
+            ExpressionKind::Binary(Box::new(left), BinaryOperator::And, Box::new(right));
+
+        let mut resolution_table = ResolutionTable::new();
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        visitor.types.add(SymbolId(10), Type::Placeholder(1));
+
+        let _ = visitor.infer(&binary_kind);
+        assert_eq!(
+            *visitor.constraints.entry_at(0),
+            Constraint::new(Type::Placeholder(1), Type::Bool)
+        );
+    }
+
+    #[test]
+    fn infer_binary_with_and_constrains_right_operand_to_bool() {
+        let left = ExpressionKind::Boolean(true);
+        let right = ExpressionKind::Identifier("has_permission".to_string(), NodeId(1));
+        let binary_kind =
+            ExpressionKind::Binary(Box::new(left), BinaryOperator::And, Box::new(right));
+
+        let mut resolution_table = ResolutionTable::new();
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        visitor.types.add(SymbolId(10), Type::Placeholder(1));
+
+        let _ = visitor.infer(&binary_kind);
+        assert_eq!(
+            *visitor.constraints.entry_at(1),
+            Constraint::new(Type::Placeholder(1), Type::Bool)
+        );
     }
 }

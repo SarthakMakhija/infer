@@ -25,6 +25,11 @@ impl Constraints {
     pub(crate) fn add(&mut self, constraint: Constraint) {
         self.entries.push(constraint);
     }
+
+    #[cfg(test)]
+    pub(crate) fn entry_at(&self, index: usize) -> &Constraint {
+        &self.entries[index]
+    }
 }
 
 #[cfg(test)]
