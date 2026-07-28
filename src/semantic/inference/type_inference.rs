@@ -4,7 +4,7 @@ use crate::ast::statement::NodeId;
 use crate::semantic::error::SemanticError;
 use crate::semantic::inference::constraints::{Constraint, Constraints};
 use crate::semantic::inference::type_table::TypeTable;
-use crate::semantic::inference::Type;
+use crate::semantic::inference::{OperatorSignature, Type};
 use crate::semantic::resolution_table::ResolutionTable;
 use crate::semantic::visitor::ExpressionVisitor;
 use crate::semantic::SymbolId;
@@ -71,36 +71,14 @@ impl<'symbols> ExpressionVisitor for TypeInferenceVisitor<'symbols> {
         let left_type = self.infer(left)?;
         let right_type = self.infer(right)?;
 
-        match operator {
-            BinaryOperator::Plus
-            | BinaryOperator::Minus
-            | BinaryOperator::Multiply
-            | BinaryOperator::Divide => {
-                self.constraints
-                    .add(Constraint::new(left_type, Type::Int32));
-                self.constraints
-                    .add(Constraint::new(right_type, Type::Int32));
-                self.current_type = Some(Type::Int32);
-            }
-            BinaryOperator::GreaterThan
-            | BinaryOperator::LessThan
-            | BinaryOperator::GreaterThanEquals
-            | BinaryOperator::LessThanEquals
-            | BinaryOperator::EqualsEquals
-            | BinaryOperator::NotEquals => {
-                self.constraints
-                    .add(Constraint::new(left_type, Type::Int32));
-                self.constraints
-                    .add(Constraint::new(right_type, Type::Int32));
-                self.current_type = Some(Type::Bool);
-            }
-            BinaryOperator::And | BinaryOperator::Or => {
-                self.constraints.add(Constraint::new(left_type, Type::Bool));
-                self.constraints
-                    .add(Constraint::new(right_type, Type::Bool));
-                self.current_type = Some(Type::Bool);
-            }
-        }
+        let signature = OperatorSignature::of(operator);
+
+        self.constraints
+            .add(Constraint::new(left_type, signature.left));
+        self.constraints
+            .add(Constraint::new(right_type, signature.right));
+        self.current_type = Some(signature.result);
+
         Ok(())
     }
 

@@ -1,3 +1,4 @@
+use crate::ast::expr::BinaryOperator;
 use crate::semantic::error::SemanticError;
 use std::cell::Cell;
 use std::convert::TryFrom;
@@ -48,6 +49,37 @@ pub(crate) fn next_type_id() -> Type {
         id.set(next);
         next
     })
+}
+
+pub(crate) struct OperatorSignature {
+    pub(crate) left: Type,
+    pub(crate) right: Type,
+    pub(crate) result: Type,
+}
+
+impl OperatorSignature {
+    pub(crate) fn of(operator: &BinaryOperator) -> Self {
+        let (left, right, result) = match operator {
+            BinaryOperator::Plus
+            | BinaryOperator::Minus
+            | BinaryOperator::Multiply
+            | BinaryOperator::Divide => (Type::Int32, Type::Int32, Type::Int32),
+
+            BinaryOperator::GreaterThan
+            | BinaryOperator::LessThan
+            | BinaryOperator::GreaterThanEquals
+            | BinaryOperator::LessThanEquals
+            | BinaryOperator::EqualsEquals
+            | BinaryOperator::NotEquals => (Type::Int32, Type::Int32, Type::Bool),
+
+            BinaryOperator::And | BinaryOperator::Or => (Type::Bool, Type::Bool, Type::Bool),
+        };
+        Self {
+            left,
+            right,
+            result,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -112,5 +144,64 @@ mod parse_type_tests {
             parsed,
             Err(SemanticError::UnsupportedTypeError("i64".to_string()))
         );
+    }
+}
+
+#[cfg(test)]
+mod operator_signature_tests {
+    use super::*;
+
+    #[test]
+    fn plus_operator_returns_int32_left_operand_type() {
+        let signature = OperatorSignature::of(&BinaryOperator::Plus);
+        assert_eq!(signature.left, Type::Int32);
+    }
+
+    #[test]
+    fn plus_operator_returns_int32_right_operand_type() {
+        let signature = OperatorSignature::of(&BinaryOperator::Plus);
+        assert_eq!(signature.right, Type::Int32);
+    }
+
+    #[test]
+    fn plus_operator_returns_int32_result_type() {
+        let signature = OperatorSignature::of(&BinaryOperator::Plus);
+        assert_eq!(signature.result, Type::Int32);
+    }
+
+    #[test]
+    fn greater_than_operator_returns_int32_left_operand_type() {
+        let signature = OperatorSignature::of(&BinaryOperator::GreaterThan);
+        assert_eq!(signature.left, Type::Int32);
+    }
+
+    #[test]
+    fn greater_than_operator_returns_int32_right_operand_type() {
+        let signature = OperatorSignature::of(&BinaryOperator::GreaterThan);
+        assert_eq!(signature.right, Type::Int32);
+    }
+
+    #[test]
+    fn greater_than_operator_returns_bool_result_type() {
+        let signature = OperatorSignature::of(&BinaryOperator::GreaterThan);
+        assert_eq!(signature.result, Type::Bool);
+    }
+
+    #[test]
+    fn and_operator_returns_bool_left_operand_type() {
+        let signature = OperatorSignature::of(&BinaryOperator::And);
+        assert_eq!(signature.left, Type::Bool);
+    }
+
+    #[test]
+    fn and_operator_returns_bool_right_operand_type() {
+        let signature = OperatorSignature::of(&BinaryOperator::And);
+        assert_eq!(signature.right, Type::Bool);
+    }
+
+    #[test]
+    fn and_operator_returns_bool_result_type() {
+        let signature = OperatorSignature::of(&BinaryOperator::And);
+        assert_eq!(signature.result, Type::Bool);
     }
 }
