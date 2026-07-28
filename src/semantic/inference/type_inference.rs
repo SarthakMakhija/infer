@@ -93,8 +93,10 @@ impl<'symbols> ExpressionVisitor for TypeInferenceVisitor<'symbols> {
         Ok(())
     }
 
-    fn visit_grouped(&mut self, _expr: &ExpressionKind) -> Result<(), SemanticError> {
-        todo!()
+    fn visit_grouped(&mut self, expr: &ExpressionKind) -> Result<(), SemanticError> {
+        let inner_type = self.infer(expr)?;
+        self.current_type = Some(inner_type);
+        Ok(())
     }
 
     fn visit_i32(&mut self, _value: i32) -> Result<(), SemanticError> {
@@ -380,6 +382,42 @@ mod unary_expression_tests {
         assert_eq!(
             *visitor.constraints.entry_at(0),
             Constraint::new(Type::Placeholder(1), Type::Bool)
+        );
+    }
+}
+
+#[cfg(test)]
+mod grouped_expression_tests {
+    use super::*;
+
+    #[test]
+    fn infer_grouped_returns_inner_expression_type() {
+        let inner = ExpressionKind::I32(42);
+        let grouped_kind = ExpressionKind::Grouped(Box::new(inner));
+
+        let resolution_table = ResolutionTable::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+
+        let inferred = visitor.infer(&grouped_kind);
+        assert_eq!(inferred, Ok(Type::Int32));
+    }
+
+    #[test]
+    fn infer_grouped_retains_constraints_of_inner_expression() {
+        let inner_operand = ExpressionKind::Identifier("age".to_string(), NodeId(1));
+        let inner_unary = ExpressionKind::Unary(Box::new(inner_operand), UnaryOperator::Minus);
+        let grouped_kind = ExpressionKind::Grouped(Box::new(inner_unary));
+
+        let mut resolution_table = ResolutionTable::new();
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        visitor.types.add(SymbolId(10), Type::Placeholder(1));
+
+        let _ = visitor.infer(&grouped_kind);
+        assert_eq!(
+            *visitor.constraints.entry_at(0),
+            Constraint::new(Type::Placeholder(1), Type::Int32)
         );
     }
 }
