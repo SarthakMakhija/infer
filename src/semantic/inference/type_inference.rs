@@ -1,10 +1,10 @@
-use crate::ast::expr::BinaryOperator;
 use crate::ast::expr::ExpressionKind;
+use crate::ast::expr::{BinaryOperator, UnaryOperator};
 use crate::ast::statement::NodeId;
 use crate::semantic::error::SemanticError;
 use crate::semantic::inference::constraints::{Constraint, Constraints};
 use crate::semantic::inference::type_table::TypeTable;
-use crate::semantic::inference::{BinaryOperatorSignature, Type};
+use crate::semantic::inference::{BinaryOperatorSignature, Type, UnaryOperatorSignature};
 use crate::semantic::resolution_table::ResolutionTable;
 use crate::semantic::visitor::ExpressionVisitor;
 use crate::semantic::SymbolId;
@@ -58,8 +58,19 @@ impl<'symbols> ExpressionVisitor for TypeInferenceVisitor<'symbols> {
         todo!()
     }
 
-    fn visit_unary(&mut self, _expr: &ExpressionKind) -> Result<(), SemanticError> {
-        todo!()
+    fn visit_unary(
+        &mut self,
+        operator: &UnaryOperator,
+        expr: &ExpressionKind,
+    ) -> Result<(), SemanticError> {
+        let operand_type = self.infer(expr)?;
+        let signature = UnaryOperatorSignature::of(operator);
+
+        self.constraints
+            .add(Constraint::new(operand_type, signature.operand));
+        self.current_type = Some(signature.result);
+
+        Ok(())
     }
 
     fn visit_binary(
@@ -303,6 +314,71 @@ mod binary_expression_tests {
         let _ = visitor.infer(&binary_kind);
         assert_eq!(
             *visitor.constraints.entry_at(1),
+            Constraint::new(Type::Placeholder(1), Type::Bool)
+        );
+    }
+}
+
+#[cfg(test)]
+mod unary_expression_tests {
+    use super::*;
+
+    #[test]
+    fn infer_unary_minus_returns_int32_type() {
+        let operand = ExpressionKind::I32(10);
+        let unary_kind = ExpressionKind::Unary(Box::new(operand), UnaryOperator::Minus);
+
+        let resolution_table = ResolutionTable::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+
+        let inferred = visitor.infer(&unary_kind);
+        assert_eq!(inferred, Ok(Type::Int32));
+    }
+
+    #[test]
+    fn infer_unary_minus_constrains_operand_to_int32() {
+        let operand = ExpressionKind::Identifier("age".to_string(), NodeId(1));
+        let unary_kind = ExpressionKind::Unary(Box::new(operand), UnaryOperator::Minus);
+
+        let mut resolution_table = ResolutionTable::new();
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        visitor.types.add(SymbolId(10), Type::Placeholder(1));
+
+        let _ = visitor.infer(&unary_kind);
+        assert_eq!(
+            *visitor.constraints.entry_at(0),
+            Constraint::new(Type::Placeholder(1), Type::Int32)
+        );
+    }
+
+    #[test]
+    fn infer_unary_negation_returns_bool_type() {
+        let operand = ExpressionKind::Boolean(true);
+        let unary_kind = ExpressionKind::Unary(Box::new(operand), UnaryOperator::Negation);
+
+        let resolution_table = ResolutionTable::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+
+        let inferred = visitor.infer(&unary_kind);
+        assert_eq!(inferred, Ok(Type::Bool));
+    }
+
+    #[test]
+    fn infer_unary_negation_constrains_operand_to_bool() {
+        let operand = ExpressionKind::Identifier("is_active".to_string(), NodeId(1));
+        let unary_kind = ExpressionKind::Unary(Box::new(operand), UnaryOperator::Negation);
+
+        let mut resolution_table = ResolutionTable::new();
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        visitor.types.add(SymbolId(10), Type::Placeholder(1));
+
+        let _ = visitor.infer(&unary_kind);
+        assert_eq!(
+            *visitor.constraints.entry_at(0),
             Constraint::new(Type::Placeholder(1), Type::Bool)
         );
     }

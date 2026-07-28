@@ -1,4 +1,4 @@
-use crate::ast::expr::{BinaryOperator, Expression, ExpressionKind};
+use crate::ast::expr::{BinaryOperator, Expression, ExpressionKind, UnaryOperator};
 use crate::ast::statement::{
     Assignment, Block, FunctionDefinition, If, Loop, NodeId, Print, Return, VariableDeclaration,
 };
@@ -62,7 +62,11 @@ pub(crate) trait ExpressionVisitor {
     ) -> Result<(), SemanticError>;
 
     /// Visits a unary expression.
-    fn visit_unary(&mut self, expr: &ExpressionKind) -> Result<(), SemanticError>;
+    fn visit_unary(
+        &mut self,
+        operator: &UnaryOperator,
+        expr: &ExpressionKind,
+    ) -> Result<(), SemanticError>;
 
     /// Visits a binary operator expression.
     fn visit_binary(

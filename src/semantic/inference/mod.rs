@@ -1,4 +1,4 @@
-use crate::ast::expr::BinaryOperator;
+use crate::ast::expr::{BinaryOperator, UnaryOperator};
 use crate::semantic::error::SemanticError;
 use std::cell::Cell;
 use std::convert::TryFrom;
@@ -79,6 +79,21 @@ impl BinaryOperatorSignature {
             right,
             result,
         }
+    }
+}
+
+pub(crate) struct UnaryOperatorSignature {
+    pub(crate) operand: Type,
+    pub(crate) result: Type,
+}
+
+impl UnaryOperatorSignature {
+    pub(crate) fn of(operator: &UnaryOperator) -> Self {
+        let (operand, result) = match operator {
+            UnaryOperator::Minus => (Type::Int32, Type::Int32),
+            UnaryOperator::Negation => (Type::Bool, Type::Bool),
+        };
+        Self { operand, result }
     }
 }
 
@@ -202,6 +217,35 @@ mod operator_signature_tests {
     #[test]
     fn and_operator_returns_bool_result_type() {
         let signature = BinaryOperatorSignature::of(&BinaryOperator::And);
+        assert_eq!(signature.result, Type::Bool);
+    }
+}
+
+#[cfg(test)]
+mod unary_operator_signature_tests {
+    use super::*;
+
+    #[test]
+    fn minus_operator_returns_int32_operand_type() {
+        let signature = UnaryOperatorSignature::of(&UnaryOperator::Minus);
+        assert_eq!(signature.operand, Type::Int32);
+    }
+
+    #[test]
+    fn minus_operator_returns_int32_result_type() {
+        let signature = UnaryOperatorSignature::of(&UnaryOperator::Minus);
+        assert_eq!(signature.result, Type::Int32);
+    }
+
+    #[test]
+    fn negation_operator_returns_bool_operand_type() {
+        let signature = UnaryOperatorSignature::of(&UnaryOperator::Negation);
+        assert_eq!(signature.operand, Type::Bool);
+    }
+
+    #[test]
+    fn negation_operator_returns_bool_result_type() {
+        let signature = UnaryOperatorSignature::of(&UnaryOperator::Negation);
         assert_eq!(signature.result, Type::Bool);
     }
 }

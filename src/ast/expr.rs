@@ -159,7 +159,7 @@ impl ExpressionKind {
             ExpressionKind::FunctionCall(ref callee, ref arguments, _) => {
                 visitor.visit_function_call(callee, arguments)
             }
-            ExpressionKind::Unary(ref expr, _) => visitor.visit_unary(expr),
+            ExpressionKind::Unary(ref expr, ref operator) => visitor.visit_unary(operator, expr),
             ExpressionKind::Grouped(ref expr) => visitor.visit_grouped(expr),
             ExpressionKind::Binary(ref left, ref operator, ref right) => {
                 visitor.visit_binary(left, operator, right)
@@ -474,7 +474,11 @@ mod expression_tests {
             Ok(())
         }
 
-        fn visit_unary(&mut self, _expr: &ExpressionKind) -> Result<(), SemanticError> {
+        fn visit_unary(
+            &mut self,
+            _operator: &UnaryOperator,
+            _expr: &ExpressionKind,
+        ) -> Result<(), SemanticError> {
             self.visited_unary = true;
             Ok(())
         }

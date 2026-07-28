@@ -1,4 +1,4 @@
-use crate::ast::expr::{BinaryOperator, Expression, ExpressionKind};
+use crate::ast::expr::{BinaryOperator, Expression, ExpressionKind, UnaryOperator};
 use crate::ast::statement::{
     Assignment, Block, FunctionDefinition, If, Loop, NodeId, Print, Return, Statement,
     VariableDeclaration,
@@ -385,7 +385,11 @@ impl ExpressionVisitor for SymbolResolutionVisitor {
     ///
     /// # Details
     /// - Recursively visits the inner operand of the unary expression.
-    fn visit_unary(&mut self, expr: &ExpressionKind) -> Result<(), SemanticError> {
+    fn visit_unary(
+        &mut self,
+        _operator: &UnaryOperator,
+        expr: &ExpressionKind,
+    ) -> Result<(), SemanticError> {
         expr.accept(self)
     }
 
@@ -1465,7 +1469,7 @@ mod identifier_expression_tests {
 #[cfg(test)]
 mod unary_expression_tests {
     use super::*;
-    use crate::ast::expr::{ExpressionKind, UnaryOperator};
+    use crate::ast::expr::{BinaryOperator, Expression, ExpressionKind, UnaryOperator};
     use crate::semantic::SymbolId;
 
     #[test]
