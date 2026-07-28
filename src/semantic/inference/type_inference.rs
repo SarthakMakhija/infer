@@ -4,7 +4,7 @@ use crate::ast::statement::NodeId;
 use crate::semantic::error::SemanticError;
 use crate::semantic::inference::constraints::{Constraint, Constraints};
 use crate::semantic::inference::type_table::TypeTable;
-use crate::semantic::inference::{OperatorSignature, Type};
+use crate::semantic::inference::{BinaryOperatorSignature, Type};
 use crate::semantic::resolution_table::ResolutionTable;
 use crate::semantic::visitor::ExpressionVisitor;
 use crate::semantic::SymbolId;
@@ -71,7 +71,7 @@ impl<'symbols> ExpressionVisitor for TypeInferenceVisitor<'symbols> {
         let left_type = self.infer(left)?;
         let right_type = self.infer(right)?;
 
-        let signature = OperatorSignature::of(operator);
+        let signature = BinaryOperatorSignature::of(operator);
 
         self.constraints
             .add(Constraint::new(left_type, signature.left));

@@ -51,13 +51,13 @@ pub(crate) fn next_type_id() -> Type {
     })
 }
 
-pub(crate) struct OperatorSignature {
+pub(crate) struct BinaryOperatorSignature {
     pub(crate) left: Type,
     pub(crate) right: Type,
     pub(crate) result: Type,
 }
 
-impl OperatorSignature {
+impl BinaryOperatorSignature {
     pub(crate) fn of(operator: &BinaryOperator) -> Self {
         let (left, right, result) = match operator {
             BinaryOperator::Plus
@@ -153,55 +153,55 @@ mod operator_signature_tests {
 
     #[test]
     fn plus_operator_returns_int32_left_operand_type() {
-        let signature = OperatorSignature::of(&BinaryOperator::Plus);
+        let signature = BinaryOperatorSignature::of(&BinaryOperator::Plus);
         assert_eq!(signature.left, Type::Int32);
     }
 
     #[test]
     fn plus_operator_returns_int32_right_operand_type() {
-        let signature = OperatorSignature::of(&BinaryOperator::Plus);
+        let signature = BinaryOperatorSignature::of(&BinaryOperator::Plus);
         assert_eq!(signature.right, Type::Int32);
     }
 
     #[test]
     fn plus_operator_returns_int32_result_type() {
-        let signature = OperatorSignature::of(&BinaryOperator::Plus);
+        let signature = BinaryOperatorSignature::of(&BinaryOperator::Plus);
         assert_eq!(signature.result, Type::Int32);
     }
 
     #[test]
     fn greater_than_operator_returns_int32_left_operand_type() {
-        let signature = OperatorSignature::of(&BinaryOperator::GreaterThan);
+        let signature = BinaryOperatorSignature::of(&BinaryOperator::GreaterThan);
         assert_eq!(signature.left, Type::Int32);
     }
 
     #[test]
     fn greater_than_operator_returns_int32_right_operand_type() {
-        let signature = OperatorSignature::of(&BinaryOperator::GreaterThan);
+        let signature = BinaryOperatorSignature::of(&BinaryOperator::GreaterThan);
         assert_eq!(signature.right, Type::Int32);
     }
 
     #[test]
     fn greater_than_operator_returns_bool_result_type() {
-        let signature = OperatorSignature::of(&BinaryOperator::GreaterThan);
+        let signature = BinaryOperatorSignature::of(&BinaryOperator::GreaterThan);
         assert_eq!(signature.result, Type::Bool);
     }
 
     #[test]
     fn and_operator_returns_bool_left_operand_type() {
-        let signature = OperatorSignature::of(&BinaryOperator::And);
+        let signature = BinaryOperatorSignature::of(&BinaryOperator::And);
         assert_eq!(signature.left, Type::Bool);
     }
 
     #[test]
     fn and_operator_returns_bool_right_operand_type() {
-        let signature = OperatorSignature::of(&BinaryOperator::And);
+        let signature = BinaryOperatorSignature::of(&BinaryOperator::And);
         assert_eq!(signature.right, Type::Bool);
     }
 
     #[test]
     fn and_operator_returns_bool_result_type() {
-        let signature = OperatorSignature::of(&BinaryOperator::And);
+        let signature = BinaryOperatorSignature::of(&BinaryOperator::And);
         assert_eq!(signature.result, Type::Bool);
     }
 }
