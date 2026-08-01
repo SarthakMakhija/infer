@@ -59,6 +59,7 @@ pub(crate) trait ExpressionVisitor {
         &mut self,
         callee: &ExpressionKind,
         arguments: &[ExpressionKind],
+        node_id: NodeId,
     ) -> Result<(), SemanticError>;
 
     /// Visits a unary expression.

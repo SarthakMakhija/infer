@@ -156,8 +156,8 @@ impl ExpressionKind {
             ExpressionKind::String(ref val) => visitor.visit_string(val),
             ExpressionKind::Boolean(val) => visitor.visit_bool(*val),
             ExpressionKind::Identifier(ref name, id) => visitor.visit_identifier(name, *id),
-            ExpressionKind::FunctionCall(ref callee, ref arguments, _) => {
-                visitor.visit_function_call(callee, arguments)
+            ExpressionKind::FunctionCall(ref callee, ref arguments, node_id) => {
+                visitor.visit_function_call(callee, arguments, *node_id)
             }
             ExpressionKind::Unary(ref expr, ref operator) => visitor.visit_unary(operator, expr),
             ExpressionKind::Grouped(ref expr) => visitor.visit_grouped(expr),
@@ -469,6 +469,7 @@ mod expression_tests {
             &mut self,
             _callee: &ExpressionKind,
             _arguments: &[ExpressionKind],
+            _node_id: NodeId,
         ) -> Result<(), SemanticError> {
             self.visited_function_call = true;
             Ok(())
