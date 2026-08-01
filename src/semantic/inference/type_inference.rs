@@ -1,12 +1,16 @@
+use crate::ast::expr::Expression;
 use crate::ast::expr::{BinaryOperator, ExpressionKind, UnaryOperator};
 use crate::ast::statement::NodeId;
+use crate::ast::statement::{
+    Assignment, Block, FunctionDefinition, If, Loop, Print, Return, VariableDeclaration,
+};
 use crate::semantic::error::SemanticError;
 use crate::semantic::inference::constraints::{Constraint, Constraints};
 use crate::semantic::inference::type_table::TypeTable;
 use crate::semantic::inference::{BinaryOperatorSignature, Type, UnaryOperatorSignature};
 use crate::semantic::resolution_table::ResolutionTable;
 use crate::semantic::scoping::state::FunctionMetadata;
-use crate::semantic::visitor::ExpressionVisitor;
+use crate::semantic::visitor::{ExpressionVisitor, StatementVisitor};
 use crate::semantic::SymbolId;
 use std::collections::HashMap;
 
@@ -182,6 +186,78 @@ impl<'symbols> ExpressionVisitor for TypeInferenceVisitor<'symbols> {
     fn visit_bool(&mut self, _value: bool) -> Result<(), SemanticError> {
         self.current_type = Some(Type::Bool);
         Ok(())
+    }
+}
+
+impl<'symbols> StatementVisitor for TypeInferenceVisitor<'symbols> {
+    /// Performs type inference for a variable declaration statement.
+    ///
+    /// Generates a type for the variable (using the type annotation, or a fresh type placeholder
+    /// if unannotated) and records it in the type table. If an initializer expression is present,
+    /// its type is inferred and a constraint is added asserting that the initializer type must equal
+    /// the variable's type.
+    fn visit_var_declaration(
+        &mut self,
+        variable_declaration: &VariableDeclaration,
+        node_id: NodeId,
+    ) -> Result<(), SemanticError> {
+        let symbol_id = self.symbol_id(&node_id);
+
+        let data_type = match variable_declaration.data_type() {
+            None => super::next_type_id(),
+            Some(type_str) => Type::try_from(type_str)?,
+        };
+        if let Some(ref expression) = variable_declaration.expression {
+            let initialized_data_type = self.infer(&expression.kind)?;
+            self.constraints
+                .add(Constraint::new(initialized_data_type, data_type));
+        }
+        self.types.add(symbol_id, data_type);
+        Ok(())
+    }
+
+    fn visit_assignment(
+        &mut self,
+        _assignment: &Assignment,
+        _node_id: NodeId,
+    ) -> Result<(), SemanticError> {
+        todo!()
+    }
+
+    fn visit_if(&mut self, _if_statement: &If) -> Result<(), SemanticError> {
+        todo!()
+    }
+
+    fn visit_loop(&mut self, _block: &Loop) -> Result<(), SemanticError> {
+        todo!()
+    }
+
+    fn visit_block(&mut self, _block: &Block) -> Result<(), SemanticError> {
+        todo!()
+    }
+
+    fn visit_function_definition(
+        &mut self,
+        _definition: &FunctionDefinition,
+        _node_id: NodeId,
+    ) -> Result<(), SemanticError> {
+        todo!()
+    }
+
+    fn visit_function_call(&mut self, _call: &Expression) -> Result<(), SemanticError> {
+        todo!()
+    }
+
+    fn visit_break(&mut self) -> Result<(), SemanticError> {
+        todo!()
+    }
+
+    fn visit_return(&mut self, _return_statement: &Return) -> Result<(), SemanticError> {
+        todo!()
+    }
+
+    fn visit_print(&mut self, _print_statement: &Print) -> Result<(), SemanticError> {
+        todo!()
     }
 }
 
@@ -602,6 +678,93 @@ mod grouped_expression_tests {
         assert_eq!(
             *visitor.constraints.entry_at(0),
             Constraint::new(Type::Placeholder(1), Type::Int32)
+        );
+    }
+}
+
+#[cfg(test)]
+mod variable_declaration_tests {
+    use super::*;
+
+    #[test]
+    fn infer_var_declaration_with_explicit_annotation() {
+        let var_declaration =
+            VariableDeclaration::new("score".to_string(), Some("i32".to_string()), None);
+
+        let mut resolution_table = ResolutionTable::new();
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
+
+        let _ = visitor.visit_var_declaration(&var_declaration, NodeId(1));
+        assert_eq!(visitor.types.get_or_panic(&SymbolId(10)), Type::Int32);
+    }
+
+    #[test]
+    fn infer_var_declaration_without_annotation_generates_placeholder_and_adds_it() {
+        let var_declaration = VariableDeclaration::new("score".to_string(), None, None);
+
+        let mut resolution_table = ResolutionTable::new();
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
+
+        let _ = visitor.visit_var_declaration(&var_declaration, NodeId(1));
+
+        let inferred_type = visitor.types.get_or_panic(&SymbolId(10));
+        assert!(matches!(inferred_type, Type::Placeholder(_)));
+    }
+
+    #[test]
+    fn infer_var_declaration_with_annotation_and_initializer_adds_annotated_type_and_constrains_initializer(
+    ) {
+        let initializer = Expression {
+            kind: ExpressionKind::I32(100),
+            line: 1,
+        };
+        let var_declaration = VariableDeclaration::new(
+            "score".to_string(),
+            Some("i32".to_string()),
+            Some(initializer),
+        );
+
+        let mut resolution_table = ResolutionTable::new();
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
+
+        let _ = visitor.visit_var_declaration(&var_declaration, NodeId(1));
+
+        assert_eq!(
+            *visitor.constraints.entry_at(0),
+            Constraint::new(Type::Int32, Type::Int32)
+        );
+    }
+
+    #[test]
+    fn infer_var_declaration_without_annotation_and_with_initializer_adds_placeholder_and_constrains_to_initializer(
+    ) {
+        let initializer = Expression {
+            kind: ExpressionKind::I32(100),
+            line: 1,
+        };
+        let var_decl = VariableDeclaration::new("score".to_string(), None, Some(initializer));
+
+        let mut resolution_table = ResolutionTable::new();
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
+
+        let _ = visitor.visit_var_declaration(&var_decl, NodeId(1));
+
+        let inferred_type = visitor.types.get_or_panic(&SymbolId(10));
+        assert_eq!(
+            *visitor.constraints.entry_at(0),
+            Constraint::new(Type::Int32, inferred_type)
         );
     }
 }
