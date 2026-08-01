@@ -224,12 +224,9 @@ impl StatementVisitor for SymbolResolutionVisitor {
         }
 
         let function_symbol_id = next_symbol_id();
-
         self.scopes
             .define(definition.name.to_string(), function_symbol_id);
-
         self.resolution_table.resolve(node_id, function_symbol_id);
-
         self.state.add_global_function(
             function_symbol_id,
             FunctionMetadata::new(

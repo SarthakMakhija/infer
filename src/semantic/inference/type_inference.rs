@@ -2,7 +2,7 @@ use crate::ast::expr::Expression;
 use crate::ast::expr::{BinaryOperator, ExpressionKind, UnaryOperator};
 use crate::ast::statement::NodeId;
 use crate::ast::statement::{
-    Assignment, Block, FunctionDefinition, If, Loop, Print, Return, VariableDeclaration,
+    Assignment, Block, FunctionDefinition, If, Loop, Print, Return, Statement, VariableDeclaration,
 };
 use crate::semantic::error::SemanticError;
 use crate::semantic::inference::constraints::{Constraint, Constraints};
@@ -47,6 +47,11 @@ impl<'symbols> TypeInferenceVisitor<'symbols> {
             .current_type
             .take()
             .expect("Visitor should have set current_type"))
+    }
+
+    /// Recursively visits any statement node to perform type inference and constraint collection.
+    pub(crate) fn visit(&mut self, statement: &Statement) -> Result<(), SemanticError> {
+        statement.accept(self)
     }
 
     fn symbol_id(&self, node_id: &NodeId) -> SymbolId {
@@ -236,8 +241,25 @@ impl<'symbols> StatementVisitor for TypeInferenceVisitor<'symbols> {
         Ok(())
     }
 
-    fn visit_if(&mut self, _if_statement: &If) -> Result<(), SemanticError> {
-        todo!()
+    /// Performs type inference for an if-else statement.
+    ///
+    /// Infers the type of the condition expression and constrains it to `Type::Bool`.
+    /// Then recursively visits the statements in both the `then` block body and the
+    /// `else` block body (if present) to collect constraints from them.
+    fn visit_if(&mut self, if_statement: &If) -> Result<(), SemanticError> {
+        let condition_data_type = self.infer(&if_statement.condition.kind)?;
+        self.constraints
+            .add(Constraint::new(condition_data_type, Type::Bool));
+
+        for statement in if_statement.body() {
+            self.visit(statement)?;
+        }
+        if let Some(else_stmts) = if_statement.else_body() {
+            for statement in else_stmts {
+                self.visit(statement)?;
+            }
+        }
+        Ok(())
     }
 
     fn visit_loop(&mut self, _block: &Loop) -> Result<(), SemanticError> {
@@ -831,5 +853,49 @@ mod assignment_tests {
             *visitor.constraints.entry_at(0),
             Constraint::new(Type::Placeholder(5), Type::Placeholder(6))
         );
+    }
+}
+
+#[cfg(test)]
+mod if_tests {
+    use super::*;
+
+    #[test]
+    fn infer_if_constrains_condition_to_boolean_and_visits_branches() {
+        let condition_expression = Expression {
+            kind: ExpressionKind::Identifier("condition".to_string(), NodeId(1)),
+            line: 1,
+        };
+        let then_stmt = Statement::VariableDeclaration(
+            VariableDeclaration::new("score".to_string(), Some("i32".to_string()), None),
+            NodeId(2),
+        );
+        let else_stmt = Statement::VariableDeclaration(
+            VariableDeclaration::new("rank".to_string(), Some("bool".to_string()), None),
+            NodeId(3),
+        );
+        let if_stmt = If::new(
+            condition_expression,
+            Block::new(vec![then_stmt]),
+            Some(Block::new(vec![else_stmt])),
+        );
+
+        let mut resolution_table = ResolutionTable::new();
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+        resolution_table.resolve(NodeId(2), SymbolId(20));
+        resolution_table.resolve(NodeId(3), SymbolId(30));
+
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
+        visitor.types.add(SymbolId(10), Type::Placeholder(1));
+
+        let _ = visitor.visit_if(&if_stmt);
+
+        assert_eq!(
+            *visitor.constraints.entry_at(0),
+            Constraint::new(Type::Placeholder(1), Type::Bool)
+        );
+        assert_eq!(visitor.types.get_or_panic(&SymbolId(20)), Type::Int32);
+        assert_eq!(visitor.types.get_or_panic(&SymbolId(30)), Type::Bool);
     }
 }
