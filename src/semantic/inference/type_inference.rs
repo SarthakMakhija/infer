@@ -60,7 +60,6 @@ impl<'symbols> ExpressionVisitor for TypeInferenceVisitor<'symbols> {
         &mut self,
         _callee: &ExpressionKind,
         _arguments: &[ExpressionKind],
-        _node_id: NodeId,
     ) -> Result<(), SemanticError> {
         todo!()
     }

@@ -363,7 +363,6 @@ impl ExpressionVisitor for SymbolResolutionVisitor {
         &mut self,
         callee: &ExpressionKind,
         arguments: &[ExpressionKind],
-        _node_id: NodeId,
     ) -> Result<(), SemanticError> {
         let ExpressionKind::Identifier(ref name, callee_node_id) = callee else {
             return Err(SemanticError::NotAFunction("".to_string()));
