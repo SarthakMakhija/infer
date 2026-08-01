@@ -216,12 +216,24 @@ impl<'symbols> StatementVisitor for TypeInferenceVisitor<'symbols> {
         Ok(())
     }
 
+    /// Performs type inference for a variable assignment statement.
+    ///
+    /// Resolves the target variable's type from the type table using the symbol ID
+    /// registered under the assignment node's ID. Then, recursively infers the type of
+    /// the assigned expression, and generates a constraint equating the target variable's
+    /// type to the expression's type.
     fn visit_assignment(
         &mut self,
-        _assignment: &Assignment,
-        _node_id: NodeId,
+        assignment: &Assignment,
+        node_id: NodeId,
     ) -> Result<(), SemanticError> {
-        todo!()
+        let symbol_id = self.symbol_id(&node_id);
+        let variable_data_type = self.types.get_or_panic(&symbol_id);
+
+        let inferred_data_type = self.infer(&assignment.expression.kind)?;
+        self.constraints
+            .add(Constraint::new(variable_data_type, inferred_data_type));
+        Ok(())
     }
 
     fn visit_if(&mut self, _if_statement: &If) -> Result<(), SemanticError> {
@@ -765,6 +777,59 @@ mod variable_declaration_tests {
         assert_eq!(
             *visitor.constraints.entry_at(0),
             Constraint::new(Type::Int32, inferred_type)
+        );
+    }
+}
+
+#[cfg(test)]
+mod assignment_tests {
+    use super::*;
+
+    #[test]
+    fn infer_assignment_generates_constraint_equating_target_variable_to_expression_type() {
+        let val_expression = Expression {
+            kind: ExpressionKind::I32(200),
+            line: 1,
+        };
+        let assignment = Assignment::new("score".to_string(), val_expression);
+
+        let mut resolution_table = ResolutionTable::new();
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
+        visitor.types.add(SymbolId(10), Type::Placeholder(5));
+
+        let _ = visitor.visit_assignment(&assignment, NodeId(1));
+
+        assert_eq!(
+            *visitor.constraints.entry_at(0),
+            Constraint::new(Type::Placeholder(5), Type::Int32)
+        );
+    }
+
+    #[test]
+    fn infer_assignment_between_variables_generates_constraint_equating_placeholders() {
+        let val_expression = Expression {
+            kind: ExpressionKind::Identifier("rank".to_string(), NodeId(2)),
+            line: 1,
+        };
+        let assignment = Assignment::new("score".to_string(), val_expression);
+
+        let mut resolution_table = ResolutionTable::new();
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+        resolution_table.resolve(NodeId(2), SymbolId(20));
+
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
+        visitor.types.add(SymbolId(10), Type::Placeholder(5));
+        visitor.types.add(SymbolId(20), Type::Placeholder(6));
+
+        let _ = visitor.visit_assignment(&assignment, NodeId(1));
+
+        assert_eq!(
+            *visitor.constraints.entry_at(0),
+            Constraint::new(Type::Placeholder(5), Type::Placeholder(6))
         );
     }
 }
