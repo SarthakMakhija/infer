@@ -58,10 +58,36 @@ impl<'symbols> ExpressionVisitor for TypeInferenceVisitor<'symbols> {
 
     fn visit_function_call(
         &mut self,
-        _callee: &ExpressionKind,
-        _arguments: &[ExpressionKind],
+        callee: &ExpressionKind,
+        arguments: &[ExpressionKind],
     ) -> Result<(), SemanticError> {
-        todo!()
+        let ExpressionKind::Identifier(ref _name, callee_node_id) = callee else {
+            return Err(SemanticError::NotAFunction("".to_string()));
+        };
+
+        let callee_symbol_id = self.symbol_id(callee_node_id);
+        let metadata = self
+            .functions
+            .get(&callee_symbol_id)
+            .ok_or_else(|| SemanticError::NotAFunction(_name.to_string()))?;
+
+        for (index, argument) in arguments.iter().enumerate() {
+            let inferred_argument_type = self.infer(argument)?;
+            let parameter_type = &metadata.parameter_types[index];
+            let expected_type = match parameter_type {
+                None => super::next_type_id(),
+                Some(type_str) => Type::try_from(type_str.as_str())?,
+            };
+            self.constraints
+                .add(Constraint::new(inferred_argument_type, expected_type));
+        }
+
+        let return_type = match &metadata.return_type {
+            None => super::next_type_id(),
+            Some(type_str) => Type::try_from(type_str.as_str())?,
+        };
+        self.current_type = Some(return_type);
+        Ok(())
     }
 
     fn visit_unary(
@@ -165,6 +191,101 @@ mod identifier_expression_tests {
 
         let inferred = visitor.infer(&identifier_kind);
         assert_eq!(inferred, Ok(Type::Int32));
+    }
+}
+
+#[cfg(test)]
+mod function_call_tests {
+    use super::*;
+
+    #[test]
+    fn infer_function_call_with_declared_return_type() {
+        let callee = ExpressionKind::Identifier("calculate".to_string(), NodeId(1));
+        let call_kind = ExpressionKind::FunctionCall(Box::new(callee), vec![], NodeId(2));
+
+        let mut resolution_table = ResolutionTable::new();
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+
+        let mut global_functions = HashMap::new();
+        global_functions.insert(
+            SymbolId(10),
+            FunctionMetadata::new("calculate".to_string(), vec![], Some("i32".to_string())),
+        );
+
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &global_functions);
+        let inferred = visitor.infer(&call_kind);
+
+        assert_eq!(inferred, Ok(Type::Int32));
+    }
+
+    #[test]
+    fn infer_function_call_constrains_arguments_to_parameter_types() {
+        let callee = ExpressionKind::Identifier("print_age".to_string(), NodeId(1));
+        let arg = ExpressionKind::Identifier("age".to_string(), NodeId(2));
+        let call_kind = ExpressionKind::FunctionCall(Box::new(callee), vec![arg], NodeId(3));
+
+        let mut resolution_table = ResolutionTable::new();
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+        resolution_table.resolve(NodeId(2), SymbolId(20));
+
+        let mut global_functions = HashMap::new();
+        global_functions.insert(
+            SymbolId(10),
+            FunctionMetadata::new("print_age".to_string(), vec![Some("i32".to_string())], None),
+        );
+
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &global_functions);
+        visitor.types.add(SymbolId(20), Type::Placeholder(1));
+
+        let _ = visitor.infer(&call_kind);
+        assert_eq!(
+            *visitor.constraints.entry_at(0),
+            Constraint::new(Type::Placeholder(1), Type::Int32)
+        );
+    }
+
+    #[test]
+    fn infer_function_call_generates_placeholder_for_absent_parameter_type() {
+        let callee = ExpressionKind::Identifier("identity".to_string(), NodeId(1));
+        let arg = ExpressionKind::Identifier("value".to_string(), NodeId(2));
+        let call_kind = ExpressionKind::FunctionCall(Box::new(callee), vec![arg], NodeId(3));
+
+        let mut resolution_table = ResolutionTable::new();
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+        resolution_table.resolve(NodeId(2), SymbolId(20));
+
+        let mut global_functions = HashMap::new();
+        global_functions.insert(
+            SymbolId(10),
+            FunctionMetadata::new("identity".to_string(), vec![None], None),
+        );
+
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &global_functions);
+        visitor.types.add(SymbolId(20), Type::Placeholder(1));
+
+        let _ = visitor.infer(&call_kind);
+        let constraint = visitor.constraints.entry_at(0);
+        assert_eq!(constraint.left, Type::Placeholder(1));
+    }
+
+    #[test]
+    fn infer_function_call_generates_placeholder_for_absent_return_type() {
+        let callee = ExpressionKind::Identifier("execute".to_string(), NodeId(1));
+        let call_kind = ExpressionKind::FunctionCall(Box::new(callee), vec![], NodeId(2));
+
+        let mut resolution_table = ResolutionTable::new();
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+
+        let mut global_functions = HashMap::new();
+        global_functions.insert(
+            SymbolId(10),
+            FunctionMetadata::new("execute".to_string(), vec![], None),
+        );
+
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &global_functions);
+        let inferred_type = visitor.infer(&call_kind).unwrap();
+
+        assert!(matches!(inferred_type, Type::Placeholder(_)));
     }
 }
 

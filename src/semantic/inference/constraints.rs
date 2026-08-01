@@ -7,8 +7,8 @@ pub(crate) struct Constraints {
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Constraint {
-    left: Type,
-    right: Type,
+    pub(crate) left: Type,
+    pub(crate) right: Type,
 }
 
 impl Constraint {
