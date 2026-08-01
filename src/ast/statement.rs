@@ -364,6 +364,14 @@ impl FunctionDefinition {
     pub fn body(&self) -> &[Statement] {
         &self.body.statements
     }
+
+    /// Returns the data types of the function parameters.
+    pub fn parameter_types(&self) -> Vec<Option<String>> {
+        self.parameters
+            .iter()
+            .map(|parameter| parameter.data_type.clone())
+            .collect()
+    }
 }
 
 /// Represents a parameter in a function definition signature.
@@ -419,6 +427,11 @@ impl Return {
     /// Returns the expression being returned, if any.
     pub fn expression(&self) -> Option<&Expression> {
         self.expression.as_ref()
+    }
+
+    /// Returns true if the return statement contains an expression value.
+    pub fn has_value(&self) -> bool {
+        self.expression.is_some()
     }
 }
 
@@ -510,10 +523,44 @@ mod tests {
     #[test]
     fn variable_declaration_id_for_two_statements() {
         let first_statement = variable_declaration!("user_score");
-        let second_statement = variable_declaration!("user_score");
-
         assert_eq!(first_statement.id(), NodeId(1));
-        assert_eq!(second_statement.id(), NodeId(2));
+    }
+}
+
+#[cfg(test)]
+mod function_definition_tests {
+    use super::*;
+
+    #[test]
+    fn parameter_types() {
+        let parameter = FunctionParameter::new("name".to_string(), Some("String".to_string()));
+        let definition = FunctionDefinition::new(
+            "greeting".to_string(),
+            vec![parameter],
+            None,
+            Block::new(vec![]),
+        );
+        assert_eq!(
+            definition.parameter_types(),
+            vec![Some("String".to_string())]
+        );
+    }
+}
+
+#[cfg(test)]
+mod return_tests {
+    use super::*;
+
+    #[test]
+    fn has_return_value() {
+        let ret = Return::new(Some(expression_i32!(42, 0)));
+        assert!(ret.has_value());
+    }
+
+    #[test]
+    fn does_not_have_return_value() {
+        let ret = Return::new(None);
+        assert!(!ret.has_value());
     }
 }
 

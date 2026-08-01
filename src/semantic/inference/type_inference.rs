@@ -1,27 +1,33 @@
-use crate::ast::expr::ExpressionKind;
-use crate::ast::expr::{BinaryOperator, UnaryOperator};
+use crate::ast::expr::{BinaryOperator, ExpressionKind, UnaryOperator};
 use crate::ast::statement::NodeId;
 use crate::semantic::error::SemanticError;
 use crate::semantic::inference::constraints::{Constraint, Constraints};
 use crate::semantic::inference::type_table::TypeTable;
 use crate::semantic::inference::{BinaryOperatorSignature, Type, UnaryOperatorSignature};
 use crate::semantic::resolution_table::ResolutionTable;
+use crate::semantic::scoping::state::FunctionMetadata;
 use crate::semantic::visitor::ExpressionVisitor;
 use crate::semantic::SymbolId;
+use std::collections::HashMap;
 
 pub(crate) struct TypeInferenceVisitor<'symbols> {
     constraints: Constraints,
     types: TypeTable,
     symbols: &'symbols ResolutionTable,
+    functions: &'symbols HashMap<SymbolId, FunctionMetadata>,
     current_type: Option<Type>,
 }
 
 impl<'symbols> TypeInferenceVisitor<'symbols> {
-    pub(crate) fn new(symbols: &'symbols ResolutionTable) -> Self {
+    pub(crate) fn new(
+        symbols: &'symbols ResolutionTable,
+        functions: &'symbols HashMap<SymbolId, FunctionMetadata>,
+    ) -> Self {
         Self {
             constraints: Constraints::new(),
             types: TypeTable::new(),
             symbols,
+            functions,
             current_type: None,
         }
     }
@@ -125,7 +131,8 @@ mod identifier_expression_tests {
         let mut resolution_table = ResolutionTable::new();
         resolution_table.resolve(NodeId(1), SymbolId(10));
 
-        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
         visitor.types.add(SymbolId(10), Type::Bool);
 
         let result = identifier_kind.accept(&mut visitor);
@@ -138,7 +145,8 @@ mod identifier_expression_tests {
         let mut resolution_table = ResolutionTable::new();
         resolution_table.resolve(NodeId(1), SymbolId(10));
 
-        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
         visitor.types.add(SymbolId(10), Type::Bool);
 
         let _ = identifier_kind.accept(&mut visitor);
@@ -151,7 +159,8 @@ mod identifier_expression_tests {
         let mut resolution_table = ResolutionTable::new();
         resolution_table.resolve(NodeId(1), SymbolId(10));
 
-        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
         visitor.types.add(SymbolId(10), Type::Int32);
 
         let inferred = visitor.infer(&identifier_kind);
@@ -167,7 +176,8 @@ mod literal_expression_tests {
     fn infer_i32_literal_returns_i32_type() {
         let i32_kind = ExpressionKind::I32(42);
         let resolution_table = ResolutionTable::new();
-        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
 
         let inferred = visitor.infer(&i32_kind);
         assert_eq!(inferred, Ok(Type::Int32));
@@ -177,7 +187,8 @@ mod literal_expression_tests {
     fn infer_string_literal_returns_string_type() {
         let string_kind = ExpressionKind::String("hello".to_string());
         let resolution_table = ResolutionTable::new();
-        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
 
         let inferred = visitor.infer(&string_kind);
         assert_eq!(inferred, Ok(Type::String));
@@ -187,7 +198,8 @@ mod literal_expression_tests {
     fn infer_bool_literal_returns_bool_type() {
         let bool_kind = ExpressionKind::Boolean(true);
         let resolution_table = ResolutionTable::new();
-        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
 
         let inferred = visitor.infer(&bool_kind);
         assert_eq!(inferred, Ok(Type::Bool));
@@ -206,7 +218,8 @@ mod binary_expression_tests {
             ExpressionKind::Binary(Box::new(left), BinaryOperator::Plus, Box::new(right));
 
         let resolution_table = ResolutionTable::new();
-        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
 
         let inferred = visitor.infer(&binary_kind);
         assert_eq!(inferred, Ok(Type::Int32));
@@ -222,7 +235,8 @@ mod binary_expression_tests {
         let mut resolution_table = ResolutionTable::new();
         resolution_table.resolve(NodeId(1), SymbolId(10));
 
-        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
         visitor.types.add(SymbolId(10), Type::Placeholder(1));
 
         let _ = visitor.infer(&binary_kind);
@@ -242,7 +256,8 @@ mod binary_expression_tests {
         let mut resolution_table = ResolutionTable::new();
         resolution_table.resolve(NodeId(1), SymbolId(10));
 
-        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
         visitor.types.add(SymbolId(10), Type::Placeholder(1));
 
         let _ = visitor.infer(&binary_kind);
@@ -260,7 +275,8 @@ mod binary_expression_tests {
             ExpressionKind::Binary(Box::new(left), BinaryOperator::GreaterThan, Box::new(right));
 
         let resolution_table = ResolutionTable::new();
-        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
 
         let inferred = visitor.infer(&binary_kind);
         assert_eq!(inferred, Ok(Type::Bool));
@@ -274,7 +290,8 @@ mod binary_expression_tests {
             ExpressionKind::Binary(Box::new(left), BinaryOperator::And, Box::new(right));
 
         let resolution_table = ResolutionTable::new();
-        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
 
         let inferred = visitor.infer(&binary_kind);
         assert_eq!(inferred, Ok(Type::Bool));
@@ -290,7 +307,8 @@ mod binary_expression_tests {
         let mut resolution_table = ResolutionTable::new();
         resolution_table.resolve(NodeId(1), SymbolId(10));
 
-        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
         visitor.types.add(SymbolId(10), Type::Placeholder(1));
 
         let _ = visitor.infer(&binary_kind);
@@ -310,7 +328,8 @@ mod binary_expression_tests {
         let mut resolution_table = ResolutionTable::new();
         resolution_table.resolve(NodeId(1), SymbolId(10));
 
-        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
         visitor.types.add(SymbolId(10), Type::Placeholder(1));
 
         let _ = visitor.infer(&binary_kind);
@@ -331,7 +350,8 @@ mod unary_expression_tests {
         let unary_kind = ExpressionKind::Unary(Box::new(operand), UnaryOperator::Minus);
 
         let resolution_table = ResolutionTable::new();
-        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
 
         let inferred = visitor.infer(&unary_kind);
         assert_eq!(inferred, Ok(Type::Int32));
@@ -345,7 +365,8 @@ mod unary_expression_tests {
         let mut resolution_table = ResolutionTable::new();
         resolution_table.resolve(NodeId(1), SymbolId(10));
 
-        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
         visitor.types.add(SymbolId(10), Type::Placeholder(1));
 
         let _ = visitor.infer(&unary_kind);
@@ -361,7 +382,8 @@ mod unary_expression_tests {
         let unary_kind = ExpressionKind::Unary(Box::new(operand), UnaryOperator::Negation);
 
         let resolution_table = ResolutionTable::new();
-        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
 
         let inferred = visitor.infer(&unary_kind);
         assert_eq!(inferred, Ok(Type::Bool));
@@ -375,7 +397,8 @@ mod unary_expression_tests {
         let mut resolution_table = ResolutionTable::new();
         resolution_table.resolve(NodeId(1), SymbolId(10));
 
-        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
         visitor.types.add(SymbolId(10), Type::Placeholder(1));
 
         let _ = visitor.infer(&unary_kind);
@@ -396,7 +419,8 @@ mod grouped_expression_tests {
         let grouped_kind = ExpressionKind::Grouped(Box::new(inner));
 
         let resolution_table = ResolutionTable::new();
-        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
 
         let inferred = visitor.infer(&grouped_kind);
         assert_eq!(inferred, Ok(Type::Int32));
@@ -411,7 +435,8 @@ mod grouped_expression_tests {
         let mut resolution_table = ResolutionTable::new();
         resolution_table.resolve(NodeId(1), SymbolId(10));
 
-        let mut visitor = TypeInferenceVisitor::new(&resolution_table);
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
         visitor.types.add(SymbolId(10), Type::Placeholder(1));
 
         let _ = visitor.infer(&grouped_kind);

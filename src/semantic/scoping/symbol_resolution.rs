@@ -81,10 +81,10 @@ impl SymbolResolutionVisitor {
             .get_global_function(&symbol_id)
             .ok_or_else(|| SemanticError::NotAFunction(name.to_string()))?;
 
-        if metadata.parameter_count != argument_count {
+        if metadata.parameter_count() != argument_count {
             return Err(SemanticError::ArgumentCountMismatch(
                 name.to_string(),
-                metadata.parameter_count,
+                metadata.parameter_count(),
                 argument_count,
             ));
         }
@@ -224,15 +224,18 @@ impl StatementVisitor for SymbolResolutionVisitor {
         }
 
         let function_symbol_id = next_symbol_id();
+
         self.scopes
             .define(definition.name.to_string(), function_symbol_id);
+
         self.resolution_table.resolve(node_id, function_symbol_id);
+
         self.state.add_global_function(
             function_symbol_id,
             FunctionMetadata::new(
                 definition.name.to_string(),
-                definition.parameters.len(),
-                definition.return_type.is_some(),
+                definition.parameter_types(),
+                definition.return_type.clone(),
             ),
         );
 
@@ -301,10 +304,10 @@ impl StatementVisitor for SymbolResolutionVisitor {
         match self.state.current_function() {
             None => Err(SemanticError::ReturnOutsideFunction),
             Some(function_metadata) => {
-                if return_statement.expression().is_none() && function_metadata.has_return_type {
+                if !return_statement.has_value() && function_metadata.has_return_type() {
                     return Err(SemanticError::MissingReturnExpression);
                 }
-                if return_statement.expression().is_some() && !function_metadata.has_return_type {
+                if return_statement.has_value() && !function_metadata.has_return_type() {
                     return Err(SemanticError::UnexpectedReturnExpression);
                 }
                 self.state.encountered_return();
@@ -909,7 +912,7 @@ mod function_definition_tests {
     }
 
     #[test]
-    fn registers_global_function_with_parameter_count_in_state() {
+    fn registers_global_function_with_parameter_types_in_state() {
         let mut visitor = SymbolResolutionVisitor::new();
 
         let parameter = function_parameter!("name", "String");
@@ -919,8 +922,7 @@ mod function_definition_tests {
 
         let symbol_id = visitor.scopes.get("greeting").unwrap();
         let metadata = visitor.state.get_global_function(&symbol_id).unwrap();
-        assert_eq!(metadata.name, "greeting");
-        assert_eq!(metadata.parameter_count, 1);
+        assert_eq!(metadata.parameter_types[0], Some("String".to_string()));
     }
 }
 
@@ -940,7 +942,7 @@ mod function_call_tests {
             .define("calculate_total".to_string(), function_symbol_id);
         visitor.state.add_global_function(
             function_symbol_id,
-            FunctionMetadata::new("calculate_total".to_string(), 0, false),
+            FunctionMetadata::new("calculate_total".to_string(), vec![], None),
         );
 
         let call_statement = function_call!(expression_function_call!(
@@ -964,7 +966,11 @@ mod function_call_tests {
             .define("calculate_total".to_string(), function_symbol_id);
         visitor.state.add_global_function(
             function_symbol_id,
-            FunctionMetadata::new("calculate_total".to_string(), 1, false),
+            FunctionMetadata::new(
+                "calculate_total".to_string(),
+                vec![Some("i32".to_string())],
+                None,
+            ),
         );
 
         let call_statement = function_call!(expression_function_call!(
@@ -1060,7 +1066,7 @@ mod function_call_tests {
             .define("calculate_total".to_string(), function_symbol_id);
         visitor.state.add_global_function(
             function_symbol_id,
-            FunctionMetadata::new("calculate_total".to_string(), 0, false),
+            FunctionMetadata::new("calculate_total".to_string(), vec![], None),
         );
 
         let callee_kind = expression_identifier!("calculate_total");
@@ -1096,7 +1102,7 @@ mod function_call_tests {
 
         visitor.state.add_global_function(
             function_symbol_id,
-            FunctionMetadata::new("calculate_total".to_string(), 0, false),
+            FunctionMetadata::new("calculate_total".to_string(), vec![], None),
         );
 
         // Resolve pending calls
@@ -1118,7 +1124,11 @@ mod function_call_tests {
             .define("calculate_total".to_string(), function_symbol_id);
         visitor.state.add_global_function(
             function_symbol_id,
-            FunctionMetadata::new("calculate_total".to_string(), 1, false),
+            FunctionMetadata::new(
+                "calculate_total".to_string(),
+                vec![Some("i32".to_string())],
+                None,
+            ),
         );
 
         let variable_symbol_id = SymbolId(2);
@@ -1192,7 +1202,7 @@ mod return_tests {
         let mut visitor = SymbolResolutionVisitor::new();
         visitor.state.add_global_function(
             SymbolId(0),
-            FunctionMetadata::new("calculate".to_string(), 0, true),
+            FunctionMetadata::new("calculate".to_string(), vec![], Some("i32".to_string())),
         );
 
         let return_statement = return_statement!();
@@ -1206,7 +1216,7 @@ mod return_tests {
         let mut visitor = SymbolResolutionVisitor::new();
         visitor.state.add_global_function(
             SymbolId(0),
-            FunctionMetadata::new("log_message".to_string(), 0, false),
+            FunctionMetadata::new("log_message".to_string(), vec![], None),
         );
 
         let return_statement = return_statement!(expression_i32!(100, 0));
@@ -1220,7 +1230,7 @@ mod return_tests {
         let mut visitor = SymbolResolutionVisitor::new();
         visitor.state.add_global_function(
             SymbolId(0),
-            FunctionMetadata::new("log_message".to_string(), 0, false),
+            FunctionMetadata::new("log_message".to_string(), vec![], None),
         );
 
         let return_statement = return_statement!();
@@ -1234,7 +1244,7 @@ mod return_tests {
         let mut visitor = SymbolResolutionVisitor::new();
         visitor.state.add_global_function(
             SymbolId(0),
-            FunctionMetadata::new("calculate".to_string(), 0, true),
+            FunctionMetadata::new("calculate".to_string(), vec![], Some("i32".to_string())),
         );
 
         let return_statement = return_statement!(expression_i32!(100, 0));
@@ -1252,7 +1262,7 @@ mod return_tests {
             .define("score".to_string(), expected_symbol_id);
         visitor.state.add_global_function(
             SymbolId(0),
-            FunctionMetadata::new("calculate".to_string(), 0, true),
+            FunctionMetadata::new("calculate".to_string(), vec![], Some("i32".to_string())),
         );
 
         let expression_kind = expression_identifier!("score");
@@ -1272,7 +1282,7 @@ mod return_tests {
         let mut visitor = SymbolResolutionVisitor::new();
         visitor.state.add_global_function(
             SymbolId(0),
-            FunctionMetadata::new("calculate".to_string(), 0, true),
+            FunctionMetadata::new("calculate".to_string(), vec![], Some("i32".to_string())),
         );
 
         let return_statement = return_statement!(expression_identifier!("score", 0));
@@ -1469,7 +1479,7 @@ mod identifier_expression_tests {
 #[cfg(test)]
 mod unary_expression_tests {
     use super::*;
-    use crate::ast::expr::{BinaryOperator, Expression, ExpressionKind, UnaryOperator};
+    use crate::ast::expr::{ExpressionKind, UnaryOperator};
     use crate::semantic::SymbolId;
 
     #[test]

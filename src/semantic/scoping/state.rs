@@ -14,21 +14,35 @@ pub(crate) struct PendingCall {
 }
 
 /// Metadata storing the signature details of a declared function.
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) struct FunctionMetadata {
     pub(crate) name: String,
-    pub(crate) parameter_count: usize,
-    pub(crate) has_return_type: bool,
+    pub(crate) parameter_types: Vec<Option<String>>,
+    pub(crate) return_type: Option<String>,
 }
 
 impl FunctionMetadata {
     /// Creates a new `FunctionMetadata` containing signature information.
-    pub(crate) fn new(name: String, parameter_count: usize, has_return_type: bool) -> Self {
+    pub(crate) fn new(
+        name: String,
+        parameter_types: Vec<Option<String>>,
+        return_type: Option<String>,
+    ) -> Self {
         Self {
             name,
-            parameter_count,
-            has_return_type,
+            parameter_types,
+            return_type,
         }
+    }
+
+    /// Returns the number of parameters the function accepts.
+    pub(crate) fn parameter_count(&self) -> usize {
+        self.parameter_types.len()
+    }
+
+    /// Returns true if the function has an annotated return type.
+    pub(crate) fn has_return_type(&self) -> bool {
+        self.return_type.is_some()
     }
 }
 
@@ -146,12 +160,11 @@ mod tests {
         let mut state = State::new();
         state.add_global_function(
             SymbolId(0),
-            FunctionMetadata::new("calculate".to_string(), 0, true),
+            FunctionMetadata::new("calculate".to_string(), vec![], Some("i32".to_string())),
         );
 
         let current = state.get_global_function(&SymbolId(0)).unwrap();
         assert_eq!(current.name, "calculate");
-        assert!(current.has_return_type);
     }
 
     #[test]
@@ -159,12 +172,11 @@ mod tests {
         let mut state = State::new();
         state.add_global_function(
             SymbolId(0),
-            FunctionMetadata::new("calculate".to_string(), 0, true),
+            FunctionMetadata::new("calculate".to_string(), vec![], Some("i32".to_string())),
         );
 
         let function_metadata = state.global_functions.get(&SymbolId(0)).unwrap();
         assert_eq!(function_metadata.name, "calculate");
-        assert!(function_metadata.has_return_type);
     }
 
     #[test]
@@ -172,7 +184,7 @@ mod tests {
         let mut state = State::new();
         state.add_global_function(
             SymbolId(0),
-            FunctionMetadata::new("calculate".to_string(), 0, true),
+            FunctionMetadata::new("calculate".to_string(), vec![], Some("i32".to_string())),
         );
         state.exited_function();
 
@@ -245,5 +257,30 @@ mod tests {
         state.encountered_return();
         state.reset_return();
         assert!(!state.is_unreachable());
+    }
+}
+
+#[cfg(test)]
+mod function_metadata_tests {
+    use super::*;
+
+    #[test]
+    fn parameter_count() {
+        let metadata =
+            FunctionMetadata::new("calculate".to_string(), vec![Some("i32".to_string())], None);
+        assert_eq!(metadata.parameter_count(), 1);
+    }
+
+    #[test]
+    fn has_return_type() {
+        let metadata =
+            FunctionMetadata::new("calculate".to_string(), vec![], Some("bool".to_string()));
+        assert!(metadata.has_return_type());
+    }
+
+    #[test]
+    fn does_not_have_return_type() {
+        let metadata = FunctionMetadata::new("calculate".to_string(), vec![], None);
+        assert!(!metadata.has_return_type());
     }
 }
