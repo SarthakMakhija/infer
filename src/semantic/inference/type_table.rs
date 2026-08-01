@@ -2,22 +2,26 @@ use crate::semantic::inference::Type;
 use crate::semantic::SymbolId;
 use std::collections::HashMap;
 
+/// A lookup table mapping resolved `SymbolId`s to their inferred `Type`s.
 #[derive(Debug, PartialEq)]
 pub(crate) struct TypeTable {
     entries: HashMap<SymbolId, Type>,
 }
 
 impl TypeTable {
+    /// Creates a new, empty type table.
     pub(crate) fn new() -> Self {
         Self {
             entries: HashMap::new(),
         }
     }
 
+    /// Associates a type with a resolved symbol ID.
     pub(crate) fn add(&mut self, symbol_id: SymbolId, ty: Type) {
         self.entries.insert(symbol_id, ty);
     }
 
+    /// Retrieves the type associated with a symbol ID, or panics if not found.
     pub(crate) fn get_or_panic(&self, symbol_id: &SymbolId) -> Type {
         self.entries
             .get(symbol_id)

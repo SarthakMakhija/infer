@@ -1,3 +1,9 @@
+//! Type inference module.
+//!
+//! Implements monomorphic constraint-based type inference (Pass 2 of semantic analysis).
+//! It walks the AST to generate type equations (constraints) and solves them
+//! using unification to determine concrete types for all expressions.
+
 use crate::ast::expr::{BinaryOperator, UnaryOperator};
 use crate::semantic::error::SemanticError;
 use std::cell::Cell;
@@ -7,17 +13,27 @@ pub(crate) mod constraints;
 pub(crate) mod type_inference;
 pub(crate) mod type_table;
 
+/// Represents a semantic type in the target language.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum Type {
+    /// 32-bit signed integer.
     Int32,
+    /// Boolean flag (`true` or `false`).
     Bool,
+    /// UTF-8 string literal.
     String,
-    Placeholder(usize), // Unique type variable placeholder (e.g. 0, 1)
+    /// A unique type placeholder/variable used during inference.
+    Placeholder(usize),
 }
 
 impl TryFrom<&str> for Type {
     type Error = SemanticError;
 
+    /// Attempts to parse a raw string slice representation of a type (e.g. `"i32"`, `"bool"`, `"string"`)
+    /// into a corresponding concrete `Type`.
+    ///
+    /// # Errors
+    /// Returns `SemanticError::UnsupportedTypeError` if the type string is unrecognized.
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
             "i32" => Ok(Type::Int32),
@@ -29,6 +45,10 @@ impl TryFrom<&str> for Type {
 }
 
 impl Type {
+    /// Extracts the inner unique identifier of a `Type::Placeholder`.
+    ///
+    /// # Panics
+    /// Panics if called on a non-placeholder variant.
     fn placeholder_type_id(&self) -> usize {
         match self {
             Type::Placeholder(type_id) => *type_id,
@@ -51,6 +71,7 @@ pub(crate) fn next_type_id() -> Type {
     })
 }
 
+/// Represents the expected input and output types for a binary operator.
 pub(crate) struct BinaryOperatorSignature {
     pub(crate) left: Type,
     pub(crate) right: Type,
@@ -58,6 +79,7 @@ pub(crate) struct BinaryOperatorSignature {
 }
 
 impl BinaryOperatorSignature {
+    /// Returns the type signature of the given binary operator.
     pub(crate) fn of(operator: &BinaryOperator) -> Self {
         let (left, right, result) = match operator {
             BinaryOperator::Plus
@@ -82,12 +104,14 @@ impl BinaryOperatorSignature {
     }
 }
 
+/// Represents the expected input and output types for a unary operator.
 pub(crate) struct UnaryOperatorSignature {
     pub(crate) operand: Type,
     pub(crate) result: Type,
 }
 
 impl UnaryOperatorSignature {
+    /// Returns the type signature of the given unary operator.
     pub(crate) fn of(operator: &UnaryOperator) -> Self {
         let (operand, result) = match operator {
             UnaryOperator::Minus => (Type::Int32, Type::Int32),

@@ -10,6 +10,10 @@ use crate::semantic::visitor::ExpressionVisitor;
 use crate::semantic::SymbolId;
 use std::collections::HashMap;
 
+/// AST expression visitor that performs constraint-based type inference.
+///
+/// It traverses expressions, generates constraints based on the operators and identifiers,
+/// and returns the inferred types of expressions.
 pub(crate) struct TypeInferenceVisitor<'symbols> {
     constraints: Constraints,
     types: TypeTable,
@@ -49,6 +53,11 @@ impl<'symbols> TypeInferenceVisitor<'symbols> {
 }
 
 impl<'symbols> ExpressionVisitor for TypeInferenceVisitor<'symbols> {
+    /// Infers the type of identifier expression.
+    ///
+    /// It queries the resolution table using the identifier's `NodeId` to find its unique `SymbolId`.
+    /// Then, it looks up the associated `Type` (which may be a concrete type or a type variable placeholder)
+    /// in the type table, and sets it as the current expression type.
     fn visit_identifier(&mut self, _name: &str, node_id: NodeId) -> Result<(), SemanticError> {
         let symbol_id = self.symbol_id(&node_id);
         let symbol_type = self.types.get_or_panic(&symbol_id);
@@ -56,6 +65,16 @@ impl<'symbols> ExpressionVisitor for TypeInferenceVisitor<'symbols> {
         Ok(())
     }
 
+    /// Infers the type of function call expression and generates constraints.
+    ///
+    /// It resolves the callee identifier to its `SymbolId` and retrieves its function metadata.
+    /// For each argument expression:
+    /// 1. Recursively infers the argument's type.
+    /// 2. Resolves the expected parameter type (parsing the string annotation, or generating a fresh type placeholder if unannotated).
+    /// 3. Generates a new constraint asserting that the inferred argument type must equal the expected parameter type.
+    ///
+    /// Finally, it resolves the function's return type (parsing the annotation, or generating a fresh placeholder if unannotated)
+    /// and sets it as the type of the entire call expression.
     fn visit_function_call(
         &mut self,
         callee: &ExpressionKind,
@@ -90,6 +109,11 @@ impl<'symbols> ExpressionVisitor for TypeInferenceVisitor<'symbols> {
         Ok(())
     }
 
+    /// Infers the type of unary expression and generates operand constraints.
+    ///
+    /// It recursively infers the operand expression's type and looks up the expected signature of the operator.
+    /// A constraint is added asserting that the operand's type must equal the expected operand type (e.g. `Type::Int32` for numeric negation,
+    /// or `Type::Bool` for logical negation). The type of the unary expression is set to the signature's result type.
     fn visit_unary(
         &mut self,
         operator: &UnaryOperator,
@@ -105,6 +129,14 @@ impl<'symbols> ExpressionVisitor for TypeInferenceVisitor<'symbols> {
         Ok(())
     }
 
+    /// Infers the type of binary expression and generates operand constraints.
+    ///
+    /// It recursively infers the types of both the left and right operand expressions, and retrieves the operator's signature.
+    /// Two constraints are added asserting that:
+    /// 1. The left operand's type equals the signature's expected left type.
+    /// 2. The right operand's type equals the signature's expected right type.
+    ///
+    /// The type of the binary expression is set to the signature's result type (e.g. `Type::Bool` for comparisons, or `Type::Int32` for arithmetic).
     fn visit_binary(
         &mut self,
         left: &ExpressionKind,
@@ -125,22 +157,28 @@ impl<'symbols> ExpressionVisitor for TypeInferenceVisitor<'symbols> {
         Ok(())
     }
 
+    /// Infers the type of grouped (parenthesized) expression.
+    ///
+    /// Since grouping does not alter types, it recursively infers the type of the inner expression and propagates it.
     fn visit_grouped(&mut self, expr: &ExpressionKind) -> Result<(), SemanticError> {
         let inner_type = self.infer(expr)?;
         self.current_type = Some(inner_type);
         Ok(())
     }
 
+    /// Infers the type of 32-bit signed integer literal, setting it to `Type::Int32`.
     fn visit_i32(&mut self, _value: i32) -> Result<(), SemanticError> {
         self.current_type = Some(Type::Int32);
         Ok(())
     }
 
+    /// Infers the type of UTF-8 string literal, setting it to `Type::String`.
     fn visit_string(&mut self, _value: &str) -> Result<(), SemanticError> {
         self.current_type = Some(Type::String);
         Ok(())
     }
 
+    /// Infers the type of boolean literal, setting it to `Type::Bool`.
     fn visit_bool(&mut self, _value: bool) -> Result<(), SemanticError> {
         self.current_type = Some(Type::Bool);
         Ok(())

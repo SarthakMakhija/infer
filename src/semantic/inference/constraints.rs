@@ -1,10 +1,12 @@
 use crate::semantic::inference::Type;
 
+/// A collection of type equations (constraints) collected during type inference.
 #[derive(Debug, PartialEq)]
 pub(crate) struct Constraints {
     entries: Vec<Constraint>,
 }
 
+/// Represents a single type constraint asserting that two types must be equal (left == right).
 #[derive(Debug, PartialEq)]
 pub(crate) struct Constraint {
     pub(crate) left: Type,
@@ -12,16 +14,19 @@ pub(crate) struct Constraint {
 }
 
 impl Constraint {
+    /// Creates a new type equality constraint (left == right).
     pub(crate) fn new(left: Type, right: Type) -> Self {
         Self { left, right }
     }
 }
 
 impl Constraints {
+    /// Creates a new, empty set of constraints.
     pub(crate) fn new() -> Self {
         Self { entries: vec![] }
     }
 
+    /// Adds a type constraint to the collection.
     pub(crate) fn add(&mut self, constraint: Constraint) {
         self.entries.push(constraint);
     }
