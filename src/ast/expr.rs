@@ -1,4 +1,4 @@
-use crate::ast::statement::{next_id, NodeId};
+use crate::ast::statement::{next_node_id, NodeId};
 use crate::lexer::token::{Token, TokenType};
 use crate::semantic::error::SemanticError;
 use crate::semantic::visitor::ExpressionVisitor;
@@ -141,12 +141,12 @@ impl ExpressionKind {
 
     /// Factory method to construct an `ExpressionKind::Identifier`.
     pub fn identifier(name: String) -> Self {
-        ExpressionKind::Identifier(name, next_id())
+        ExpressionKind::Identifier(name, next_node_id())
     }
 
     /// Factory method to construct an `ExpressionKind::FunctionCall`.
     pub fn function_call(callee: ExpressionKind, arguments: Vec<ExpressionKind>) -> Self {
-        ExpressionKind::FunctionCall(Box::new(callee), arguments, next_id())
+        ExpressionKind::FunctionCall(Box::new(callee), arguments, next_node_id())
     }
 
     /// Accepts an expression visitor, dispatching the expression kind to the corresponding `visit_*` method.

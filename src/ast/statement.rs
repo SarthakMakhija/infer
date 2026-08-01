@@ -25,7 +25,7 @@ thread_local! {
 }
 
 /// Generates a new, unique statement and expression identifier in a single-threaded execution.
-pub(crate) fn next_id() -> NodeId {
+pub(crate) fn next_node_id() -> NodeId {
     ID.with(|id| {
         let current = id.get();
         let next = NodeId(current.0 + 1);
@@ -174,7 +174,7 @@ impl Statement {
     }
 
     fn statement_id() -> NodeId {
-        next_id()
+        next_node_id()
     }
 }
 
