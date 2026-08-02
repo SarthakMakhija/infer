@@ -21,11 +21,14 @@ impl TypeTable {
         self.entries.insert(symbol_id, ty);
     }
 
+    /// Retrieves the type associated with a symbol ID, if it exists.
+    pub(crate) fn get(&self, symbol_id: &SymbolId) -> Option<Type> {
+        self.entries.get(symbol_id).copied()
+    }
+
     /// Retrieves the type associated with a symbol ID, or panics if not found.
     pub(crate) fn get_or_panic(&self, symbol_id: &SymbolId) -> Type {
-        self.entries
-            .get(symbol_id)
-            .copied()
+        self.get(symbol_id)
             .unwrap_or_else(|| panic!("type not found for symbol {:?}", symbol_id))
     }
 }

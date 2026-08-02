@@ -61,6 +61,23 @@ impl<'symbols> TypeInferenceVisitor<'symbols> {
             .get(node_id)
             .unwrap_or_else(|| panic!("symbol not found for {:?}", node_id))
     }
+
+    fn get_or_create_parameter_type(
+        &mut self,
+        symbol_id: SymbolId,
+        parameter_type_str: Option<&str>,
+    ) -> Result<Type, SemanticError> {
+        if let Some(existing_type) = self.types.get(&symbol_id) {
+            Ok(existing_type)
+        } else {
+            let parameter_type = match parameter_type_str {
+                None => super::next_type_id(),
+                Some(type_str) => Type::try_from(type_str)?,
+            };
+            self.types.add(symbol_id, parameter_type.clone());
+            Ok(parameter_type)
+        }
+    }
 }
 
 impl<'symbols> StatementVisitor for TypeInferenceVisitor<'symbols> {
@@ -170,11 +187,8 @@ impl<'symbols> StatementVisitor for TypeInferenceVisitor<'symbols> {
         self.current_function_return_type = expected_return_type;
 
         for (index, parameter_symbol_id) in metadata.parameter_symbols.iter().enumerate() {
-            let parameter_type = match &metadata.parameter_types[index] {
-                None => super::next_type_id(),
-                Some(type_str) => Type::try_from(type_str.as_str())?,
-            };
-            self.types.add(*parameter_symbol_id, parameter_type);
+            let parameter_type_str = metadata.parameter_types[index].as_deref();
+            self.get_or_create_parameter_type(*parameter_symbol_id, parameter_type_str)?;
         }
         for statement in definition.body() {
             self.visit(statement)?;
@@ -267,7 +281,9 @@ impl<'symbols> ExpressionVisitor for TypeInferenceVisitor<'symbols> {
         for (index, argument) in arguments.iter().enumerate() {
             let inferred_argument_type = self.infer(argument)?;
             let parameter_symbol_id = metadata.parameter_symbols[index];
-            let expected_type = self.types.get_or_panic(&parameter_symbol_id);
+            let parameter_type_str = metadata.parameter_types[index].as_deref();
+            let expected_type =
+                self.get_or_create_parameter_type(parameter_symbol_id, parameter_type_str)?;
             self.constraints
                 .add(Constraint::new(inferred_argument_type, expected_type));
         }
@@ -1116,5 +1132,52 @@ mod function_tests {
             *visitor.constraints.entry_at(0),
             Constraint::new(Type::Int32, Type::Int32)
         );
+    }
+
+    #[test]
+    fn infer_function_call_before_definition_body_is_visited_shares_type() {
+        let callee = ExpressionKind::Identifier("identity".to_string(), NodeId(1));
+        let argument = ExpressionKind::Identifier("value".to_string(), NodeId(2));
+        let call_kind = ExpressionKind::FunctionCall(Box::new(callee), vec![argument], NodeId(3));
+
+        let parameter = FunctionParameter::new("value".to_string(), Some("i32".to_string()));
+        let function_definition = FunctionDefinition::new(
+            "identity".to_string(),
+            vec![parameter],
+            Some("i32".to_string()),
+            Block::new(vec![]),
+        );
+
+        let mut resolution_table = ResolutionTable::new();
+        // Maps the callee identifier 'identity' in the function call to the function symbol ID (SymbolId(10)).
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+        // Maps the argument variable 'value' in the caller's scope to its symbol ID (SymbolId(20)).
+        resolution_table.resolve(NodeId(2), SymbolId(20));
+        // Maps the function definition statement to the function symbol ID (SymbolId(10)).
+        resolution_table.resolve(NodeId(3), SymbolId(10));
+
+        let mut functions = HashMap::new();
+        let metadata = FunctionMetadata::new(
+            "identity".to_string(),
+            vec![Some("i32".to_string())],
+            Some("i32".to_string()),
+        )
+        .with_symbols(vec![SymbolId(11)]);
+
+        functions.insert(SymbolId(10), metadata);
+
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
+        visitor.types.add(SymbolId(20), Type::Placeholder(1));
+
+        let _ = visitor.infer(&call_kind);
+
+        assert_eq!(visitor.types.get_or_panic(&SymbolId(11)), Type::Int32);
+        assert_eq!(
+            *visitor.constraints.entry_at(0),
+            Constraint::new(Type::Placeholder(1), Type::Int32)
+        );
+
+        let _ = visitor.visit_function_definition(&function_definition, NodeId(3));
+        assert_eq!(visitor.types.get_or_panic(&SymbolId(11)), Type::Int32);
     }
 }
