@@ -8,10 +8,12 @@ use crate::ast::expr::{BinaryOperator, UnaryOperator};
 use crate::semantic::error::SemanticError;
 use std::cell::Cell;
 use std::convert::TryFrom;
+use std::fmt;
 
 pub(crate) mod constraints;
 pub(crate) mod type_inference;
 pub(crate) mod type_table;
+pub(crate) mod unifier;
 
 /// Represents a semantic type in the target language.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -40,6 +42,17 @@ impl TryFrom<&str> for Type {
             "bool" => Ok(Type::Bool),
             "string" => Ok(Type::String),
             _ => Err(SemanticError::UnsupportedTypeError(value.to_string())),
+        }
+    }
+}
+
+impl fmt::Display for Type {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Type::Int32 => write!(formatter, "i32"),
+            Type::Bool => write!(formatter, "bool"),
+            Type::String => write!(formatter, "string"),
+            Type::Placeholder(placeholder_id) => write!(formatter, "T{}", placeholder_id),
         }
     }
 }

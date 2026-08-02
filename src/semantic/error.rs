@@ -1,3 +1,4 @@
+use crate::semantic::inference::Type;
 use std::fmt::{Display, Formatter};
 
 /// Represents various semantic and scope errors caught during AST validation.
@@ -25,6 +26,8 @@ pub(crate) enum SemanticError {
     ArgumentCountMismatch(String, usize, usize),
     /// An unsupported type annotation was used.
     UnsupportedTypeError(String),
+    /// Mismatch type
+    TypeMismatch(Type, Type),
 }
 
 impl Display for SemanticError {
@@ -72,6 +75,9 @@ impl Display for SemanticError {
             }
             SemanticError::UnsupportedTypeError(ty) => {
                 write!(formatter, "unsupported type: {}", ty)
+            }
+            SemanticError::TypeMismatch(left, right) => {
+                write!(formatter, "can not unify types: {}, {}", left, right)
             }
         }
     }
@@ -168,6 +174,14 @@ mod tests {
         assert_eq!(
             SemanticError::UnsupportedTypeError("i64".to_string()).to_string(),
             "unsupported type: i64"
+        );
+    }
+
+    #[test]
+    fn format_type_mismatch_error() {
+        assert_eq!(
+            SemanticError::TypeMismatch(Type::Int32, Type::Bool).to_string(),
+            "can not unify types: i32, bool"
         );
     }
 }

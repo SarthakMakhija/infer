@@ -3,7 +3,7 @@ use crate::semantic::inference::Type;
 /// A collection of type equations (constraints) collected during type inference.
 #[derive(Debug, PartialEq)]
 pub(crate) struct Constraints {
-    entries: Vec<Constraint>,
+    pub(crate) entries: Vec<Constraint>,
 }
 
 /// Represents a single type constraint asserting that two types must be equal (left == right).
