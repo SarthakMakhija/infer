@@ -1,3 +1,101 @@
+//! Unification constraint solver implementation.
+//!
+//! # End-to-End Type Inference Flow Example
+//!
+//! To understand how the Symbol Resolution, Type Inference, and Unification Solver
+//! components interact, consider the following program:
+//!
+//! ```text
+//! var x;
+//! var y = x;
+//! x = 10;
+//! ```
+//!
+//! ## Phase 1: Symbol Resolution (Pass 1)
+//!
+//! The AST nodes are traversed from top to bottom. Declarations introduce new unique
+//! `SymbolId`s, and reference nodes are resolved to point back to their respective declarations.
+//!
+//! 1. **`var x;`** (Declaration NodeId(1)):
+//!    * Declares variable `x`. A new unique symbol `SymbolId(10)` is generated.
+//!    * Maps: `NodeId(1) -> SymbolId(10)`.
+//! 2. **`var y = x;`** (Declaration NodeId(2), Reference NodeId(3)):
+//!    * Declares variable `y`. A new unique symbol `SymbolId(20)` is generated.
+//!    * Maps: `NodeId(2) -> SymbolId(20)`.
+//!    * The initializer references the identifier `x` (`NodeId(3)`). This resolves back to the
+//!      already declared `SymbolId(10)`.
+//!    * Maps: `NodeId(3) -> SymbolId(10)`.
+//! 3. **`x = 10;`** (Reference NodeId(4), Literal NodeId(5)):
+//!    * The assignment target references identifier `x` (`NodeId(4)`). This resolves back to
+//!      `SymbolId(10)`.
+//!    * Maps: `NodeId(4) -> SymbolId(10)`.
+//!
+//! **Final Resolution Table:**
+//! ```text
+//! NodeId(1) (declaration x)           -> SymbolId(10)
+//! NodeId(2) (declaration y)           -> SymbolId(20)
+//! NodeId(3) (reference x in y = x)    -> SymbolId(10)
+//! NodeId(4) (reference x in x = 10)   -> SymbolId(10)
+//! ```
+//!
+//! ## Phase 2: Type Inference & Constraint Generation (Pass 2)
+//!
+//! The `TypeInferenceVisitor` traverses the AST, generates fresh placeholder type variables
+//! for unannotated declarations, and collects equality equations (constraints).
+//!
+//! 1. **`var x;`**:
+//!    * Unannotated declaration. Generates a fresh placeholder type variable: `Type::Placeholder(1)`.
+//!    * Records `SymbolId(10) -> Type::Placeholder(1)` in the `TypeTable`.
+//! 2. **`var y = x;`**:
+//!    * Unannotated declaration. Generates a fresh placeholder type variable: `Type::Placeholder(2)`.
+//!    * Records `SymbolId(20) -> Type::Placeholder(2)` in the `TypeTable`.
+//!    * Infers the initializer expression `x` (`NodeId(3)`): looks up `SymbolId(10)` in the `TypeTable`
+//!      and retrieves `Type::Placeholder(1)`.
+//!    * Generates an equality constraint equating `y`'s type to `x`'s type:
+//!      `Type::Placeholder(2) == Type::Placeholder(1)`.
+//! 3. **`x = 10;`**:
+//!    * Infers target `x` (`NodeId(4)`): looks up `SymbolId(10)` in `TypeTable` -> `Type::Placeholder(1)`.
+//!    * Infers source literal `10` (`NodeId(5)`): returns concrete type `Type::Int32`.
+//!    * Generates an equality constraint equating `x`'s type to the literal's type:
+//!      `Type::Placeholder(1) == Type::Int32`.
+//!
+//! **Final Type Table (Pre-Solving):**
+//! ```text
+//! SymbolId(10) (variable x) -> Type::Placeholder(1)
+//! SymbolId(20) (variable y) -> Type::Placeholder(2)
+//! ```
+//!
+//! **Final Constraints:**
+//! 1. `Type::Placeholder(2) == Type::Placeholder(1)` (from declaration `var y = x`)
+//! 2. `Type::Placeholder(1) == Type::Int32`        (from assignment `x = 10`)
+//!
+//! ## Phase 3: Constraint Solving & Unification
+//!
+//! The `Unifier` processes constraints one by one to build a substitution mapping,
+//! followed by a flattening pass to perform path compression.
+//!
+//! 1. **Process Constraint 1** (`Type::Placeholder(2) == Type::Placeholder(1)`):
+//!    * Resolves `Placeholder(2)` to `Placeholder(2)`.
+//!    * Resolves `Placeholder(1)` to `Placeholder(1)`.
+//!    * Since both are placeholders, binds the left variable to the right: `2 -> Type::Placeholder(1)`.
+//!    * Substitutions: `{ 2: Type::Placeholder(1) }`.
+//! 2. **Process Constraint 2** (`Type::Placeholder(1) == Type::Int32`):
+//!    * Resolves `Placeholder(1)` to `Placeholder(1)`.
+//!    * Resolves `Int32` to `Int32`.
+//!    * Binds the placeholder variable to the concrete type: `1 -> Type::Int32`.
+//!    * Substitutions: `{ 2: Type::Placeholder(1), 1: Type::Int32 }`.
+//! 3. **Flattening Pass (Path Compression)**:
+//!    * For Key `2`: `resolve(Placeholder(2))` recursive lookup resolves to `Type::Int32`. Updates mapping to `2 -> Type::Int32`.
+//!    * For Key `1`: `resolve(Placeholder(1))` lookup resolves to `Type::Int32`. Updates mapping to `1 -> Type::Int32`.
+//!
+//! **Final Solved Substitutions Map:**
+//! ```text
+//! {
+//!   1: Type::Int32,
+//!   2: Type::Int32
+//! }
+//! ```
+
 use crate::semantic::error::SemanticError;
 use crate::semantic::inference::constraints::Constraints;
 use crate::semantic::inference::Type;
