@@ -19,6 +19,7 @@ pub(crate) struct FunctionMetadata {
     pub(crate) name: String,
     pub(crate) parameter_types: Vec<Option<String>>,
     pub(crate) return_type: Option<String>,
+    pub(crate) parameter_symbols: Vec<SymbolId>,
 }
 
 impl FunctionMetadata {
@@ -32,7 +33,14 @@ impl FunctionMetadata {
             name,
             parameter_types,
             return_type,
+            parameter_symbols: vec![],
         }
+    }
+
+    /// Builder helper to associate parameter SymbolIds with the function metadata.
+    pub(crate) fn with_symbols(mut self, parameter_symbols: Vec<SymbolId>) -> Self {
+        self.parameter_symbols = parameter_symbols;
+        self
     }
 
     /// Returns the number of parameters the function accepts.

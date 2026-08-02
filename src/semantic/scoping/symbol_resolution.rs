@@ -227,24 +227,30 @@ impl StatementVisitor for SymbolResolutionVisitor {
         self.scopes
             .define(definition.name.to_string(), function_symbol_id);
         self.resolution_table.resolve(node_id, function_symbol_id);
-        self.state.add_global_function(
-            function_symbol_id,
-            FunctionMetadata::new(
-                definition.name.to_string(),
-                definition.parameter_types(),
-                definition.return_type.clone(),
-            ),
-        );
 
+        let mut parameter_symbols = Vec::new();
         self.scopes.begin_scope();
         for parameter in definition.parameters() {
             let parameter_name = parameter.name();
             if self.scopes.contains_locally(parameter_name) {
                 return Err(SemanticError::DuplicateVariable(parameter_name.to_string()));
             }
+            let parameter_symbol_id = next_symbol_id();
             self.scopes
-                .define(parameter_name.to_string(), next_symbol_id());
+                .define(parameter_name.to_string(), parameter_symbol_id);
+            parameter_symbols.push(parameter_symbol_id);
         }
+
+        self.state.add_global_function(
+            function_symbol_id,
+            FunctionMetadata::new(
+                definition.name.to_string(),
+                definition.parameter_types(),
+                definition.return_type.clone(),
+            )
+            .with_symbols(parameter_symbols),
+        );
+
         self.visit_statements(definition.body())?;
         self.scopes.end_scope();
         self.state.exited_function();

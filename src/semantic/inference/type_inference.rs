@@ -24,6 +24,7 @@ pub(crate) struct TypeInferenceVisitor<'symbols> {
     symbols: &'symbols ResolutionTable,
     functions: &'symbols HashMap<SymbolId, FunctionMetadata>,
     current_type: Option<Type>,
+    current_function_return_type: Option<Type>,
 }
 
 impl<'symbols> TypeInferenceVisitor<'symbols> {
@@ -37,6 +38,7 @@ impl<'symbols> TypeInferenceVisitor<'symbols> {
             symbols,
             functions,
             current_type: None,
+            current_function_return_type: None,
         }
     }
 
@@ -149,16 +151,44 @@ impl<'symbols> StatementVisitor for TypeInferenceVisitor<'symbols> {
         Ok(())
     }
 
+    /// Performs type inference for a function definition.
+    ///
+    /// Resolves the expected return type and registers the parameters in the type table using their SymbolIds.
+    /// Then recursively visits all statements inside the function body.
     fn visit_function_definition(
         &mut self,
-        _definition: &FunctionDefinition,
-        _node_id: NodeId,
+        definition: &FunctionDefinition,
+        node_id: NodeId,
     ) -> Result<(), SemanticError> {
-        todo!()
+        let function_symbol_id = self.symbol_id(&node_id);
+        let metadata = self.functions.get(&function_symbol_id).unwrap();
+
+        let expected_return_type = match &metadata.return_type {
+            Some(type_str) => Some(Type::try_from(type_str.as_str())?),
+            None => None,
+        };
+        self.current_function_return_type = expected_return_type;
+
+        for (index, parameter_symbol_id) in metadata.parameter_symbols.iter().enumerate() {
+            let parameter_type = match &metadata.parameter_types[index] {
+                None => super::next_type_id(),
+                Some(type_str) => Type::try_from(type_str.as_str())?,
+            };
+            self.types.add(*parameter_symbol_id, parameter_type);
+        }
+        for statement in definition.body() {
+            self.visit(statement)?;
+        }
+        self.current_function_return_type = None;
+        Ok(())
     }
 
-    fn visit_function_call(&mut self, _call: &Expression) -> Result<(), SemanticError> {
-        todo!()
+    /// Performs type inference for a statement-level function call.
+    ///
+    /// Delegates to expression inference on the call expression's kind.
+    fn visit_function_call(&mut self, call: &Expression) -> Result<(), SemanticError> {
+        self.infer(&call.kind)?;
+        Ok(())
     }
 
     /// Performs type inference for a break statement.
@@ -168,8 +198,20 @@ impl<'symbols> StatementVisitor for TypeInferenceVisitor<'symbols> {
         Ok(())
     }
 
-    fn visit_return(&mut self, _return_statement: &Return) -> Result<(), SemanticError> {
-        todo!()
+    /// Performs type inference for a return statement.
+    ///
+    /// Infers the type of the returned value expression and adds a constraint
+    /// equating it to the expected return type of the enclosing function.
+    fn visit_return(&mut self, return_statement: &Return) -> Result<(), SemanticError> {
+        if let Some(ref expression) = return_statement.expression {
+            let returned_type = self.infer(&expression.kind)?;
+            let expected_type = self
+                .current_function_return_type
+                .expect("Return statement outside function");
+            self.constraints
+                .add(Constraint::new(returned_type, expected_type));
+        }
+        Ok(())
     }
 
     /// Performs type inference for a print statement.
@@ -224,11 +266,8 @@ impl<'symbols> ExpressionVisitor for TypeInferenceVisitor<'symbols> {
 
         for (index, argument) in arguments.iter().enumerate() {
             let inferred_argument_type = self.infer(argument)?;
-            let parameter_type = &metadata.parameter_types[index];
-            let expected_type = match parameter_type {
-                None => super::next_type_id(),
-                Some(type_str) => Type::try_from(type_str.as_str())?,
-            };
+            let parameter_symbol_id = metadata.parameter_symbols[index];
+            let expected_type = self.types.get_or_panic(&parameter_symbol_id);
             self.constraints
                 .add(Constraint::new(inferred_argument_type, expected_type));
         }
@@ -401,10 +440,12 @@ mod function_call_tests {
         let mut global_functions = HashMap::new();
         global_functions.insert(
             SymbolId(10),
-            FunctionMetadata::new("print_age".to_string(), vec![Some("i32".to_string())], None),
+            FunctionMetadata::new("print_age".to_string(), vec![Some("i32".to_string())], None)
+                .with_symbols(vec![SymbolId(11)]),
         );
 
         let mut visitor = TypeInferenceVisitor::new(&resolution_table, &global_functions);
+        visitor.types.add(SymbolId(11), Type::Int32);
         visitor.types.add(SymbolId(20), Type::Placeholder(1));
 
         let _ = visitor.infer(&call_kind);
@@ -427,10 +468,12 @@ mod function_call_tests {
         let mut global_functions = HashMap::new();
         global_functions.insert(
             SymbolId(10),
-            FunctionMetadata::new("identity".to_string(), vec![None], None),
+            FunctionMetadata::new("identity".to_string(), vec![None], None)
+                .with_symbols(vec![SymbolId(11)]),
         );
 
         let mut visitor = TypeInferenceVisitor::new(&resolution_table, &global_functions);
+        visitor.types.add(SymbolId(11), Type::Placeholder(2));
         visitor.types.add(SymbolId(20), Type::Placeholder(1));
 
         let _ = visitor.infer(&call_kind);
@@ -999,6 +1042,79 @@ mod print_tests {
         assert_eq!(
             *visitor.constraints.entry_at(0),
             Constraint::new(Type::Placeholder(5), Type::Int32)
+        );
+    }
+}
+
+#[cfg(test)]
+mod function_tests {
+    use super::*;
+    use crate::ast::statement::FunctionParameter;
+
+    #[test]
+    fn infer_function_definition_registers_parameters_in_type_table() {
+        let parameter = FunctionParameter::new("value".to_string(), Some("i32".to_string()));
+        let function_definition = FunctionDefinition::new(
+            "identity".to_string(),
+            vec![parameter],
+            Some("i32".to_string()),
+            Block::new(vec![]),
+        );
+
+        let mut resolution_table = ResolutionTable::new();
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+
+        let mut functions = HashMap::new();
+        let metadata = FunctionMetadata::new(
+            "identity".to_string(),
+            vec![Some("i32".to_string())],
+            Some("i32".to_string()),
+        )
+        .with_symbols(vec![SymbolId(11)]);
+
+        functions.insert(SymbolId(10), metadata);
+
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
+        let _ = visitor.visit_function_definition(&function_definition, NodeId(1));
+        assert_eq!(visitor.types.get_or_panic(&SymbolId(11)), Type::Int32);
+    }
+
+    #[test]
+    fn infer_function_definition_constrains_return_type_to_expected_type() {
+        let parameter = FunctionParameter::new("value".to_string(), Some("i32".to_string()));
+        let return_statement = Statement::Return(
+            Return::new(Some(Expression {
+                kind: ExpressionKind::Identifier("value".to_string(), NodeId(2)),
+                line: 1,
+            })),
+            NodeId(3),
+        );
+        let function_definition = FunctionDefinition::new(
+            "identity".to_string(),
+            vec![parameter],
+            Some("i32".to_string()),
+            Block::new(vec![return_statement]),
+        );
+
+        let mut resolution_table = ResolutionTable::new();
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+        resolution_table.resolve(NodeId(2), SymbolId(11));
+
+        let mut functions = HashMap::new();
+        let metadata = FunctionMetadata::new(
+            "identity".to_string(),
+            vec![Some("i32".to_string())],
+            Some("i32".to_string()),
+        )
+        .with_symbols(vec![SymbolId(11)]);
+
+        functions.insert(SymbolId(10), metadata);
+
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
+        let _ = visitor.visit_function_definition(&function_definition, NodeId(1));
+        assert_eq!(
+            *visitor.constraints.entry_at(0),
+            Constraint::new(Type::Int32, Type::Int32)
         );
     }
 }
