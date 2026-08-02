@@ -114,23 +114,9 @@ impl Unifier {
         }
     }
 
-    /// Recursively resolves type placeholders to their final bound types.
-    pub(crate) fn resolve(&self, type_node: Type) -> Type {
-        match type_node {
-            Type::Placeholder(placeholder_id) => {
-                if let Some(next_type) = self.substitutions.get(&placeholder_id) {
-                    self.resolve(*next_type)
-                } else {
-                    type_node
-                }
-            }
-            _ => type_node,
-        }
-    }
-
     /// Solves all type constraints in the collection, updating substitutions and flattening them.
     pub(crate) fn solve(
-        &mut self,
+        mut self,
         constraints: Constraints,
     ) -> Result<HashMap<usize, Type>, SemanticError> {
         for constraint in constraints.entries {
@@ -143,7 +129,7 @@ impl Unifier {
             let concrete_type = self.resolve(Type::Placeholder(placeholder_id));
             self.substitutions.insert(placeholder_id, concrete_type);
         }
-        Ok(self.substitutions.clone())
+        Ok(self.substitutions)
     }
 
     /// Unifies two types, updating the substitutions map or returning a mismatch error.
@@ -167,6 +153,20 @@ impl Unifier {
 
         Err(SemanticError::TypeMismatch(left_type, right_type))
     }
+
+    /// Recursively resolves type placeholders to their final bound types.
+    fn resolve(&self, type_node: Type) -> Type {
+        match type_node {
+            Type::Placeholder(placeholder_id) => {
+                if let Some(next_type) = self.substitutions.get(&placeholder_id) {
+                    self.resolve(*next_type)
+                } else {
+                    type_node
+                }
+            }
+            _ => type_node,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -176,18 +176,20 @@ mod tests {
 
     #[test]
     fn unify_concrete_types() {
-        let mut unifier = Unifier::new();
+        let unifier = Unifier::new();
         let mut constraints = Constraints::new();
         constraints.add(Constraint::new(Type::Int32, Type::Int32));
 
         let result = unifier.solve(constraints);
         assert!(result.is_ok());
-        assert!(unifier.substitutions.is_empty());
+
+        let substitutions = result.unwrap();
+        assert!(substitutions.is_empty());
     }
 
     #[test]
     fn unify_concrete_types_mismatch() {
-        let mut unifier = Unifier::new();
+        let unifier = Unifier::new();
         let mut constraints = Constraints::new();
         constraints.add(Constraint::new(Type::Int32, Type::Bool));
 
@@ -200,18 +202,20 @@ mod tests {
 
     #[test]
     fn unify_placeholder_to_concrete_type() {
-        let mut unifier = Unifier::new();
+        let unifier = Unifier::new();
         let mut constraints = Constraints::new();
         constraints.add(Constraint::new(Type::Placeholder(1), Type::Int32));
 
         let result = unifier.solve(constraints);
         assert!(result.is_ok());
-        assert_eq!(unifier.resolve(Type::Placeholder(1)), Type::Int32);
+
+        let substitutions = result.unwrap();
+        assert_eq!(*substitutions.get(&1).unwrap(), Type::Int32);
     }
 
     #[test]
     fn unify_placeholders_transitive() {
-        let mut unifier = Unifier::new();
+        let unifier = Unifier::new();
         let mut constraints = Constraints::new();
         constraints.add(Constraint::new(Type::Placeholder(1), Type::Placeholder(2)));
         constraints.add(Constraint::new(Type::Placeholder(2), Type::Int32));
@@ -226,7 +230,7 @@ mod tests {
 
     #[test]
     fn unify_conflicting_placeholder_bindings_fails() {
-        let mut unifier = Unifier::new();
+        let unifier = Unifier::new();
         let mut constraints = Constraints::new();
         constraints.add(Constraint::new(Type::Placeholder(1), Type::Int32));
         constraints.add(Constraint::new(Type::Placeholder(1), Type::Bool));
