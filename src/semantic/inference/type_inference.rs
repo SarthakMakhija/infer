@@ -172,8 +172,15 @@ impl<'symbols> StatementVisitor for TypeInferenceVisitor<'symbols> {
         todo!()
     }
 
-    fn visit_print(&mut self, _print_statement: &Print) -> Result<(), SemanticError> {
-        todo!()
+    /// Performs type inference for a print statement.
+    ///
+    /// Recursively infers the type of all printed argument expressions to collect
+    /// constraints from them.
+    fn visit_print(&mut self, print_statement: &Print) -> Result<(), SemanticError> {
+        for argument in print_statement.arguments() {
+            self.infer(&argument.kind)?;
+        }
+        Ok(())
     }
 }
 
@@ -960,5 +967,38 @@ mod block_tests {
 
         let _ = visitor.visit_block(&block_statement);
         assert_eq!(visitor.types.get_or_panic(&SymbolId(10)), Type::Int32);
+    }
+}
+
+#[cfg(test)]
+mod print_tests {
+    use super::*;
+
+    #[test]
+    fn infer_print_expressions() {
+        let left_expression = ExpressionKind::Identifier("score".to_string(), NodeId(1));
+        let right_expression = ExpressionKind::I32(10);
+        let add_expression = Expression {
+            kind: ExpressionKind::Binary(
+                Box::new(left_expression),
+                BinaryOperator::Plus,
+                Box::new(right_expression),
+            ),
+            line: 1,
+        };
+        let print_stmt = Print::new(vec![add_expression]);
+
+        let mut resolution_table = ResolutionTable::new();
+        resolution_table.resolve(NodeId(1), SymbolId(10));
+
+        let functions = HashMap::new();
+        let mut visitor = TypeInferenceVisitor::new(&resolution_table, &functions);
+        visitor.types.add(SymbolId(10), Type::Placeholder(5));
+
+        let _ = visitor.visit_print(&print_stmt);
+        assert_eq!(
+            *visitor.constraints.entry_at(0),
+            Constraint::new(Type::Placeholder(5), Type::Int32)
+        );
     }
 }
