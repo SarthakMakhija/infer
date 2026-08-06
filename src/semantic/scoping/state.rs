@@ -151,6 +151,11 @@ impl State {
     pub(crate) fn is_unreachable(&self) -> bool {
         self.encountered_break || self.encountered_return
     }
+
+    /// Returns a reference to the map of declared global functions and their metadata.
+    pub(crate) fn global_functions(&self) -> &HashMap<SymbolId, FunctionMetadata> {
+        &self.global_functions
+    }
 }
 
 #[cfg(test)]

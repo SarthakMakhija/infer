@@ -9,6 +9,8 @@ use crate::semantic::scoping::next_symbol_id;
 use crate::semantic::scoping::scope::Scopes;
 use crate::semantic::scoping::state::{FunctionMetadata, State};
 use crate::semantic::visitor::{ExpressionVisitor, StatementVisitor};
+use crate::semantic::SymbolId;
+use std::collections::HashMap;
 
 /// An AST visitor that resolves symbols, verifies scope nesting, checks arity,
 /// validates control flow statements (`break`, `return`), and checks for unreachable code.
@@ -64,6 +66,16 @@ impl SymbolResolutionVisitor {
                 .resolve(pending_call.callee_node_id, symbol_id);
         }
         Ok(())
+    }
+
+    /// Returns a reference to the resolved symbol table.
+    pub(crate) fn resolution_table(&self) -> &ResolutionTable {
+        &self.resolution_table
+    }
+
+    /// Returns a reference to the map of declared global functions and their metadata.
+    pub(crate) fn global_functions(&self) -> &HashMap<SymbolId, FunctionMetadata> {
+        self.state.global_functions()
     }
 
     fn validate_function_call(

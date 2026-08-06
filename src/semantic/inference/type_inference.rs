@@ -19,7 +19,7 @@ use std::collections::HashMap;
 /// It traverses expressions, generates constraints based on the operators and identifiers,
 /// and returns the inferred types of expressions.
 pub(crate) struct TypeInferenceVisitor<'symbols> {
-    constraints: Constraints,
+    pub(crate) constraints: Constraints,
     types: TypeTable,
     symbols: &'symbols ResolutionTable,
     functions: &'symbols HashMap<SymbolId, FunctionMetadata>,
